@@ -9,8 +9,9 @@ export const BRAND = {
   footerBrand: "Garata",
   whatsapp: "https://wa.me/6288975958005",
   gold: "#EAB308",
-  bg: "#050505",
-  bgFooter: "#030303",
+  goldGradient: "linear-gradient(135deg, #EAB308, #CA8A04, #FACC15)",
+  bg: "#0A0F1E",
+  bgFooter: "#050810",
 };
 
 // ---------- HERO: 5 mockup cards that scatter after "Generating..." ----------
@@ -85,8 +86,9 @@ export const bentoByNiche: Record<Exclude<Niche, "Semua">, { main: string; small
 };
 
 // ---------- LOGO SHOWCASE (7-10 items) ----------
-export const logoShowcase: string[] = Array.from({ length: 10 }, (_, i) =>
-  `https://placehold.co/400x400/0a0a0a/EAB308?text=LOGO+${i + 1}`,
+export const logoShowcase: string[] = Array.from(
+  { length: 10 },
+  (_, i) => `https://placehold.co/400x400/0a0a0a/EAB308?text=LOGO+${i + 1}`,
 );
 
 // ---------- STATS ----------

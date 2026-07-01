@@ -14,7 +14,10 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Masuk / Daftar — CetakIde" },
-      { name: "description", content: "Masuk ke dashboard CetakIde atau daftar akun baru dengan saldo gratis Rp50.000." },
+      {
+        name: "description",
+        content: "Masuk ke dashboard CetakIde atau daftar akun baru dengan saldo gratis Rp50.000.",
+      },
     ],
   }),
   component: AuthPage,
@@ -66,11 +69,28 @@ function AuthPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/15 blur-[140px]" />
+      {/* Background image */}
+      <div className="absolute inset-0">
+        <img
+          src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop"
+          alt="Background"
+          className="h-full w-full object-cover"
+        />
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0A0F1E]/95 via-[#0A0F1E]/90 to-[#0A0F1E]/95" />
       </div>
 
-      <Link to="/" className="absolute left-4 top-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+      {/* Background glow effects */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[140px]" style={{ background: "rgba(234,179,8,0.15)" }} />
+        <div className="absolute left-[20%] top-[30%] h-40 w-40 rounded-full blur-3xl opacity-20" style={{ background: "#EAB308" }} />
+        <div className="absolute right-[20%] bottom-[30%] h-32 w-32 rounded-full blur-3xl opacity-15" style={{ background: "#8b5cf6" }} />
+      </div>
+
+      <Link
+        to="/"
+        className="absolute left-4 top-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeft className="h-4 w-4" /> Kembali
       </Link>
 
@@ -83,14 +103,18 @@ function AuthPage() {
             {mode === "login" ? "Masuk ke CetakIde" : "Daftar Akun Baru"}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {mode === "login" ? "Lanjutkan bikin visual iklanmu." : "Dapat saldo awal Rp50.000 gratis."}
+            {mode === "login"
+              ? "Lanjutkan bikin visual iklanmu."
+              : "Dapat saldo awal Rp50.000 gratis."}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "register" && (
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Username</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Username
+              </label>
               <input
                 required
                 value={username}
@@ -112,7 +136,9 @@ function AuthPage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Password</label>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              Password
+            </label>
             <input
               required
               type="password"

@@ -3,16 +3,41 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import useEmblaCarousel from "embla-carousel-react";
 import {
-  Sparkles, ArrowRight, Zap, ShieldCheck, Rocket, Palette,
-  Instagram, Facebook, Youtube, Twitter, Send, Loader2, Check,
+  Sparkles,
+  ArrowRight,
+  Zap,
+  ShieldCheck,
+  Rocket,
+  Palette,
+  Instagram,
+  Facebook,
+  Youtube,
+  Twitter,
+  Send,
+  Loader2,
+  Check,
 } from "lucide-react";
 import {
-  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Navbar } from "@/components/navbar";
 import {
-  BRAND, heroMockupCards, heroPrompt, carouselData, nicheTabs,
-  bentoByNiche, logoShowcase, stats, whyUs, howItWorks, faqs,
-  footerColumns, type Niche,
+  BRAND,
+  heroMockupCards,
+  heroPrompt,
+  carouselData,
+  nicheTabs,
+  bentoByNiche,
+  logoShowcase,
+  stats,
+  whyUs,
+  howItWorks,
+  faqs,
+  footerColumns,
+  type Niche,
 } from "@/config/site-assets";
 
 export const Route = createFileRoute("/")({
@@ -23,26 +48,31 @@ export const Route = createFileRoute("/")({
 /*  HERO — auto-type prompt → "Generating..." → 3D scatter of 5 asset cards   */
 /* -------------------------------------------------------------------------- */
 
-function useTypewriter(text: string, speed = 35, startDelay = 500) {
+function useTypewriter(text: string, speed = 35, startDelay = 500, resetKey = 0) {
   const [out, setOut] = useState("");
   const [done, setDone] = useState(false);
   useEffect(() => {
-    setOut(""); setDone(false);
+    setOut("");
+    setDone(false);
     let i = 0;
     const start = setTimeout(() => {
       const id = setInterval(() => {
         i++;
         setOut(text.slice(0, i));
-        if (i >= text.length) { clearInterval(id); setDone(true); }
+        if (i >= text.length) {
+          clearInterval(id);
+          setDone(true);
+        }
       }, speed);
     }, startDelay);
     return () => clearTimeout(start);
-  }, [text, speed, startDelay]);
+  }, [text, speed, startDelay, resetKey]);
   return { out, done };
 }
 
 function HeroMockup() {
-  const { out: typed, done: typedDone } = useTypewriter(heroPrompt, 32, 700);
+  const [runKey, setRunKey] = useState(0);
+  const { out: typed, done: typedDone } = useTypewriter(heroPrompt, 32, 700, runKey);
   const [phase, setPhase] = useState<"typing" | "generating" | "done">("typing");
 
   useEffect(() => {
@@ -55,20 +85,25 @@ function HeroMockup() {
   // Loop demo every ~14s
   useEffect(() => {
     if (phase !== "done") return;
-    const t = setTimeout(() => setPhase("typing"), 9000);
+    const t = setTimeout(() => {
+      setPhase("typing");
+      setRunKey((k) => k + 1);
+    }, 9000);
     return () => clearTimeout(t);
   }, [phase]);
 
-  // Re-run typewriter when we return to typing
-  const [runKey, setRunKey] = useState(0);
-  useEffect(() => { if (phase === "typing") setRunKey((k) => k + 1); }, [phase]);
+  // Manual regenerate function
+  const handleRegenerate = () => {
+    setPhase("typing");
+    setRunKey((k) => k + 1);
+  };
 
   const scatterPositions = [
     { x: -180, y: -20, r: -14, z: 1 },
-    { x: -90,  y:  30, r:  -6, z: 2 },
-    { x:   0,  y: -30, r:   0, z: 5 },
-    { x:  90,  y:  30, r:   6, z: 2 },
-    { x: 180,  y: -20, r:  14, z: 1 },
+    { x: -90, y: 30, r: -6, z: 2 },
+    { x: 0, y: -30, r: 0, z: 5 },
+    { x: 90, y: 30, r: 6, z: 2 },
+    { x: 180, y: -20, r: 14, z: 1 },
   ];
 
   return (
@@ -89,10 +124,19 @@ function HeroMockup() {
         {/* prompt row */}
         <div className="border-b border-white/10 p-4 sm:p-5">
           <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-4 py-3">
-            <Sparkles className="h-4 w-4 shrink-0 text-[color:var(--gold)]" style={{ color: BRAND.gold }} />
-            <p key={runKey} className="min-h-[1.25rem] flex-1 text-left text-sm text-white/85 sm:text-base">
+            <Sparkles
+              className="h-4 w-4 shrink-0 text-[color:var(--gold)]"
+              style={{ color: BRAND.gold }}
+            />
+            <p
+              key={runKey}
+              className="min-h-[1.25rem] flex-1 text-left text-sm text-white/85 sm:text-base"
+            >
               {typed}
-              <span className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-[color:var(--gold)]" style={{ background: BRAND.gold }} />
+              <span
+                className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-[color:var(--gold)]"
+                style={{ background: BRAND.gold }}
+              />
             </p>
             <button
               className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-black transition disabled:opacity-70"
@@ -100,10 +144,23 @@ function HeroMockup() {
               disabled
             >
               {phase === "generating" ? (
-                <span className="flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin" /> Generating</span>
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Generating
+                </span>
               ) : phase === "done" ? (
-                <span className="flex items-center gap-1.5"><Check className="h-3 w-3" /> Selesai</span>
-              ) : "Generate"}
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3 w-3" /> Selesai
+                </span>
+              ) : (
+                "Generate"
+              )}
+            </button>
+            <button
+              onClick={handleRegenerate}
+              className="shrink-0 rounded-lg border border-white/20 px-3 py-1.5 text-xs font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+              title="Generate ulang animasi"
+            >
+              ↻
             </button>
           </div>
         </div>
@@ -111,11 +168,14 @@ function HeroMockup() {
         {/* canvas */}
         <div className="relative h-[320px] overflow-hidden sm:h-[400px] md:h-[440px]">
           {/* soft grid backdrop */}
-          <div className="absolute inset-0 opacity-[0.15]" style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)",
-            backgroundSize: "36px 36px",
-          }} />
+          <div
+            className="absolute inset-0 opacity-[0.15]"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)",
+              backgroundSize: "36px 36px",
+            }}
+          />
           <div
             className="pointer-events-none absolute left-1/2 top-1/2 h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
             style={{ background: `${BRAND.gold}30` }}
@@ -125,7 +185,9 @@ function HeroMockup() {
           <AnimatePresence>
             {phase === "generating" && (
               <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 className="absolute inset-0 flex items-center justify-center"
               >
                 <div className="flex flex-col items-center gap-3">
@@ -139,26 +201,36 @@ function HeroMockup() {
           {/* Scatter cards */}
           <div className="absolute inset-0 flex items-center justify-center [transform-style:preserve-3d]">
             <AnimatePresence>
-              {phase === "done" && heroMockupCards.slice(0, 5).map((src, i) => {
-                const p = scatterPositions[i];
-                return (
-                  <motion.div
-                    key={`${runKey}-${i}`}
-                    initial={{ opacity: 0, scale: 0.4, y: 60, rotate: 0 }}
-                    animate={{ opacity: 1, scale: 1, x: p.x, y: p.y, rotate: p.r }}
-                    exit={{ opacity: 0, scale: 0.6 }}
-                    transition={{ delay: i * 0.12, type: "spring", stiffness: 140, damping: 16 }}
-                    style={{ zIndex: p.z }}
-                    className="absolute h-[200px] w-[160px] overflow-hidden rounded-xl border border-white/15 bg-black shadow-2xl sm:h-[240px] sm:w-[190px]"
-                  >
-                    <img src={src} alt={`Hasil ${i + 1}`} className="h-full w-full object-cover" />
-                    <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/80 to-transparent px-2 py-1.5 text-[10px] text-white/80">
-                      <span>#{String(i + 1).padStart(2, "0")}</span>
-                      <span className="rounded px-1.5 py-0.5" style={{ background: BRAND.gold, color: "#000" }}>HD</span>
-                    </div>
-                  </motion.div>
-                );
-              })}
+              {phase === "done" &&
+                heroMockupCards.slice(0, 5).map((src, i) => {
+                  const p = scatterPositions[i];
+                  return (
+                    <motion.div
+                      key={`${runKey}-${i}`}
+                      initial={{ opacity: 0, scale: 0.4, y: 60, rotate: 0 }}
+                      animate={{ opacity: 1, scale: 1, x: p.x, y: p.y, rotate: p.r }}
+                      exit={{ opacity: 0, scale: 0.6 }}
+                      transition={{ delay: i * 0.12, type: "spring", stiffness: 140, damping: 16 }}
+                      style={{ zIndex: p.z }}
+                      className="absolute h-[200px] w-[160px] overflow-hidden rounded-xl border border-white/15 bg-black shadow-2xl sm:h-[240px] sm:w-[190px]"
+                    >
+                      <img
+                        src={src}
+                        alt={`Hasil ${i + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/80 to-transparent px-2 py-1.5 text-[10px] text-white/80">
+                        <span>#{String(i + 1).padStart(2, "0")}</span>
+                        <span
+                          className="rounded px-1.5 py-0.5"
+                          style={{ background: BRAND.gold, color: "#000" }}
+                        >
+                          HD
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
             </AnimatePresence>
           </div>
         </div>
@@ -217,7 +289,12 @@ function LogoAuto({ images }: { images: string[] }) {
             className="flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-full border p-2 sm:h-40 sm:w-40"
             style={{ borderColor: `${BRAND.gold}55`, background: "#0a0a0a" }}
           >
-            <img src={src} alt="" loading="lazy" className="h-full w-full rounded-full object-cover" />
+            <img
+              src={src}
+              alt=""
+              loading="lazy"
+              className="h-full w-full rounded-full object-cover"
+            />
           </div>
         ))}
       </div>
@@ -237,7 +314,10 @@ function Bento() {
       const all = Object.values(bentoByNiche);
       return {
         main: all[0].main,
-        small: all.slice(1).map((n) => n.main).slice(0, 4),
+        small: all
+          .slice(1)
+          .map((n) => n.main)
+          .slice(0, 4),
       };
     }
     return bentoByNiche[active];
@@ -271,7 +351,10 @@ function Bento() {
           <div className="aspect-[4/5] w-full">
             <img src={data.main} alt="" className="h-full w-full object-cover" />
           </div>
-          <div className="absolute left-4 top-4 rounded-full px-3 py-1 text-[11px] font-semibold" style={{ background: BRAND.gold, color: "#000" }}>
+          <div
+            className="absolute left-4 top-4 rounded-full px-3 py-1 text-[11px] font-semibold"
+            style={{ background: BRAND.gold, color: "#000" }}
+          >
             {active === "Semua" ? "Featured" : active}
           </div>
         </div>
@@ -279,7 +362,10 @@ function Bento() {
         {/* 4 small 1:1 */}
         <div className="grid grid-cols-2 gap-4">
           {data.small.map((src, i) => (
-            <div key={i} className="relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+            <div
+              key={i}
+              className="relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
+            >
               <img src={src} alt="" className="h-full w-full object-cover" />
             </div>
           ))}
@@ -296,19 +382,59 @@ function Bento() {
 function Index() {
   return (
     <div className="min-h-screen text-white" style={{ background: BRAND.bg }}>
+      <Navbar />
       {/* HERO */}
-      <section className="relative overflow-hidden pt-16 pb-20 sm:pt-24 sm:pb-28">
+      <section className="relative overflow-hidden pt-28 pb-20 sm:pt-36 sm:pb-28">
+        {/* Background image */}
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop"
+            alt="Background"
+            className="h-full w-full object-cover"
+          />
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0A0F1E]/95 via-[#0A0F1E]/85 to-[#0A0F1E]/95" />
+        </div>
+
+        {/* Background layers */}
         <div className="pointer-events-none absolute inset-0">
+          {/* Gradient glow */}
           <div
             className="absolute left-1/2 top-24 h-[520px] w-[520px] -translate-x-1/2 rounded-full blur-[160px]"
             style={{ background: `${BRAND.gold}22` }}
+          />
+          {/* Grid pattern overlay */}
+          <div
+            className="absolute inset-0 opacity-[0.08]"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.3) 1px, transparent 1px)",
+              backgroundSize: "60px 60px",
+            }}
+          />
+          {/* Floating decorative shapes */}
+          <div
+            className="absolute left-[10%] top-[20%] h-32 w-32 rounded-full blur-3xl opacity-20"
+            style={{ background: BRAND.gold }}
+          />
+          <div
+            className="absolute right-[15%] bottom-[30%] h-40 w-40 rounded-full blur-3xl opacity-15"
+            style={{ background: "#8b5cf6" }}
+          />
+          <div
+            className="absolute left-[20%] bottom-[20%] h-24 w-24 rounded-full blur-3xl opacity-10"
+            style={{ background: "#06b6d4" }}
           />
         </div>
 
         <div className="relative mx-auto max-w-6xl px-4 text-center sm:px-6">
           <span
             className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-medium"
-            style={{ borderColor: `${BRAND.gold}55`, color: BRAND.gold, background: `${BRAND.gold}0d` }}
+            style={{
+              borderColor: `${BRAND.gold}55`,
+              color: BRAND.gold,
+              background: `${BRAND.gold}0d`,
+            }}
           >
             <Sparkles className="h-3.5 w-3.5" /> {BRAND.name} · AI Visual Builder Instan
           </span>
@@ -317,28 +443,71 @@ function Index() {
             Visual iklan siap tayang, <br className="hidden sm:block" />
             <span style={{ color: BRAND.gold }}>dalam satu klik.</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base text-white/70 sm:text-lg">
-            Ketik prompt, pilih format, cetak visual — Instagram, Facebook Ads, YouTube, dan marketplace,
-            semua keluar dalam hitungan detik.
-          </p>
+
+          {/* Mini Instagram Feed Carousel */}
+          <div className="mt-8 flex items-center justify-center overflow-hidden py-4">
+            <div className="flex animate-marquee gap-3">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="relative aspect-square h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-20 sm:w-20 md:h-24 md:w-24"
+                >
+                  <img
+                    src={`https://placehold.co/200x200/0a0a0a/EAB308?text=IG+${i + 1}`}
+                    alt={`Instagram ${i + 1}`}
+                    className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                </div>
+              ))}
+              {/* Duplicate for seamless loop */}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={`dup-${i}`}
+                  className="relative aspect-square h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-20 sm:w-20 md:h-24 md:w-24"
+                >
+                  <img
+                    src={`https://placehold.co/200x200/0a0a0a/EAB308?text=IG+${i + 1}`}
+                    alt={`Instagram ${i + 1}`}
+                    className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               to="/auth"
               search={{ mode: "register" }}
-              className="group inline-flex items-center gap-2 rounded-full px-7 py-3.5 font-semibold text-black transition hover:brightness-110"
-              style={{ background: BRAND.gold, boxShadow: `0 12px 40px -10px ${BRAND.gold}` }}
+              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-7 py-3.5 font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+              style={{
+                background: BRAND.goldGradient,
+                boxShadow: `0 12px 40px -10px ${BRAND.gold}`,
+              }}
             >
-              Coba Gratis Sekarang
-              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+              <span className="relative z-10">Coba Gratis Sekarang</span>
+              <ArrowRight className="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full transition-transform duration-700 group-hover:translate-x-full" />
             </Link>
             <a
               href="#showcase"
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 px-6 py-3.5 text-sm font-medium text-white/85 transition hover:bg-white/5"
+              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-white/15 px-6 py-3.5 text-sm font-medium text-white/85 transition-all duration-300 hover:scale-105 hover:border-white/30"
+              style={{
+                background: "linear-gradient(135deg, rgba(234,179,8,0.1), rgba(234,179,8,0.05))",
+              }}
             >
-              Lihat Contoh Hasil
+              <span className="relative z-10">Lihat Contoh Hasil</span>
+              <div className="absolute inset-0 -translate-x-full bg-white/10 transition-transform duration-500 group-hover:translate-x-0" />
             </a>
           </div>
+
+          <p className="mx-auto mt-5 max-w-2xl text-base text-white/70 sm:text-lg">
+            Ketik prompt, pilih format, cetak visual — Instagram, Facebook Ads, YouTube, dan
+            marketplace, semua keluar dalam hitungan detik.
+          </p>
 
           <HeroMockup />
         </div>
@@ -348,7 +517,10 @@ function Index() {
       <section id="showcase" className="relative py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto mb-12 max-w-2xl text-center">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: BRAND.gold }}>
+            <span
+              className="text-xs font-semibold uppercase tracking-[0.2em]"
+              style={{ color: BRAND.gold }}
+            >
               Semua Format Iklan
             </span>
             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
@@ -358,14 +530,16 @@ function Index() {
 
           <div className="space-y-12">
             {carouselData.map((c) => (
-              <div key={c.title}>
+              <div key={c.title} className="group">
                 <div className="mb-4 flex items-end justify-between gap-4">
                   <div>
-                    <h3 className="text-lg font-semibold sm:text-xl">{c.title}</h3>
+                    <h3 className="text-lg font-semibold transition-colors group-hover:text-white/90 sm:text-xl">
+                      {c.title}
+                    </h3>
                     <p className="text-xs text-white/50 sm:text-sm">{c.subtitle}</p>
                   </div>
                   <span
-                    className="hidden rounded-full border px-3 py-1 text-[11px] sm:inline-flex"
+                    className="hidden rounded-full border px-3 py-1 text-[11px] transition-all group-hover:scale-110 sm:inline-flex"
                     style={{ borderColor: `${BRAND.gold}55`, color: BRAND.gold }}
                   >
                     Auto-generated
@@ -379,25 +553,29 @@ function Index() {
       </section>
 
       {/* MULTI-NICHE BENTO */}
-      <section className="relative py-16 sm:py-20">
+      <section id="bento" className="relative py-16 sm:py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto mb-8 max-w-2xl text-center">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: BRAND.gold }}>
+            <span
+              className="text-xs font-semibold uppercase tracking-[0.2em]"
+              style={{ color: BRAND.gold }}
+            >
               Contoh Hasil Visual
             </span>
-            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
-              Cocok untuk semua niche bisnis
-            </h2>
+            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Cocok untuk semua niche bisnis</h2>
           </div>
           <Bento />
         </div>
       </section>
 
       {/* LOGO BRANDING */}
-      <section className="relative py-16 sm:py-20">
+      <section id="logo" className="relative py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto mb-10 max-w-2xl text-center">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: BRAND.gold }}>
+            <span
+              className="text-xs font-semibold uppercase tracking-[0.2em]"
+              style={{ color: BRAND.gold }}
+            >
               Logo & Brand Identity
             </span>
             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
@@ -409,18 +587,23 @@ function Index() {
       </section>
 
       {/* STATS */}
-      <section className="relative py-12">
+      <section id="stats" className="relative py-12">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {stats.map((s) => (
               <div
                 key={s.label}
-                className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center backdrop-blur"
+                className="group rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center backdrop-blur transition-all duration-300 hover:scale-105 hover:border-white/20 hover:bg-white/[0.06]"
               >
-                <div className="text-2xl font-extrabold sm:text-3xl" style={{ color: BRAND.gold }}>
+                <div
+                  className="text-2xl font-extrabold transition-colors sm:text-3xl"
+                  style={{ color: BRAND.gold }}
+                >
                   {s.value}
                 </div>
-                <div className="mt-1 text-xs text-white/60 sm:text-sm">{s.label}</div>
+                <div className="mt-1 text-xs text-white/60 transition-colors group-hover:text-white/80 sm:text-sm">
+                  {s.label}
+                </div>
               </div>
             ))}
           </div>
@@ -428,29 +611,37 @@ function Index() {
       </section>
 
       {/* WHY US */}
-      <section className="relative py-16 sm:py-20">
+      <section id="keunggulan" className="relative py-16 sm:py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto mb-12 max-w-2xl text-center">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: BRAND.gold }}>
+            <span
+              className="text-xs font-semibold uppercase tracking-[0.2em]"
+              style={{ color: BRAND.gold }}
+            >
               Kenapa {BRAND.name}
             </span>
-            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
-              Dibangun untuk performa iklan
-            </h2>
+            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Dibangun untuk performa iklan</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {whyUs.map((w, i) => {
               const Icon = [Rocket, ShieldCheck, Palette][i] ?? Rocket;
               return (
-                <div key={w.title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                <div
+                  key={w.title}
+                  className="group rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-all duration-300 hover:scale-105 hover:border-white/20 hover:bg-white/[0.06] hover:shadow-xl"
+                >
                   <div
-                    className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl"
+                    className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl transition-transform group-hover:scale-110"
                     style={{ background: `${BRAND.gold}1a`, color: BRAND.gold }}
                   >
                     <Icon className="h-5 w-5" />
                   </div>
-                  <h3 className="text-base font-semibold">{w.title}</h3>
-                  <p className="mt-2 text-sm text-white/60">{w.desc}</p>
+                  <h3 className="text-base font-semibold transition-colors group-hover:text-white/90">
+                    {w.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-white/60 transition-colors group-hover:text-white/80">
+                    {w.desc}
+                  </p>
                 </div>
               );
             })}
@@ -459,10 +650,13 @@ function Index() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section className="relative py-16 sm:py-20">
+      <section id="cara-kerja" className="relative py-16 sm:py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto mb-12 max-w-2xl text-center">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: BRAND.gold }}>
+            <span
+              className="text-xs font-semibold uppercase tracking-[0.2em]"
+              style={{ color: BRAND.gold }}
+            >
               How It Works
             </span>
             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">3 langkah, visual jadi</h2>
@@ -471,18 +665,27 @@ function Index() {
             <div
               aria-hidden
               className="absolute left-8 right-8 top-9 hidden h-px md:block"
-              style={{ background: `linear-gradient(90deg, transparent, ${BRAND.gold}55, transparent)` }}
+              style={{
+                background: `linear-gradient(90deg, transparent, ${BRAND.gold}55, transparent)`,
+              }}
             />
             {howItWorks.map((s) => (
-              <div key={s.step} className="relative rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+              <div
+                key={s.step}
+                className="group relative rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-all duration-300 hover:scale-105 hover:border-white/20 hover:bg-white/[0.06] hover:shadow-xl"
+              >
                 <div
-                  className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl text-lg font-extrabold"
+                  className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl text-lg font-extrabold transition-transform group-hover:scale-110"
                   style={{ background: BRAND.gold, color: "#000" }}
                 >
                   {s.step}
                 </div>
-                <h3 className="text-base font-semibold">{s.title}</h3>
-                <p className="mt-2 text-sm text-white/60">{s.desc}</p>
+                <h3 className="text-base font-semibold transition-colors group-hover:text-white/90">
+                  {s.title}
+                </h3>
+                <p className="mt-2 text-sm text-white/60 transition-colors group-hover:text-white/80">
+                  {s.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -493,7 +696,10 @@ function Index() {
       <section id="faq" className="relative py-16 sm:py-20">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <div className="mb-10 text-center">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: BRAND.gold }}>
+            <span
+              className="text-xs font-semibold uppercase tracking-[0.2em]"
+              style={{ color: BRAND.gold }}
+            >
               FAQ
             </span>
             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Pertanyaan yang sering ditanya</h2>
@@ -540,7 +746,10 @@ function Index() {
             </p>
             <div className="mt-8 flex items-baseline justify-center gap-3">
               <span className="text-lg text-white/40 line-through">Rp 650.000</span>
-              <span className="font-display text-5xl font-extrabold sm:text-6xl" style={{ color: BRAND.gold }}>
+              <span
+                className="font-display text-5xl font-extrabold sm:text-6xl"
+                style={{ color: BRAND.gold }}
+              >
                 Rp 65.000
               </span>
             </div>
@@ -557,7 +766,7 @@ function Index() {
       </section>
 
       {/* FOOTER */}
-      <footer className="relative w-full pt-16" style={{ background: BRAND.bgFooter }}>
+      <footer id="footer" className="relative w-full pt-16" style={{ background: BRAND.bgFooter }}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="grid gap-10 pb-12 md:grid-cols-2 lg:grid-cols-5">
             <div className="lg:col-span-2">
@@ -598,7 +807,10 @@ function Index() {
                 <ul className="space-y-2.5">
                   {col.links.map((l) => (
                     <li key={l.label}>
-                      <a href={l.href} className="text-sm text-white/60 transition hover:text-white">
+                      <a
+                        href={l.href}
+                        className="text-sm text-white/60 transition hover:text-white"
+                      >
                         {l.label}
                       </a>
                     </li>

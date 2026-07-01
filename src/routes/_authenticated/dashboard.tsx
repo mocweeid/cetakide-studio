@@ -2,29 +2,57 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { DashboardSidebar, type Platform } from "@/components/dashboard-sidebar";
 import {
-  DashboardSidebar,
-  type Platform,
-} from "@/components/dashboard-sidebar";
-import {
-  Wand2, Loader2, Wallet, Check, X, AlertTriangle, MessageCircle, Sparkles,
+  Wand2,
+  Loader2,
+  Wallet,
+  Check,
+  X,
+  AlertTriangle,
+  MessageCircle,
+  Sparkles,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard — CetakIde" },
-      { name: "description", content: "Workspace CetakIde untuk generate banner, thumbnail, dan logo." },
+      {
+        name: "description",
+        content: "Workspace CetakIde untuk generate banner, thumbnail, dan logo.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
   component: Dashboard,
 });
 
-const ASPECT_MAP: Record<Exclude<Platform, "history">, { label: string; ratios: { key: string; w: number; h: number }[] }> = {
-  instagram: { label: "Instagram", ratios: [{ key: "1:1", w: 1, h: 1 }, { key: "9:16", w: 9, h: 16 }] },
-  facebook:  { label: "Facebook Ads", ratios: [{ key: "4:5", w: 4, h: 5 }, { key: "1:1", w: 1, h: 1 }] },
-  youtube:   { label: "YouTube", ratios: [{ key: "16:9", w: 16, h: 9 }, { key: "9:16", w: 9, h: 16 }] },
+const ASPECT_MAP: Record<
+  Exclude<Platform, "history">,
+  { label: string; ratios: { key: string; w: number; h: number }[] }
+> = {
+  instagram: {
+    label: "Instagram",
+    ratios: [
+      { key: "1:1", w: 1, h: 1 },
+      { key: "9:16", w: 9, h: 16 },
+    ],
+  },
+  facebook: {
+    label: "Facebook Ads",
+    ratios: [
+      { key: "4:5", w: 4, h: 5 },
+      { key: "1:1", w: 1, h: 1 },
+    ],
+  },
+  youtube: {
+    label: "YouTube",
+    ratios: [
+      { key: "16:9", w: 16, h: 9 },
+      { key: "9:16", w: 9, h: 16 },
+    ],
+  },
 };
 
 type Project = {
@@ -46,7 +74,12 @@ function Dashboard() {
   const [isDeveloper, setIsDeveloper] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [toggles, setToggles] = useState({ autoLayout: true, shadow: true, reflection: false, hd: true });
+  const [toggles, setToggles] = useState({
+    autoLayout: true,
+    shadow: true,
+    reflection: false,
+    hd: true,
+  });
 
   // Load profile + role + history
   useEffect(() => {
@@ -58,7 +91,12 @@ function Dashboard() {
       const [{ data: profile }, { data: roles }, { data: proj }] = await Promise.all([
         supabase.from("profiles").select("saldo, username").eq("id", uid).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", uid),
-        supabase.from("projects").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(30),
+        supabase
+          .from("projects")
+          .select("*")
+          .eq("user_id", uid)
+          .order("created_at", { ascending: false })
+          .limit(30),
       ]);
 
       if (profile) {
@@ -122,7 +160,10 @@ function Dashboard() {
         status: "sukses" as const,
       };
       const { data: inserted, error: insErr } = await supabase
-        .from("projects").insert(insertPayload).select().single();
+        .from("projects")
+        .insert(insertPayload)
+        .select()
+        .single();
       if (insErr) throw insErr;
 
       setProjects((p) => [inserted as Project, ...p]);
@@ -139,11 +180,7 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 p-4 md:flex-row">
-        <DashboardSidebar
-          active={platform}
-          onSelect={setPlatform}
-          isDeveloper={isDeveloper}
-        />
+        <DashboardSidebar active={platform} onSelect={setPlatform} isDeveloper={isDeveloper} />
 
         <main className="flex-1 space-y-4">
           {/* Top bar */}
@@ -155,7 +192,11 @@ function Dashboard() {
             <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
               <Wallet className="h-4 w-4" />
               💳 Saldo: Rp {saldo.toLocaleString("id-ID")}
-              {isDeveloper && <span className="ml-2 rounded-full bg-primary/30 px-2 py-0.5 text-[10px] uppercase">∞ Dev</span>}
+              {isDeveloper && (
+                <span className="ml-2 rounded-full bg-primary/30 px-2 py-0.5 text-[10px] uppercase">
+                  ∞ Dev
+                </span>
+              )}
             </div>
           </div>
 
@@ -173,7 +214,9 @@ function Dashboard() {
                         key={r.key}
                         onClick={() => setRatio(r.key)}
                         className={`rounded-md px-2.5 py-1 text-xs transition ${
-                          r.key === ratio ? "bg-primary text-black font-semibold" : "bg-white/5 text-muted-foreground hover:bg-white/10"
+                          r.key === ratio
+                            ? "bg-primary text-black font-semibold"
+                            : "bg-white/5 text-muted-foreground hover:bg-white/10"
                         }`}
                       >
                         {r.key}
@@ -188,7 +231,11 @@ function Dashboard() {
                     style={canvasStyle}
                   >
                     {projects[0]?.image_url ? (
-                      <img src={projects[0].image_url} alt="Latest" className="h-full w-full object-cover" />
+                      <img
+                        src={projects[0].image_url}
+                        alt="Latest"
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
                         <Sparkles className="mr-2 h-4 w-4" /> Canvas siap dicetak
@@ -221,7 +268,9 @@ function Dashboard() {
                 </div>
 
                 <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Enhancer</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    Enhancer
+                  </p>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     {(
                       [
@@ -259,7 +308,11 @@ function Dashboard() {
                   disabled={generating}
                   className="glow-gold flex w-full items-center justify-center gap-2 rounded-lg gradient-gold py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
                 >
-                  {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                  {generating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Wand2 className="h-4 w-4" />
+                  )}
                   Cetak Ide Sekarang
                 </button>
                 <p className="text-center text-[11px] text-muted-foreground">
@@ -304,10 +357,15 @@ function HistoryTable({ items }: { items: Project[] }) {
             {items.map((p) => (
               <tr key={p.id} className="border-t border-white/5 hover:bg-white/5">
                 <td className="px-4 py-3 text-muted-foreground">
-                  {new Date(p.created_at).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
+                  {new Date(p.created_at).toLocaleString("id-ID", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
                 </td>
                 <td className="px-4 py-3">{p.kebutuhan}</td>
-                <td className="px-4 py-3 capitalize text-muted-foreground">{p.platform} • {p.aspect_ratio}</td>
+                <td className="px-4 py-3 capitalize text-muted-foreground">
+                  {p.platform} • {p.aspect_ratio}
+                </td>
                 <td className="px-4 py-3">
                   {p.status === "sukses" && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-2.5 py-0.5 text-xs text-green-400">

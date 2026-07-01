@@ -3,9 +3,13 @@ import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 
 const links = [
-  { to: "#solusi", label: "Solusi" },
   { to: "#showcase", label: "Showcase" },
-  { to: "#audiens", label: "Untuk Siapa" },
+  { to: "#bento", label: "Contoh Hasil" },
+  { to: "#logo", label: "Logo" },
+  { to: "#stats", label: "Statistik" },
+  { to: "#keunggulan", label: "Keunggulan" },
+  { to: "#cara-kerja", label: "Cara Kerja" },
+  { to: "#faq", label: "FAQ" },
   { to: "#harga", label: "Harga" },
 ];
 
@@ -29,15 +33,17 @@ export function SiteHeader() {
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg gradient-gold text-black">
             <Sparkles className="h-4 w-4" />
           </span>
-          <span>Cetak<span className="text-gradient-gold">Ide</span></span>
+          <span>
+            Cetak<span className="text-gradient-gold">Ide</span>
+          </span>
         </Link>
 
-        <nav className="hidden items-center gap-7 md:flex">
+        <nav className="flex items-center gap-4 overflow-x-auto md:gap-7">
           {links.map((l) => (
             <a
               key={l.to}
               href={l.to}
-              className="text-sm text-muted-foreground transition hover:text-primary"
+              className="whitespace-nowrap text-sm text-muted-foreground transition hover:text-primary"
             >
               {l.label}
             </a>
