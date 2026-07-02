@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedWorkspaceRouteImport } from './routes/_authenticated/workspace'
 import { Route as AuthenticatedTopUpRouteImport } from './routes/_authenticated/top-up'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReferencesRouteImport } from './routes/_authenticated/references'
 import { Route as AuthenticatedProjectRouteImport } from './routes/_authenticated/project'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
@@ -43,6 +44,11 @@ const AuthenticatedWorkspaceRoute = AuthenticatedWorkspaceRouteImport.update({
 const AuthenticatedTopUpRoute = AuthenticatedTopUpRouteImport.update({
   id: '/top-up',
   path: '/top-up',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReferencesRoute = AuthenticatedReferencesRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/integrations': typeof AuthenticatedIntegrationsRoute
   '/project': typeof AuthenticatedProjectRoute
   '/references': typeof AuthenticatedReferencesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/top-up': typeof AuthenticatedTopUpRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
 }
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/integrations': typeof AuthenticatedIntegrationsRoute
   '/project': typeof AuthenticatedProjectRoute
   '/references': typeof AuthenticatedReferencesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/top-up': typeof AuthenticatedTopUpRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
 }
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
   '/_authenticated/project': typeof AuthenticatedProjectRoute
   '/_authenticated/references': typeof AuthenticatedReferencesRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/top-up': typeof AuthenticatedTopUpRoute
   '/_authenticated/workspace': typeof AuthenticatedWorkspaceRoute
 }
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/integrations'
     | '/project'
     | '/references'
+    | '/settings'
     | '/top-up'
     | '/workspace'
   fileRoutesByTo: FileRoutesByTo
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/integrations'
     | '/project'
     | '/references'
+    | '/settings'
     | '/top-up'
     | '/workspace'
   id:
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/_authenticated/integrations'
     | '/_authenticated/project'
     | '/_authenticated/references'
+    | '/_authenticated/settings'
     | '/_authenticated/top-up'
     | '/_authenticated/workspace'
   fileRoutesById: FileRoutesById
@@ -197,6 +209,13 @@ declare module '@tanstack/react-router' {
       path: '/top-up'
       fullPath: '/top-up'
       preLoaderRoute: typeof AuthenticatedTopUpRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/references': {
@@ -251,6 +270,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
   AuthenticatedProjectRoute: typeof AuthenticatedProjectRoute
   AuthenticatedReferencesRoute: typeof AuthenticatedReferencesRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTopUpRoute: typeof AuthenticatedTopUpRoute
   AuthenticatedWorkspaceRoute: typeof AuthenticatedWorkspaceRoute
 }
@@ -262,6 +282,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
   AuthenticatedProjectRoute: AuthenticatedProjectRoute,
   AuthenticatedReferencesRoute: AuthenticatedReferencesRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTopUpRoute: AuthenticatedTopUpRoute,
   AuthenticatedWorkspaceRoute: AuthenticatedWorkspaceRoute,
 }
