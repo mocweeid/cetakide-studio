@@ -444,32 +444,18 @@ function Index() {
             <span style={{ color: BRAND.gold }}>dalam satu klik.</span>
           </h1>
 
-          {/* Mini Instagram Feed Carousel */}
-          <div className="mt-8 flex items-center justify-center overflow-hidden py-4">
-            <div className="flex animate-marquee gap-3">
-              {Array.from({ length: 8 }).map((_, i) => (
+          {/* Mini Instagram Feed Carousel — seamless infinite */}
+          <div className="mt-8 w-full overflow-hidden py-4">
+            <div className="flex w-max animate-marquee gap-3 will-change-transform">
+              {Array.from({ length: 16 }).map((_, i) => (
                 <div
                   key={i}
                   className="relative aspect-square h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-20 sm:w-20 md:h-24 md:w-24"
                 >
                   <img
-                    src={`https://placehold.co/200x200/0a0a0a/EAB308?text=IG+${i + 1}`}
-                    alt={`Instagram ${i + 1}`}
-                    className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                </div>
-              ))}
-              {/* Duplicate for seamless loop */}
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={`dup-${i}`}
-                  className="relative aspect-square h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-20 sm:w-20 md:h-24 md:w-24"
-                >
-                  <img
-                    src={`https://placehold.co/200x200/0a0a0a/EAB308?text=IG+${i + 1}`}
-                    alt={`Instagram ${i + 1}`}
-                    className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
+                    src={`https://placehold.co/200x200/0a0a0a/EAB308?text=IG+${(i % 8) + 1}`}
+                    alt={`Instagram ${(i % 8) + 1}`}
+                    className="h-full w-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 </div>

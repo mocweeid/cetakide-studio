@@ -12,7 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedWorkspaceRouteImport } from './routes/_authenticated/workspace'
+import { Route as AuthenticatedTopUpRouteImport } from './routes/_authenticated/top-up'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedReferencesRouteImport } from './routes/_authenticated/references'
+import { Route as AuthenticatedProjectRouteImport } from './routes/_authenticated/project'
+import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAutoUploaderRouteImport } from './routes/_authenticated/auto-uploader'
+import { Route as AuthenticatedApiDocRouteImport } from './routes/_authenticated/api-doc'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -28,36 +36,136 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedWorkspaceRoute = AuthenticatedWorkspaceRouteImport.update({
+  id: '/workspace',
+  path: '/workspace',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTopUpRoute = AuthenticatedTopUpRouteImport.update({
+  id: '/top-up',
+  path: '/top-up',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedReferencesRoute = AuthenticatedReferencesRouteImport.update({
+  id: '/references',
+  path: '/references',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProjectRoute = AuthenticatedProjectRouteImport.update({
+  id: '/project',
+  path: '/project',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedIntegrationsRoute =
+  AuthenticatedIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAutoUploaderRoute =
+  AuthenticatedAutoUploaderRouteImport.update({
+    id: '/auto-uploader',
+    path: '/auto-uploader',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedApiDocRoute = AuthenticatedApiDocRouteImport.update({
+  id: '/api-doc',
+  path: '/api-doc',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/api-doc': typeof AuthenticatedApiDocRoute
+  '/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/integrations': typeof AuthenticatedIntegrationsRoute
+  '/project': typeof AuthenticatedProjectRoute
+  '/references': typeof AuthenticatedReferencesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/top-up': typeof AuthenticatedTopUpRoute
+  '/workspace': typeof AuthenticatedWorkspaceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/api-doc': typeof AuthenticatedApiDocRoute
+  '/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/integrations': typeof AuthenticatedIntegrationsRoute
+  '/project': typeof AuthenticatedProjectRoute
+  '/references': typeof AuthenticatedReferencesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/top-up': typeof AuthenticatedTopUpRoute
+  '/workspace': typeof AuthenticatedWorkspaceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/api-doc': typeof AuthenticatedApiDocRoute
+  '/_authenticated/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
+  '/_authenticated/project': typeof AuthenticatedProjectRoute
+  '/_authenticated/references': typeof AuthenticatedReferencesRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/top-up': typeof AuthenticatedTopUpRoute
+  '/_authenticated/workspace': typeof AuthenticatedWorkspaceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/api-doc'
+    | '/auto-uploader'
+    | '/dashboard'
+    | '/integrations'
+    | '/project'
+    | '/references'
+    | '/settings'
+    | '/top-up'
+    | '/workspace'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard'
+  to:
+    | '/'
+    | '/auth'
+    | '/api-doc'
+    | '/auto-uploader'
+    | '/dashboard'
+    | '/integrations'
+    | '/project'
+    | '/references'
+    | '/settings'
+    | '/top-up'
+    | '/workspace'
   id:
-    '__root__' | '/' | '/_authenticated' | '/auth' | '/_authenticated/dashboard'
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/api-doc'
+    | '/_authenticated/auto-uploader'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/integrations'
+    | '/_authenticated/project'
+    | '/_authenticated/references'
+    | '/_authenticated/settings'
+    | '/_authenticated/top-up'
+    | '/_authenticated/workspace'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -89,6 +197,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/workspace': {
+      id: '/_authenticated/workspace'
+      path: '/workspace'
+      fullPath: '/workspace'
+      preLoaderRoute: typeof AuthenticatedWorkspaceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/top-up': {
+      id: '/_authenticated/top-up'
+      path: '/top-up'
+      fullPath: '/top-up'
+      preLoaderRoute: typeof AuthenticatedTopUpRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/references': {
+      id: '/_authenticated/references'
+      path: '/references'
+      fullPath: '/references'
+      preLoaderRoute: typeof AuthenticatedReferencesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/project': {
+      id: '/_authenticated/project'
+      path: '/project'
+      fullPath: '/project'
+      preLoaderRoute: typeof AuthenticatedProjectRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/integrations': {
+      id: '/_authenticated/integrations'
+      path: '/integrations'
+      fullPath: '/integrations'
+      preLoaderRoute: typeof AuthenticatedIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -96,15 +246,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/auto-uploader': {
+      id: '/_authenticated/auto-uploader'
+      path: '/auto-uploader'
+      fullPath: '/auto-uploader'
+      preLoaderRoute: typeof AuthenticatedAutoUploaderRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/api-doc': {
+      id: '/_authenticated/api-doc'
+      path: '/api-doc'
+      fullPath: '/api-doc'
+      preLoaderRoute: typeof AuthenticatedApiDocRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedApiDocRoute: typeof AuthenticatedApiDocRoute
+  AuthenticatedAutoUploaderRoute: typeof AuthenticatedAutoUploaderRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
+  AuthenticatedProjectRoute: typeof AuthenticatedProjectRoute
+  AuthenticatedReferencesRoute: typeof AuthenticatedReferencesRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedTopUpRoute: typeof AuthenticatedTopUpRoute
+  AuthenticatedWorkspaceRoute: typeof AuthenticatedWorkspaceRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedApiDocRoute: AuthenticatedApiDocRoute,
+  AuthenticatedAutoUploaderRoute: AuthenticatedAutoUploaderRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
+  AuthenticatedProjectRoute: AuthenticatedProjectRoute,
+  AuthenticatedReferencesRoute: AuthenticatedReferencesRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedTopUpRoute: AuthenticatedTopUpRoute,
+  AuthenticatedWorkspaceRoute: AuthenticatedWorkspaceRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -118,13 +298,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

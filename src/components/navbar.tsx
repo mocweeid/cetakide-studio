@@ -21,7 +21,7 @@ export function Navbar() {
   const closeMenu = () => setIsOpen(false);
 
   return (
-    <nav className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-[#0a0a0a]/90 backdrop-blur-md">
+    <nav className="fixed left-0 right-0 top-0 z-50 border-b border-white/20 bg-white/[0.06] backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex items-center justify-between py-4">
           {/* Logo */}
