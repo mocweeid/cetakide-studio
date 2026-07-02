@@ -77,35 +77,86 @@ export type Database = {
       projects: {
         Row: {
           aspect_ratio: string
+          body_content: string | null
           created_at: string
           id: string
           image_url: string | null
           kebutuhan: string
           platform: string
           prompt: string | null
+          reference_url: string | null
+          social_url: string | null
           status: string
+          subtitle: string | null
+          title: string | null
           user_id: string
+          whatsapp: string | null
         }
         Insert: {
           aspect_ratio?: string
+          body_content?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
           kebutuhan: string
           platform?: string
           prompt?: string | null
+          reference_url?: string | null
+          social_url?: string | null
           status?: string
+          subtitle?: string | null
+          title?: string | null
           user_id: string
+          whatsapp?: string | null
         }
         Update: {
           aspect_ratio?: string
+          body_content?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
           kebutuhan?: string
           platform?: string
           prompt?: string | null
+          reference_url?: string | null
+          social_url?: string | null
           status?: string
+          subtitle?: string | null
+          title?: string | null
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          method: string | null
+          status: string
+          transaction_code: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          method?: string | null
+          status?: string
+          transaction_code?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: string | null
+          status?: string
+          transaction_code?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
