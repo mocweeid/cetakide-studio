@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedWorkspaceRouteImport } from './routes/_authenticated/workspace'
 import { Route as AuthenticatedTopUpRouteImport } from './routes/_authenticated/top-up'
+import { Route as AuthenticatedProjectRouteImport } from './routes/_authenticated/project'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 
 const AuthRoute = AuthRouteImport.update({
@@ -40,6 +41,11 @@ const AuthenticatedTopUpRoute = AuthenticatedTopUpRouteImport.update({
   path: '/top-up',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProjectRoute = AuthenticatedProjectRouteImport.update({
+  id: '/project',
+  path: '/project',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -50,6 +56,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/project': typeof AuthenticatedProjectRoute
   '/top-up': typeof AuthenticatedTopUpRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
 }
@@ -57,6 +64,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/project': typeof AuthenticatedProjectRoute
   '/top-up': typeof AuthenticatedTopUpRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
 }
@@ -66,20 +74,28 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/project': typeof AuthenticatedProjectRoute
   '/_authenticated/top-up': typeof AuthenticatedTopUpRoute
   '/_authenticated/workspace': typeof AuthenticatedWorkspaceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/top-up' | '/workspace'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/project'
+    | '/top-up'
+    | '/workspace'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/top-up' | '/workspace'
+  to: '/' | '/auth' | '/dashboard' | '/project' | '/top-up' | '/workspace'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/dashboard'
+    | '/_authenticated/project'
     | '/_authenticated/top-up'
     | '/_authenticated/workspace'
   fileRoutesById: FileRoutesById
@@ -127,6 +143,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTopUpRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/project': {
+      id: '/_authenticated/project'
+      path: '/project'
+      fullPath: '/project'
+      preLoaderRoute: typeof AuthenticatedProjectRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -139,12 +162,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedProjectRoute: typeof AuthenticatedProjectRoute
   AuthenticatedTopUpRoute: typeof AuthenticatedTopUpRoute
   AuthenticatedWorkspaceRoute: typeof AuthenticatedWorkspaceRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedProjectRoute: AuthenticatedProjectRoute,
   AuthenticatedTopUpRoute: AuthenticatedTopUpRoute,
   AuthenticatedWorkspaceRoute: AuthenticatedWorkspaceRoute,
 }
