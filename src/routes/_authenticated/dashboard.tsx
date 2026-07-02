@@ -1,17 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { DashboardSidebar, type Platform } from "@/components/dashboard-sidebar";
+import { AppShell, useAppUser } from "@/components/app-shell";
 import {
-  Wand2,
-  Loader2,
   Wallet,
   Check,
   X,
   AlertTriangle,
   MessageCircle,
   Sparkles,
+  Wand2,
+  TrendingUp,
+  Crown,
+  PlusCircle,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
