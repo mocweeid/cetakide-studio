@@ -19,6 +19,7 @@ import { Route as AuthenticatedProjectRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAutoUploaderRouteImport } from './routes/_authenticated/auto-uploader'
+import { Route as AuthenticatedApiDocRouteImport } from './routes/_authenticated/api-doc'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -71,10 +72,16 @@ const AuthenticatedAutoUploaderRoute =
     path: '/auto-uploader',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedApiDocRoute = AuthenticatedApiDocRouteImport.update({
+  id: '/api-doc',
+  path: '/api-doc',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/api-doc': typeof AuthenticatedApiDocRoute
   '/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/api-doc': typeof AuthenticatedApiDocRoute
   '/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/api-doc': typeof AuthenticatedApiDocRoute
   '/_authenticated/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/api-doc'
     | '/auto-uploader'
     | '/dashboard'
     | '/integrations'
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/api-doc'
     | '/auto-uploader'
     | '/dashboard'
     | '/integrations'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/api-doc'
     | '/_authenticated/auto-uploader'
     | '/_authenticated/dashboard'
     | '/_authenticated/integrations'
@@ -222,10 +234,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAutoUploaderRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/api-doc': {
+      id: '/_authenticated/api-doc'
+      path: '/api-doc'
+      fullPath: '/api-doc'
+      preLoaderRoute: typeof AuthenticatedApiDocRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedApiDocRoute: typeof AuthenticatedApiDocRoute
   AuthenticatedAutoUploaderRoute: typeof AuthenticatedAutoUploaderRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
@@ -236,6 +256,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedApiDocRoute: AuthenticatedApiDocRoute,
   AuthenticatedAutoUploaderRoute: AuthenticatedAutoUploaderRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
