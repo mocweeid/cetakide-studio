@@ -13,6 +13,7 @@ import {
   Sparkles,
   ShieldCheck,
   X,
+  Users, // <-- Icon baru untuk Manajemen User
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -23,6 +24,7 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
+// Menu standar untuk semua user
 const GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: "Main",
@@ -63,6 +65,17 @@ export function DashboardSidebar({
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
+  // Sistem Menu Dinamis: Tambahkan menu Admin jika isDeveloper true
+  const activeGroups = [...GROUPS];
+  if (isDeveloper) {
+    activeGroups.push({
+      title: "Admin Control",
+      items: [
+        { to: "/manage-users", label: "Manajemen User", icon: Users },
+      ],
+    });
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
     toast.success("Berhasil keluar.");
@@ -86,7 +99,7 @@ export function DashboardSidebar({
       </div>
 
       <nav className="flex-1 space-y-5">
-        {GROUPS.map((group) => (
+        {activeGroups.map((group) => (
           <div key={group.title}>
             <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               {group.title}
