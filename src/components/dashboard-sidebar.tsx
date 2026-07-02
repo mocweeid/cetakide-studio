@@ -13,7 +13,7 @@ import {
   Sparkles,
   ShieldCheck,
   X,
-  Users, // <-- Icon baru untuk Manajemen User
+  Users,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -24,7 +24,6 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
-// Menu standar untuk semua user
 const GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: "Main",
@@ -43,8 +42,7 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
     title: "System",
     items: [
       { to: "/references", label: "Manajemen Referensi", icon: ImageIcon },
-      { to: "/integrations", label: "Integrasi API", icon: Plug },
-      { to: "/api-doc", label: "API Doc", icon: FileCode },
+      // Manajemen User ditaruh di sini tepat di bawah referensi
     ],
   },
   {
@@ -65,15 +63,17 @@ export function DashboardSidebar({
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  // Sistem Menu Dinamis: Tambahkan menu Admin jika isDeveloper true
+  // Modifikasi dinamis untuk menu Admin
   const activeGroups = [...GROUPS];
+  
   if (isDeveloper) {
-    activeGroups.push({
-      title: "Admin Control",
-      items: [
-        { to: "/manage-users", label: "Manajemen User", icon: Users },
-      ],
-    });
+    const systemGroup = activeGroups.find((g) => g.title === "System");
+    if (systemGroup) {
+      systemGroup.items.push({ to: "/manage-users", label: "Manajemen User", icon: Users });
+      // Menambahkan API Doc setelahnya agar urutannya tetap rapi
+      systemGroup.items.push({ to: "/integrations", label: "Integrasi API", icon: Plug });
+      systemGroup.items.push({ to: "/api-doc", label: "API Doc", icon: FileCode });
+    }
   }
 
   async function signOut() {
