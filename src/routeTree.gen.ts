@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedWorkspaceRouteImport } from './routes/_authenticated/workspace'
 import { Route as AuthenticatedTopUpRouteImport } from './routes/_authenticated/top-up'
+import { Route as AuthenticatedReferencesRouteImport } from './routes/_authenticated/references'
 import { Route as AuthenticatedProjectRouteImport } from './routes/_authenticated/project'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAutoUploaderRouteImport } from './routes/_authenticated/auto-uploader'
@@ -42,6 +43,11 @@ const AuthenticatedTopUpRoute = AuthenticatedTopUpRouteImport.update({
   path: '/top-up',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReferencesRoute = AuthenticatedReferencesRouteImport.update({
+  id: '/references',
+  path: '/references',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProjectRoute = AuthenticatedProjectRouteImport.update({
   id: '/project',
   path: '/project',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/project': typeof AuthenticatedProjectRoute
+  '/references': typeof AuthenticatedReferencesRoute
   '/top-up': typeof AuthenticatedTopUpRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
 }
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/project': typeof AuthenticatedProjectRoute
+  '/references': typeof AuthenticatedReferencesRoute
   '/top-up': typeof AuthenticatedTopUpRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
 }
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/_authenticated/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/project': typeof AuthenticatedProjectRoute
+  '/_authenticated/references': typeof AuthenticatedReferencesRoute
   '/_authenticated/top-up': typeof AuthenticatedTopUpRoute
   '/_authenticated/workspace': typeof AuthenticatedWorkspaceRoute
 }
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/auto-uploader'
     | '/dashboard'
     | '/project'
+    | '/references'
     | '/top-up'
     | '/workspace'
   fileRoutesByTo: FileRoutesByTo
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/auto-uploader'
     | '/dashboard'
     | '/project'
+    | '/references'
     | '/top-up'
     | '/workspace'
   id:
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/_authenticated/auto-uploader'
     | '/_authenticated/dashboard'
     | '/_authenticated/project'
+    | '/_authenticated/references'
     | '/_authenticated/top-up'
     | '/_authenticated/workspace'
   fileRoutesById: FileRoutesById
@@ -162,6 +174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTopUpRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/references': {
+      id: '/_authenticated/references'
+      path: '/references'
+      fullPath: '/references'
+      preLoaderRoute: typeof AuthenticatedReferencesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/project': {
       id: '/_authenticated/project'
       path: '/project'
@@ -190,6 +209,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAutoUploaderRoute: typeof AuthenticatedAutoUploaderRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProjectRoute: typeof AuthenticatedProjectRoute
+  AuthenticatedReferencesRoute: typeof AuthenticatedReferencesRoute
   AuthenticatedTopUpRoute: typeof AuthenticatedTopUpRoute
   AuthenticatedWorkspaceRoute: typeof AuthenticatedWorkspaceRoute
 }
@@ -198,6 +218,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAutoUploaderRoute: AuthenticatedAutoUploaderRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProjectRoute: AuthenticatedProjectRoute,
+  AuthenticatedReferencesRoute: AuthenticatedReferencesRoute,
   AuthenticatedTopUpRoute: AuthenticatedTopUpRoute,
   AuthenticatedWorkspaceRoute: AuthenticatedWorkspaceRoute,
 }
