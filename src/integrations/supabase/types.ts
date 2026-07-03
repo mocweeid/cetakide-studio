@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_providers: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string | null
+          model: string
+          provider: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          model: string
+          provider: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          model?: string
+          provider?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       blogs: {
         Row: {
           content: string | null
@@ -125,6 +161,39 @@ export type Database = {
           title?: string | null
           user_id?: string
           whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      references_lib: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          notes: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          notes?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          notes?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
