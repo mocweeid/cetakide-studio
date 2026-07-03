@@ -75,10 +75,11 @@ function SettingsPage() {
         .getPublicUrl(filePath);
 
       // 3. Simpan URL tersebut ke tabel profiles
+      if (!user?.userId) throw new Error("User tidak ditemukan.");
       const { error: updateError } = await supabase
         .from("profiles")
         .update({ avatar_url: publicUrlData.publicUrl })
-        .eq("id", user?.userId);
+        .eq("id", user.userId);
 
       if (updateError) throw updateError;
 

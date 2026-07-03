@@ -17,6 +17,7 @@ import { Route as AuthenticatedTopUpRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReferencesRouteImport } from './routes/_authenticated/references'
 import { Route as AuthenticatedProjectRouteImport } from './routes/_authenticated/project'
+import { Route as AuthenticatedManageUsersRouteImport } from './routes/_authenticated/manage-users'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAutoUploaderRouteImport } from './routes/_authenticated/auto-uploader'
@@ -61,6 +62,12 @@ const AuthenticatedProjectRoute = AuthenticatedProjectRouteImport.update({
   path: '/project',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedManageUsersRoute =
+  AuthenticatedManageUsersRouteImport.update({
+    id: '/manage-users',
+    path: '/manage-users',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedIntegrationsRoute =
   AuthenticatedIntegrationsRouteImport.update({
     id: '/integrations',
@@ -91,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
+  '/manage-users': typeof AuthenticatedManageUsersRoute
   '/project': typeof AuthenticatedProjectRoute
   '/references': typeof AuthenticatedReferencesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -104,6 +112,7 @@ export interface FileRoutesByTo {
   '/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
+  '/manage-users': typeof AuthenticatedManageUsersRoute
   '/project': typeof AuthenticatedProjectRoute
   '/references': typeof AuthenticatedReferencesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -119,6 +128,7 @@ export interface FileRoutesById {
   '/_authenticated/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
+  '/_authenticated/manage-users': typeof AuthenticatedManageUsersRoute
   '/_authenticated/project': typeof AuthenticatedProjectRoute
   '/_authenticated/references': typeof AuthenticatedReferencesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/auto-uploader'
     | '/dashboard'
     | '/integrations'
+    | '/manage-users'
     | '/project'
     | '/references'
     | '/settings'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/auto-uploader'
     | '/dashboard'
     | '/integrations'
+    | '/manage-users'
     | '/project'
     | '/references'
     | '/settings'
@@ -161,6 +173,7 @@ export interface FileRouteTypes {
     | '/_authenticated/auto-uploader'
     | '/_authenticated/dashboard'
     | '/_authenticated/integrations'
+    | '/_authenticated/manage-users'
     | '/_authenticated/project'
     | '/_authenticated/references'
     | '/_authenticated/settings'
@@ -232,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/manage-users': {
+      id: '/_authenticated/manage-users'
+      path: '/manage-users'
+      fullPath: '/manage-users'
+      preLoaderRoute: typeof AuthenticatedManageUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/integrations': {
       id: '/_authenticated/integrations'
       path: '/integrations'
@@ -268,6 +288,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAutoUploaderRoute: typeof AuthenticatedAutoUploaderRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
+  AuthenticatedManageUsersRoute: typeof AuthenticatedManageUsersRoute
   AuthenticatedProjectRoute: typeof AuthenticatedProjectRoute
   AuthenticatedReferencesRoute: typeof AuthenticatedReferencesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -280,6 +301,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAutoUploaderRoute: AuthenticatedAutoUploaderRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
+  AuthenticatedManageUsersRoute: AuthenticatedManageUsersRoute,
   AuthenticatedProjectRoute: AuthenticatedProjectRoute,
   AuthenticatedReferencesRoute: AuthenticatedReferencesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
