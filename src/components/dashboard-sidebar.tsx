@@ -14,6 +14,37 @@ import {
   ShieldCheck,
   X,
   Users,
+  BarChart3,
+  Terminal,
+  Calendar,
+  Layers,
+  Crop,
+  Palette,
+  FolderHeart,
+  LayoutGrid,
+  LayoutTemplate,
+  Users2,
+  Share2,
+  MessageSquare,
+  Languages,
+  Receipt,
+  BellRing,
+  HelpCircle,
+  ShieldAlert,
+  Webhook,
+  SlidersHorizontal,
+  Activity,
+  Database,
+  KeyRound,
+  Brush,
+  ImagePlus,
+  Type,
+  Globe,
+  Sliders,
+  Split,
+  UserCheck,
+  CreditCard,
+  FileJson,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -25,28 +56,91 @@ type NavItem = {
 };
 
 function buildGroups(isDeveloper: boolean): { title: string; items: NavItem[] }[] {
-  const systemItems: NavItem[] = [
-    { to: "/references", label: "Manajemen Referensi", icon: ImageIcon },
-    { to: "/integrations", label: "Integrasi API", icon: Plug },
-    { to: "/api-doc", label: "API Doc", icon: FileCode },
-  ];
-  if (isDeveloper) {
-    systemItems.push({ to: "/manage-users", label: "Manajemen User", icon: Users });
-  }
-  return [
+  const groups = [
     {
-      title: "Main",
+      title: "Main & AI Tools",
       items: [
         { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { to: "/workspace", label: "Workspace", icon: Wand2 },
         { to: "/project", label: "Project", icon: FolderKanban },
         { to: "/auto-uploader", label: "Auto Uploader", icon: UploadCloud },
+        { to: "/analytics", label: "Analitik Hub", icon: BarChart3 },
+        { to: "/playground", label: "AI Playground", icon: Terminal },
+        { to: "/scheduler", label: "Kalender Konten", icon: Calendar },
+        { to: "/bulk-generator", label: "Generate Massal", icon: Layers },
+        { to: "/editor-studio", label: "AI Editor Studio", icon: Crop },
+        { to: "/inpainting", label: "AI Inpainting", icon: Brush },
       ],
     },
-    { title: "Finance", items: [{ to: "/top-up", label: "Top Up Saldo", icon: Wallet }] },
-    { title: "System", items: systemItems },
-    { title: "Account", items: [{ to: "/settings", label: "Settings", icon: Settings }] },
+    {
+      title: "Brand & Assets",
+      items: [
+        { to: "/brand-kits", label: "Brand Kit", icon: Palette },
+        { to: "/assets", label: "Galeri Aset", icon: FolderHeart },
+        { to: "/templates", label: "Koleksi Template", icon: LayoutGrid },
+        { to: "/preset-theme", label: "Preset Theme", icon: LayoutTemplate },
+        { to: "/fonts", label: "Font Manager", icon: Type },
+        { to: "/stock-library", label: "Stock Library", icon: ImagePlus },
+      ],
+    },
+    {
+      title: "Marketing & Growth",
+      items: [
+        { to: "/team", label: "Kolaborasi Tim", icon: Users2 },
+        { to: "/affiliate", label: "Program Afiliasi", icon: Share2 },
+        { to: "/reviews", label: "Ulasan & Feedback", icon: MessageSquare },
+        { to: "/seo-optimizer", label: "SEO Optimizer", icon: Languages },
+        { to: "/personas", label: "Persona Pembeli", icon: UserCheck },
+        { to: "/social-accounts", label: "Akun Sosial Media", icon: Globe },
+        { to: "/style-tuner", label: "Visual Style Tuner", icon: Sliders },
+        { to: "/ab-testing", label: "A/B Testing", icon: Split },
+      ],
+    },
+    {
+      title: "Finance & Security",
+      items: [
+        { to: "/top-up", label: "Top Up Saldo", icon: Wallet },
+        { to: "/billing", label: "Riwayat Tagihan", icon: Receipt },
+        { to: "/notifications", label: "Saluran Notifikasi", icon: BellRing },
+        { to: "/security-logs", label: "Log Keamanan", icon: ShieldAlert },
+      ],
+    },
+    {
+      title: "Support & Config",
+      items: [
+        { to: "/references", label: "Manajemen Referensi", icon: ImageIcon },
+        { to: "/integrations", label: "Integrasi API", icon: Plug },
+        { to: "/api-doc", label: "API Doc", icon: FileCode },
+        { to: "/support", label: "Pusat Bantuan", icon: HelpCircle },
+        { to: "/api-keys", label: "API Keys Manager", icon: KeyRound },
+        { to: "/webhooks", label: "Webhook API", icon: Webhook },
+        { to: "/usage-limits", label: "Batas Penggunaan", icon: SlidersHorizontal },
+      ],
+    },
   ];
+
+  if (isDeveloper) {
+    groups.push({
+      title: "Developer Control",
+      items: [
+        { to: "/manage-users", label: "Manajemen User", icon: Users },
+        { to: "/system-logs", label: "Kesehatan Server", icon: Activity },
+        { to: "/db-shell", label: "Admin DB Shell", icon: Database },
+        { to: "/payment-gateways", label: "Payment Gateways", icon: CreditCard },
+        { to: "/developer-playground", label: "Swagger API Shell", icon: FileJson },
+      ],
+    });
+  }
+
+  groups.push({
+    title: "Account",
+    items: [
+      { to: "/", label: "Landing Page", icon: Globe },
+      { to: "/settings", label: "Settings", icon: Settings },
+    ],
+  });
+
+  return groups;
 }
 
 export function DashboardSidebar({
@@ -78,7 +172,10 @@ export function DashboardSidebar({
           Cetak<span className="text-gradient-gold">Ide</span>
         </Link>
         {showClose && (
-          <button onClick={showClose} className="rounded-md p-1.5 text-muted-foreground hover:bg-white/10 md:hidden">
+          <button
+            onClick={showClose}
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-white/10 md:hidden"
+          >
             <X className="h-4 w-4" />
           </button>
         )}

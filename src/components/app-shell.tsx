@@ -1,15 +1,16 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
-import { 
-  Menu, 
-  Wallet, 
-  User, 
-  LayoutDashboard, 
-  Grip, 
-  FolderKanban, 
-  Settings, 
-  LogOut 
+import {
+  Menu,
+  Wallet,
+  User,
+  LayoutDashboard,
+  Grip,
+  FolderKanban,
+  Settings,
+  LogOut,
+  Globe,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
@@ -70,11 +71,11 @@ export function AppShell({
   right?: ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false); 
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/"; 
+    window.location.href = "/";
   };
 
   return (
@@ -93,7 +94,10 @@ export function AppShell({
 
         {sidebarOpen && (
           <div className="fixed inset-0 z-50 flex md:hidden">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setSidebarOpen(false)}
+            />
             <div className="relative z-10 h-full w-72 p-3">
               <DashboardSidebar
                 isDeveloper={!!user?.isDeveloper}
@@ -119,7 +123,7 @@ export function AppShell({
                 {subtitle && <p className="truncate text-xs text-muted-foreground">{subtitle}</p>}
               </div>
             </div>
-            
+
             <div className="flex shrink-0 items-center gap-3">
               {right}
               <Link
@@ -128,16 +132,22 @@ export function AppShell({
               >
                 <Wallet className="h-3.5 w-3.5" />
                 Rp {(user?.saldo ?? 0).toLocaleString("id-ID")}
-                {user?.isDeveloper && <span className="rounded-full bg-primary/30 px-1.5 py-0.5 text-[9px]">∞</span>}
+                {user?.isDeveloper && (
+                  <span className="rounded-full bg-primary/30 px-1.5 py-0.5 text-[9px]">∞</span>
+                )}
               </Link>
-              
+
               <div className="relative">
                 <button
                   onClick={() => setProfileMenuOpen(!profileMenuOpen)}
                   className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10 transition-colors hover:border-primary/50 hover:bg-white/20"
                 >
                   {user?.avatar_url ? (
-                    <img src={user.avatar_url} alt="Profile" className="h-full w-full object-cover" />
+                    <img
+                      src={user.avatar_url}
+                      alt="Profile"
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <User className="h-4 w-4 text-white/80" />
                   )}
@@ -146,28 +156,52 @@ export function AppShell({
                 {profileMenuOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setProfileMenuOpen(false)} />
-                    
+
                     <div className="absolute right-0 top-full z-50 mt-2 w-52 rounded-2xl border border-white/15 bg-black/80 p-2 shadow-2xl backdrop-blur-xl">
-                      
                       <div className="mb-2 border-b border-white/10 px-3 pb-3 pt-1">
-                        <p className="truncate text-sm font-semibold text-white">{user?.username}</p>
+                        <p className="truncate text-sm font-semibold text-white">
+                          {user?.username}
+                        </p>
                         <p className="text-[10px] text-primary">{user?.level}</p>
                       </div>
 
                       <div className="flex flex-col gap-1">
-                        <Link to="/dashboard" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-white/10 hover:text-white">
+                        <Link
+                          to="/dashboard"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
+                        >
                           <LayoutDashboard className="h-4 w-4" /> Dashboard
                         </Link>
-                        <Link to="/workspace" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-white/10 hover:text-white">
+                        <Link
+                          to="/workspace"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
+                        >
                           <Grip className="h-4 w-4" /> Workspace
                         </Link>
-                        <Link to="/project" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-white/10 hover:text-white">
+                        <Link
+                          to="/project"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
+                        >
                           <FolderKanban className="h-4 w-4" /> Project
                         </Link>
-                        <Link to="/settings" onClick={() => setProfileMenuOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-white/10 hover:text-white">
+                        <Link
+                          to="/"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
+                        >
+                          <Globe className="h-4 w-4" /> Landing Page
+                        </Link>
+                        <Link
+                          to="/settings"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
+                        >
                           <Settings className="h-4 w-4" /> Setting Profile
                         </Link>
-                        
+
                         <button
                           onClick={handleLogout}
                           className="mt-1 flex w-full items-center gap-3 rounded-lg border-t border-white/5 px-3 pt-3 pb-2 text-left text-xs font-medium text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300"

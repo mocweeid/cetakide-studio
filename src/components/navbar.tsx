@@ -1,21 +1,56 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Sparkles, Menu, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Sparkles, Menu, X, ChevronDown } from "lucide-react";
 import { BRAND } from "@/config/site-assets";
+import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 
-const navLinks = [
-  { to: "#", label: "Beranda" },
-  { to: "#showcase", label: "Contoh Visual" },
-  { to: "#bento", label: "Galeri" },
-  { to: "#logo", label: "Logo AI" },
-  { to: "#keunggulan", label: "Keunggulan" },
-  { to: "#cara-kerja", label: "Cara Kerja" },
-  { to: "#faq", label: "FAQ" },
-  { to: "#harga", label: "Harga" },
+type NavItem = {
+  label: string;
+  to?: string;
+  children?: { label: string; to: string }[];
+};
+
+const navLinks: NavItem[] = [
+  { label: "Beranda", to: "#" },
+  {
+    label: "Fitur Dashboard",
+    children: [
+      { label: "AI Visual Builder", to: "#ai-visual-builder" },
+      { label: "Manajemen Brand Kit", to: "#fitur-preview" },
+      { label: "Font Kustom", to: "#fitur-preview" },
+      { label: "Auto Uploader Media", to: "#fitur-preview" },
+    ],
+  },
+  {
+    label: "Sumber Daya",
+    children: [
+      { label: "Galeri Contoh", to: "#bento" },
+      { label: "Logo AI", to: "#logo" },
+      { label: "Cara Kerja", to: "#cara-kerja" },
+    ],
+  },
+  { label: "FAQ", to: "#faq" },
+  { label: "Harga", to: "#harga" },
 ];
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
@@ -38,25 +73,63 @@ export function Navbar() {
           {/* Desktop Menu */}
           <div className="hidden items-center gap-6 md:flex">
             {navLinks.map((link) => (
-              <a
-                key={link.to}
-                href={link.to}
-                className="group relative text-sm text-white/70 transition-all duration-300 hover:text-white"
-                onClick={closeMenu}
-              >
-                {link.label}
-                <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transition-all duration-300 group-hover:w-full" />
-              </a>
+              link.children ? (
+                <div key={link.label} className="group relative">
+                  <button className="flex items-center gap-1 text-sm text-white/70 transition-all duration-300 hover:text-white">
+                    {link.label}
+                    <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
+                  </button>
+                  <div className="absolute left-0 top-full hidden pt-4 group-hover:block">
+                     <div className="rounded-xl border border-white/10 bg-[#0a0a0a]/95 backdrop-blur-md shadow-xl p-2 w-56 flex flex-col gap-1">
+                        {link.children.map(child => (
+                           <a key={child.label} href={child.to} className="rounded-lg px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition" onClick={closeMenu}>
+                              {child.label}
+                           </a>
+                        ))}
+                     </div>
+                  </div>
+                </div>
+              ) : (
+                <a
+                  key={link.to}
+                  href={link.to}
+                  className="group relative text-sm text-white/70 transition-all duration-300 hover:text-white"
+                  onClick={closeMenu}
+                >
+                  {link.label}
+                  <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transition-all duration-300 group-hover:w-full" />
+                </a>
+              )
             ))}
-            <Link
-              to="/auth"
-              search={{ mode: "register" }}
-              className="group relative overflow-hidden rounded-full px-5 py-2 text-sm font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-lg"
-              style={{ background: BRAND.gold }}
-            >
-              <span className="relative z-10">Mulai Gratis</span>
-              <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
-            </Link>
+            {session ? (
+              <Link
+                to="/dashboard"
+                className="group relative overflow-hidden rounded-full px-5 py-2 text-sm font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                style={{ background: BRAND.gold }}
+              >
+                <span className="relative z-10">Ke Dashboard</span>
+                <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
+              </Link>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/auth"
+                  search={{ mode: "login" }}
+                  className="px-4 py-2 text-sm font-semibold text-white/80 transition-colors hover:text-white"
+                >
+                  Masuk
+                </Link>
+                <Link
+                  to="/auth"
+                  search={{ mode: "register" }}
+                  className="group relative overflow-hidden rounded-full px-5 py-2 text-sm font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                  style={{ background: BRAND.gold }}
+                >
+                  <span className="relative z-10">Mulai Gratis</span>
+                  <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile Hamburger Button */}
@@ -74,26 +147,61 @@ export function Navbar() {
           <div className="border-t border-white/10 py-4 md:hidden">
             <div className="flex flex-col gap-4">
               {navLinks.map((link) => (
-                <a
-                  key={link.to}
-                  href={link.to}
-                  className="group relative text-sm text-white/70 transition-all duration-300 hover:text-white"
+                link.children ? (
+                  <div key={link.label} className="flex flex-col gap-2">
+                    <span className="text-sm font-semibold text-white/90">{link.label}</span>
+                    <div className="ml-4 flex flex-col gap-2 border-l border-white/10 pl-4">
+                       {link.children.map(child => (
+                         <a key={child.label} href={child.to} onClick={closeMenu} className="text-sm text-white/60 hover:text-white transition">
+                           {child.label}
+                         </a>
+                       ))}
+                    </div>
+                  </div>
+                ) : (
+                  <a
+                    key={link.to}
+                    href={link.to}
+                    className="group relative text-sm text-white/70 transition-all duration-300 hover:text-white"
+                    onClick={closeMenu}
+                  >
+                    {link.label}
+                    <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transition-all duration-300 group-hover:w-full" />
+                  </a>
+                )
+              ))}
+              {session ? (
+                <Link
+                  to="/dashboard"
+                  className="group relative overflow-hidden rounded-full px-5 py-2 text-center text-sm font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                  style={{ background: BRAND.gold }}
                   onClick={closeMenu}
                 >
-                  {link.label}
-                  <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transition-all duration-300 group-hover:w-full" />
-                </a>
-              ))}
-              <Link
-                to="/auth"
-                search={{ mode: "register" }}
-                className="group relative overflow-hidden rounded-full px-5 py-2 text-center text-sm font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                style={{ background: BRAND.gold }}
-                onClick={closeMenu}
-              >
-                <span className="relative z-10">Mulai Gratis</span>
-                <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
-              </Link>
+                  <span className="relative z-10">Ke Dashboard</span>
+                  <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
+                </Link>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <Link
+                    to="/auth"
+                    search={{ mode: "login" }}
+                    className="rounded-full border border-white/20 px-5 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                    onClick={closeMenu}
+                  >
+                    Masuk
+                  </Link>
+                  <Link
+                    to="/auth"
+                    search={{ mode: "register" }}
+                    className="group relative overflow-hidden rounded-full px-5 py-2 text-center text-sm font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                    style={{ background: BRAND.gold }}
+                    onClick={closeMenu}
+                  >
+                    <span className="relative z-10">Mulai Gratis</span>
+                    <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}

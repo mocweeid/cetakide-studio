@@ -6,7 +6,9 @@ import { toast } from "sonner";
 import { Image as ImageIcon, Plus, Trash2, X, Loader2, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/references")({
-  head: () => ({ meta: [{ title: "Manajemen Referensi — CetakIde" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [{ title: "Manajemen Referensi — CetakIde" }, { name: "robots", content: "noindex" }],
+  }),
   component: ReferencesPage,
 });
 
@@ -28,7 +30,12 @@ function ReferencesPage() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: "", category: CATEGORIES[0], image_url: "", notes: "" });
+  const [form, setForm] = useState({
+    title: "",
+    category: CATEGORIES[0],
+    image_url: "",
+    notes: "",
+  });
 
   async function refresh() {
     if (!user?.userId) return;
@@ -134,7 +141,8 @@ function ReferencesPage() {
               {!loading && rows.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
-                    Belum ada referensi. Klik <span className="text-primary">Tambah Referensi</span> untuk memulai.
+                    Belum ada referensi. Klik <span className="text-primary">Tambah Referensi</span>{" "}
+                    untuk memulai.
                   </td>
                 </tr>
               )}
@@ -143,7 +151,11 @@ function ReferencesPage() {
                   <td className="px-4 py-3">
                     <div className="h-12 w-12 overflow-hidden rounded-lg border border-white/10 bg-black/40">
                       {r.image_url ? (
-                        <img src={r.image_url} alt={r.title} className="h-full w-full object-cover" />
+                        <img
+                          src={r.image_url}
+                          alt={r.title}
+                          className="h-full w-full object-cover"
+                        />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                           <ImageIcon className="h-4 w-4" />
@@ -216,7 +228,9 @@ function ReferencesPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Judul</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                  Judul
+                </label>
                 <input
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -224,19 +238,25 @@ function ReferencesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Kategori</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                  Kategori
+                </label>
                 <select
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   className="w-full rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-sm focus:border-primary focus:outline-none"
                 >
                   {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">URL Gambar</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                  URL Gambar
+                </label>
                 <input
                   value={form.image_url}
                   onChange={(e) => setForm({ ...form, image_url: e.target.value })}
@@ -245,7 +265,9 @@ function ReferencesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Catatan</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                  Catatan
+                </label>
                 <textarea
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}

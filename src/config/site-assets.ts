@@ -17,11 +17,11 @@ export const BRAND = {
 // ---------- HERO: 5 mockup cards that scatter after "Generating..." ----------
 // Swap these paths to /assets/mockup-cards/1.webp ... 5.webp when ready.
 export const heroMockupCards: string[] = [
-  "https://placehold.co/600x750/0a0a0a/EAB308?text=Sneaker+01",
-  "https://placehold.co/600x750/111111/EAB308?text=Sneaker+02",
-  "https://placehold.co/600x750/0a0a0a/EAB308?text=Sneaker+03",
-  "https://placehold.co/600x750/141414/EAB308?text=Sneaker+04",
-  "https://placehold.co/600x750/0a0a0a/EAB308?text=Sneaker+05",
+  "/assets/feed-ig/ig-1.png",
+  "/assets/feed-ig/ig-2.png",
+  "/assets/feed-ig/ig-3.png",
+  "/assets/feed-ig/ig-4.png",
+  "/assets/feed-ig/ig-5.png",
 ];
 
 export const heroPrompt =
@@ -32,31 +32,52 @@ export const heroPrompt =
 const ph = (label: string, tint = "111111") =>
   `https://placehold.co/800x800/${tint}/EAB308?text=${encodeURIComponent(label)}`;
 
-export const carouselData: { title: string; subtitle: string; images: string[] }[] = [
+export const carouselData: { title: string; subtitle: string; aspectClass?: string; width?: number; images: string[] }[] = [
   {
     title: "Iklan Instagram Feed",
     subtitle: "1:1 · siap posting",
-    images: Array.from({ length: 8 }, (_, i) => ph(`IG Feed ${i + 1}`, "0a0a0a")),
+    aspectClass: "aspect-square",
+    width: 220,
+    images: [
+      "/assets/feed-ig/ig-1.png",
+      "/assets/feed-ig/ig-2.png",
+      "/assets/feed-ig/ig-3.png",
+      "/assets/feed-ig/ig-4.png",
+      "/assets/feed-ig/ig-5.png",
+      "/assets/feed-ig/ig-6.png",
+      "/assets/feed-ig/ig-7.png",
+      "/assets/feed-ig/ig-8.png",
+    ],
   },
   {
     title: "Instagram Story & Reels",
     subtitle: "9:16 · vertical premium",
-    images: Array.from({ length: 8 }, (_, i) => ph(`Story ${i + 1}`, "141414")),
+    aspectClass: "aspect-[9/16]",
+    width: 160,
+    images: [
+      "/assets/story-ig/story-2.png",
+      "/assets/story-ig/story-3.png",
+      "/assets/story-ig/story-4.png",
+      "/assets/story-ig/story-5.png",
+      "/assets/story-ig/story-6.png",
+      "/assets/story-ig/story-7.png",
+      "/assets/story-ig/story-8.png",
+      "/assets/story-ig/story-9.png",
+    ],
   },
   {
     title: "Facebook Ads",
-    subtitle: "1.91:1 · CTR tinggi",
-    images: Array.from({ length: 8 }, (_, i) => ph(`FB Ads ${i + 1}`, "0f0f0f")),
-  },
-  {
-    title: "YouTube Thumbnail",
-    subtitle: "16:9 · click magnet",
-    images: Array.from({ length: 8 }, (_, i) => ph(`YT Thumb ${i + 1}`, "181818")),
-  },
-  {
-    title: "Marketplace Banner",
-    subtitle: "Shopee · Tokopedia · TikTok",
-    images: Array.from({ length: 8 }, (_, i) => ph(`Marketplace ${i + 1}`, "0a0a0a")),
+    subtitle: "1:1 · CTR tinggi",
+    aspectClass: "aspect-square",
+    width: 220,
+    images: [
+      "https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=800&h=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1557821552-17105176677c?q=80&w=800&h=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=800&h=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800&h=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=800&h=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?q=80&w=800&h=800&auto=format&fit=crop",
+    ],
   },
 ];
 
@@ -68,28 +89,53 @@ export const nicheTabs: Niche[] = ["Semua", "Kuliner", "Fashion", "Otomotif", "P
 
 export const bentoByNiche: Record<Exclude<Niche, "Semua">, { main: string; small: string[] }> = {
   Kuliner: {
-    main: ph("Kuliner Hero 4:5", "0a0a0a"),
-    small: [ph("Kuliner 1"), ph("Kuliner 2"), ph("Kuliner 3"), ph("Kuliner 4")],
+    main: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800&h=1000&auto=format&fit=crop",
+    small: [
+      "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1484723091791-00d312214432?q=80&w=400&h=400&auto=format&fit=crop",
+    ],
   },
   Fashion: {
-    main: ph("Fashion Hero 4:5", "111111"),
-    small: [ph("Fashion 1"), ph("Fashion 2"), ph("Fashion 3"), ph("Fashion 4")],
+    main: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&h=1000&auto=format&fit=crop",
+    small: [
+      "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1434389678232-04ce6ac5b905?q=80&w=400&h=400&auto=format&fit=crop",
+    ],
   },
   Otomotif: {
-    main: ph("Otomotif Hero 4:5", "0f0f0f"),
-    small: [ph("Otomotif 1"), ph("Otomotif 2"), ph("Otomotif 3"), ph("Otomotif 4")],
+    main: "https://images.unsplash.com/photo-1503376710777-62b1a13fa09f?q=80&w=800&h=1000&auto=format&fit=crop",
+    small: [
+      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1583121274602-3e2820c69888?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1553440569-bcc63803a83d?q=80&w=400&h=400&auto=format&fit=crop",
+    ],
   },
   Properti: {
-    main: ph("Properti Hero 4:5", "141414"),
-    small: [ph("Properti 1"), ph("Properti 2"), ph("Properti 3"), ph("Properti 4")],
+    main: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800&h=1000&auto=format&fit=crop",
+    small: [
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=400&h=400&auto=format&fit=crop",
+    ],
   },
 };
 
 // ---------- LOGO SHOWCASE (7-10 items) ----------
-export const logoShowcase: string[] = Array.from(
-  { length: 10 },
-  (_, i) => `https://placehold.co/400x400/0a0a0a/EAB308?text=LOGO+${i + 1}`,
-);
+export const logoShowcase: string[] = [
+  "https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?q=80&w=400&h=400&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1622676067757-0a4ff499ea8b?q=80&w=400&h=400&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1558000143-a6042db63212?q=80&w=400&h=400&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1616186835106-9be62dafb1ec?q=80&w=400&h=400&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1614680376593-902f74cf0d41?q=80&w=400&h=400&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1563694983011-6f4bb44ab124?q=80&w=400&h=400&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?q=80&w=400&h=400&auto=format&fit=crop",
+];
 
 // ---------- STATS ----------
 export const stats = [
@@ -102,16 +148,28 @@ export const stats = [
 // ---------- WHY US ----------
 export const whyUs = [
   {
-    title: "Hasil Siap Tayang",
-    desc: "Resolusi HD, aspect ratio otomatis untuk IG, FB, dan YouTube — tanpa perlu edit ulang.",
+    title: "AI Visual Builder",
+    desc: "Hasilkan desain visual dari teks prompt langsung di atas kanvas dengan aspect ratio khusus sosmed.",
   },
   {
-    title: "Tanpa Langganan",
-    desc: "Bayar sekali, pakai sesuai kebutuhan. Cukup potong saldo Rp1.000 per generate.",
+    title: "Manajemen Brand Kit",
+    desc: "Simpan nama brand dan palet warna (Color Palette) Anda, lalu terapkan ke semua desain secara instan.",
   },
   {
-    title: "Konsisten dengan Brand",
-    desc: "Warna, mood, dan gaya visual dijaga presisi supaya identitas brand tidak berantakan.",
+    title: "Koleksi Template",
+    desc: "Akses berbagai template layout dasar untuk mempercepat proses pembuatan konten iklan profesional.",
+  },
+  {
+    title: "Kustomisasi Tipografi",
+    desc: "Ubah jenis huruf sesuka hati dari belasan pilihan font premium populer langsung di dashboard.",
+  },
+  {
+    title: "Auto Uploader Media",
+    desc: "Pilih gambar dari galeri visual picker atau unggah aset logo tambahan dengan sangat mudah.",
+  },
+  {
+    title: "Sistem Saldo (Tanpa Langganan)",
+    desc: "Tidak perlu kartu kredit langganan bulanan. Cetak gambar dan fitur cukup potong saldo di dalam dashboard.",
   },
 ];
 

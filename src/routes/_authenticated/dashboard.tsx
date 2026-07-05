@@ -17,7 +17,7 @@ import {
   Coins,
   Megaphone,
   Loader2,
-  Save
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -52,7 +52,7 @@ type DevStats = {
 function DashboardPage() {
   const { user } = useAppUser();
   const [projects, setProjects] = useState<Project[]>([]);
-  
+
   // State data pengumuman
   const [announcement, setAnnouncement] = useState("");
   const [isEditingAnnounce, setIsEditingAnnounce] = useState(false);
@@ -62,7 +62,7 @@ function DashboardPage() {
   const [devStats, setDevStats] = useState<DevStats>({
     totalDeposit: 0,
     totalGenerateAll: 0,
-    totalUsers: 0
+    totalUsers: 0,
   });
   const [loadingDevStats, setLoadingDevStats] = useState(false);
 
@@ -95,16 +95,18 @@ function DashboardPage() {
       Promise.all([
         supabase.from("profiles").select("saldo"), // Ambil semua saldo untuk di-SUM
         supabase.from("projects").select("id", { count: "exact", head: true }), // Hitung total baris projects
-        supabase.from("profiles").select("id", { count: "exact", head: true }) // Hitung total baris users
-      ]).then(([profilesRes, projectsCountRes, usersCountRes]) => {
-        const totalDep = (profilesRes.data ?? []).reduce((sum, p) => sum + (p.saldo || 0), 0);
-        setDevStats({
-          totalDeposit: totalDep,
-          totalGenerateAll: projectsCountRes.count ?? 0,
-          totalUsers: usersCountRes.count ?? 0
-        });
-        setLoadingDevStats(false);
-      }).catch(() => setLoadingDevStats(false));
+        supabase.from("profiles").select("id", { count: "exact", head: true }), // Hitung total baris users
+      ])
+        .then(([profilesRes, projectsCountRes, usersCountRes]) => {
+          const totalDep = (profilesRes.data ?? []).reduce((sum, p) => sum + (p.saldo || 0), 0);
+          setDevStats({
+            totalDeposit: totalDep,
+            totalGenerateAll: projectsCountRes.count ?? 0,
+            totalUsers: usersCountRes.count ?? 0,
+          });
+          setLoadingDevStats(false);
+        })
+        .catch(() => setLoadingDevStats(false));
     }
   }, [user]);
 
@@ -113,10 +115,8 @@ function DashboardPage() {
     setIsSavingAnnounce(true);
     try {
       // Update data pengumuman di baris pertama atau buat baru jika kosong
-      const { error } = await supabase
-        .from("announcements")
-        .insert([{ message: announcement }]) // Menyuntikkan versi terbaru ke baris atas
-        
+      const { error } = await supabase.from("announcements").insert([{ message: announcement }]); // Menyuntikkan versi terbaru ke baris atas
+
       if (error) throw error;
       toast.success("Pengumuman berhasil diperbarui ke seluruh user!");
       setIsEditingAnnounce(false);
@@ -129,14 +129,15 @@ function DashboardPage() {
 
   return (
     <AppShell title="Dashboard" subtitle="Ringkasan akun & aktivitas" user={user}>
-      
       {/* === BANNER PENGUMUMAN DYNAMIC === */}
       <div className="mb-6 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 to-transparent p-4 backdrop-blur-md">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <Megaphone className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
             <div className="space-y-1 flex-1">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-primary">Info & Pengumuman</h4>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-primary">
+                Info & Pengumuman
+              </h4>
               {isEditingAnnounce ? (
                 <textarea
                   value={announcement}
@@ -145,11 +146,13 @@ function DashboardPage() {
                   rows={2}
                 />
               ) : (
-                <p className="text-sm text-gray-200">{announcement || "Belum ada pengumuman terbaru."}</p>
+                <p className="text-sm text-gray-200">
+                  {announcement || "Belum ada pengumuman terbaru."}
+                </p>
               )}
             </div>
           </div>
-          
+
           {/* Akses Kontrol Pengumuman: Hanya muncul di akun Developer */}
           {user?.isDeveloper && (
             <div className="shrink-0 self-end sm:self-center">
@@ -160,7 +163,11 @@ function DashboardPage() {
                     disabled={isSavingAnnounce}
                     className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-black hover:bg-primary/90"
                   >
-                    {isSavingAnnounce ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                    {isSavingAnnounce ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
                     Simpan
                   </button>
                   <button
@@ -202,7 +209,9 @@ function DashboardPage() {
                   Rp {devStats.totalDeposit.toLocaleString("id-ID")}
                 </p>
               )}
-              <p className="mt-1 text-xs text-muted-foreground">Akumulasi seluruh nominal dompet user</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Akumulasi seluruh nominal dompet user
+              </p>
             </div>
 
             {/* Total Klik Generate Seluruh User */}
@@ -217,7 +226,9 @@ function DashboardPage() {
                   {devStats.totalGenerateAll.toLocaleString("id-ID")} Kali
                 </p>
               )}
-              <p className="mt-1 text-xs text-muted-foreground">Total klik dari seluruh riwayat project</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Total klik dari seluruh riwayat project
+              </p>
             </div>
 
             {/* Total Terdaftar */}
@@ -232,7 +243,9 @@ function DashboardPage() {
                   {devStats.totalUsers.toLocaleString("id-ID")} Akun
                 </p>
               )}
-              <p className="mt-1 text-xs text-muted-foreground">Total basis data user aktif di aplikasi</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Total basis data user aktif di aplikasi
+              </p>
             </div>
           </div>
         </div>

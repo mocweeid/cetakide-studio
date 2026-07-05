@@ -13,15 +13,46 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedWorkspaceRouteImport } from './routes/_authenticated/workspace'
+import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
+import { Route as AuthenticatedUsageLimitsRouteImport } from './routes/_authenticated/usage-limits'
 import { Route as AuthenticatedTopUpRouteImport } from './routes/_authenticated/top-up'
+import { Route as AuthenticatedTemplatesRouteImport } from './routes/_authenticated/templates'
+import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
+import { Route as AuthenticatedSystemLogsRouteImport } from './routes/_authenticated/system-logs'
+import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
+import { Route as AuthenticatedStyleTunerRouteImport } from './routes/_authenticated/style-tuner'
+import { Route as AuthenticatedStockLibraryRouteImport } from './routes/_authenticated/stock-library'
+import { Route as AuthenticatedSocialAccountsRouteImport } from './routes/_authenticated/social-accounts'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSeoOptimizerRouteImport } from './routes/_authenticated/seo-optimizer'
+import { Route as AuthenticatedSecurityLogsRouteImport } from './routes/_authenticated/security-logs'
+import { Route as AuthenticatedSchedulerRouteImport } from './routes/_authenticated/scheduler'
+import { Route as AuthenticatedReviewsRouteImport } from './routes/_authenticated/reviews'
 import { Route as AuthenticatedReferencesRouteImport } from './routes/_authenticated/references'
 import { Route as AuthenticatedProjectRouteImport } from './routes/_authenticated/project'
+import { Route as AuthenticatedPresetThemeRouteImport } from './routes/_authenticated/preset-theme'
+import { Route as AuthenticatedPlaygroundRouteImport } from './routes/_authenticated/playground'
+import { Route as AuthenticatedPersonasRouteImport } from './routes/_authenticated/personas'
+import { Route as AuthenticatedPaymentGatewaysRouteImport } from './routes/_authenticated/payment-gateways'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedManageUsersRouteImport } from './routes/_authenticated/manage-users'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
+import { Route as AuthenticatedInpaintingRouteImport } from './routes/_authenticated/inpainting'
+import { Route as AuthenticatedFontsRouteImport } from './routes/_authenticated/fonts'
+import { Route as AuthenticatedEditorStudioRouteImport } from './routes/_authenticated/editor-studio'
+import { Route as AuthenticatedDeveloperPlaygroundRouteImport } from './routes/_authenticated/developer-playground'
+import { Route as AuthenticatedDbShellRouteImport } from './routes/_authenticated/db-shell'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedBulkGeneratorRouteImport } from './routes/_authenticated/bulk-generator'
+import { Route as AuthenticatedBrandKitsRouteImport } from './routes/_authenticated/brand-kits'
+import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedAutoUploaderRouteImport } from './routes/_authenticated/auto-uploader'
+import { Route as AuthenticatedAssetsRouteImport } from './routes/_authenticated/assets'
+import { Route as AuthenticatedApiKeysRouteImport } from './routes/_authenticated/api-keys'
 import { Route as AuthenticatedApiDocRouteImport } from './routes/_authenticated/api-doc'
+import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as AuthenticatedAffiliateRouteImport } from './routes/_authenticated/affiliate'
+import { Route as AuthenticatedAbTestingRouteImport } from './routes/_authenticated/ab-testing'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -42,14 +73,84 @@ const AuthenticatedWorkspaceRoute = AuthenticatedWorkspaceRouteImport.update({
   path: '/workspace',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedWebhooksRoute = AuthenticatedWebhooksRouteImport.update({
+  id: '/webhooks',
+  path: '/webhooks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedUsageLimitsRoute =
+  AuthenticatedUsageLimitsRouteImport.update({
+    id: '/usage-limits',
+    path: '/usage-limits',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTopUpRoute = AuthenticatedTopUpRouteImport.update({
   id: '/top-up',
   path: '/top-up',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTemplatesRoute = AuthenticatedTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSystemLogsRoute = AuthenticatedSystemLogsRouteImport.update({
+  id: '/system-logs',
+  path: '/system-logs',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedStyleTunerRoute = AuthenticatedStyleTunerRouteImport.update({
+  id: '/style-tuner',
+  path: '/style-tuner',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedStockLibraryRoute =
+  AuthenticatedStockLibraryRouteImport.update({
+    id: '/stock-library',
+    path: '/stock-library',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSocialAccountsRoute =
+  AuthenticatedSocialAccountsRouteImport.update({
+    id: '/social-accounts',
+    path: '/social-accounts',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSeoOptimizerRoute =
+  AuthenticatedSeoOptimizerRouteImport.update({
+    id: '/seo-optimizer',
+    path: '/seo-optimizer',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSecurityLogsRoute =
+  AuthenticatedSecurityLogsRouteImport.update({
+    id: '/security-logs',
+    path: '/security-logs',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSchedulerRoute = AuthenticatedSchedulerRouteImport.update({
+  id: '/scheduler',
+  path: '/scheduler',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedReviewsRoute = AuthenticatedReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReferencesRoute = AuthenticatedReferencesRouteImport.update({
@@ -62,6 +163,34 @@ const AuthenticatedProjectRoute = AuthenticatedProjectRouteImport.update({
   path: '/project',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPresetThemeRoute =
+  AuthenticatedPresetThemeRouteImport.update({
+    id: '/preset-theme',
+    path: '/preset-theme',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundRoute = AuthenticatedPlaygroundRouteImport.update({
+  id: '/playground',
+  path: '/playground',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPersonasRoute = AuthenticatedPersonasRouteImport.update({
+  id: '/personas',
+  path: '/personas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPaymentGatewaysRoute =
+  AuthenticatedPaymentGatewaysRouteImport.update({
+    id: '/payment-gateways',
+    path: '/payment-gateways',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedManageUsersRoute =
   AuthenticatedManageUsersRouteImport.update({
     id: '/manage-users',
@@ -74,9 +203,52 @@ const AuthenticatedIntegrationsRoute =
     path: '/integrations',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedInpaintingRoute = AuthenticatedInpaintingRouteImport.update({
+  id: '/inpainting',
+  path: '/inpainting',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFontsRoute = AuthenticatedFontsRouteImport.update({
+  id: '/fonts',
+  path: '/fonts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEditorStudioRoute =
+  AuthenticatedEditorStudioRouteImport.update({
+    id: '/editor-studio',
+    path: '/editor-studio',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDeveloperPlaygroundRoute =
+  AuthenticatedDeveloperPlaygroundRouteImport.update({
+    id: '/developer-playground',
+    path: '/developer-playground',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDbShellRoute = AuthenticatedDbShellRouteImport.update({
+  id: '/db-shell',
+  path: '/db-shell',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBulkGeneratorRoute =
+  AuthenticatedBulkGeneratorRouteImport.update({
+    id: '/bulk-generator',
+    path: '/bulk-generator',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedBrandKitsRoute = AuthenticatedBrandKitsRouteImport.update({
+  id: '/brand-kits',
+  path: '/brand-kits',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAutoUploaderRoute =
@@ -85,38 +257,125 @@ const AuthenticatedAutoUploaderRoute =
     path: '/auto-uploader',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAssetsRoute = AuthenticatedAssetsRouteImport.update({
+  id: '/assets',
+  path: '/assets',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedApiKeysRoute = AuthenticatedApiKeysRouteImport.update({
+  id: '/api-keys',
+  path: '/api-keys',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedApiDocRoute = AuthenticatedApiDocRouteImport.update({
   id: '/api-doc',
   path: '/api-doc',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAffiliateRoute = AuthenticatedAffiliateRouteImport.update({
+  id: '/affiliate',
+  path: '/affiliate',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAbTestingRoute = AuthenticatedAbTestingRouteImport.update({
+  id: '/ab-testing',
+  path: '/ab-testing',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/ab-testing': typeof AuthenticatedAbTestingRoute
+  '/affiliate': typeof AuthenticatedAffiliateRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/api-doc': typeof AuthenticatedApiDocRoute
+  '/api-keys': typeof AuthenticatedApiKeysRoute
+  '/assets': typeof AuthenticatedAssetsRoute
   '/auto-uploader': typeof AuthenticatedAutoUploaderRoute
+  '/billing': typeof AuthenticatedBillingRoute
+  '/brand-kits': typeof AuthenticatedBrandKitsRoute
+  '/bulk-generator': typeof AuthenticatedBulkGeneratorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/db-shell': typeof AuthenticatedDbShellRoute
+  '/developer-playground': typeof AuthenticatedDeveloperPlaygroundRoute
+  '/editor-studio': typeof AuthenticatedEditorStudioRoute
+  '/fonts': typeof AuthenticatedFontsRoute
+  '/inpainting': typeof AuthenticatedInpaintingRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
   '/manage-users': typeof AuthenticatedManageUsersRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
+  '/payment-gateways': typeof AuthenticatedPaymentGatewaysRoute
+  '/personas': typeof AuthenticatedPersonasRoute
+  '/playground': typeof AuthenticatedPlaygroundRoute
+  '/preset-theme': typeof AuthenticatedPresetThemeRoute
   '/project': typeof AuthenticatedProjectRoute
   '/references': typeof AuthenticatedReferencesRoute
+  '/reviews': typeof AuthenticatedReviewsRoute
+  '/scheduler': typeof AuthenticatedSchedulerRoute
+  '/security-logs': typeof AuthenticatedSecurityLogsRoute
+  '/seo-optimizer': typeof AuthenticatedSeoOptimizerRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/social-accounts': typeof AuthenticatedSocialAccountsRoute
+  '/stock-library': typeof AuthenticatedStockLibraryRoute
+  '/style-tuner': typeof AuthenticatedStyleTunerRoute
+  '/support': typeof AuthenticatedSupportRoute
+  '/system-logs': typeof AuthenticatedSystemLogsRoute
+  '/team': typeof AuthenticatedTeamRoute
+  '/templates': typeof AuthenticatedTemplatesRoute
   '/top-up': typeof AuthenticatedTopUpRoute
+  '/usage-limits': typeof AuthenticatedUsageLimitsRoute
+  '/webhooks': typeof AuthenticatedWebhooksRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/ab-testing': typeof AuthenticatedAbTestingRoute
+  '/affiliate': typeof AuthenticatedAffiliateRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/api-doc': typeof AuthenticatedApiDocRoute
+  '/api-keys': typeof AuthenticatedApiKeysRoute
+  '/assets': typeof AuthenticatedAssetsRoute
   '/auto-uploader': typeof AuthenticatedAutoUploaderRoute
+  '/billing': typeof AuthenticatedBillingRoute
+  '/brand-kits': typeof AuthenticatedBrandKitsRoute
+  '/bulk-generator': typeof AuthenticatedBulkGeneratorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/db-shell': typeof AuthenticatedDbShellRoute
+  '/developer-playground': typeof AuthenticatedDeveloperPlaygroundRoute
+  '/editor-studio': typeof AuthenticatedEditorStudioRoute
+  '/fonts': typeof AuthenticatedFontsRoute
+  '/inpainting': typeof AuthenticatedInpaintingRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
   '/manage-users': typeof AuthenticatedManageUsersRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
+  '/payment-gateways': typeof AuthenticatedPaymentGatewaysRoute
+  '/personas': typeof AuthenticatedPersonasRoute
+  '/playground': typeof AuthenticatedPlaygroundRoute
+  '/preset-theme': typeof AuthenticatedPresetThemeRoute
   '/project': typeof AuthenticatedProjectRoute
   '/references': typeof AuthenticatedReferencesRoute
+  '/reviews': typeof AuthenticatedReviewsRoute
+  '/scheduler': typeof AuthenticatedSchedulerRoute
+  '/security-logs': typeof AuthenticatedSecurityLogsRoute
+  '/seo-optimizer': typeof AuthenticatedSeoOptimizerRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/social-accounts': typeof AuthenticatedSocialAccountsRoute
+  '/stock-library': typeof AuthenticatedStockLibraryRoute
+  '/style-tuner': typeof AuthenticatedStyleTunerRoute
+  '/support': typeof AuthenticatedSupportRoute
+  '/system-logs': typeof AuthenticatedSystemLogsRoute
+  '/team': typeof AuthenticatedTeamRoute
+  '/templates': typeof AuthenticatedTemplatesRoute
   '/top-up': typeof AuthenticatedTopUpRoute
+  '/usage-limits': typeof AuthenticatedUsageLimitsRoute
+  '/webhooks': typeof AuthenticatedWebhooksRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
 }
 export interface FileRoutesById {
@@ -124,15 +383,46 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/ab-testing': typeof AuthenticatedAbTestingRoute
+  '/_authenticated/affiliate': typeof AuthenticatedAffiliateRoute
+  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/api-doc': typeof AuthenticatedApiDocRoute
+  '/_authenticated/api-keys': typeof AuthenticatedApiKeysRoute
+  '/_authenticated/assets': typeof AuthenticatedAssetsRoute
   '/_authenticated/auto-uploader': typeof AuthenticatedAutoUploaderRoute
+  '/_authenticated/billing': typeof AuthenticatedBillingRoute
+  '/_authenticated/brand-kits': typeof AuthenticatedBrandKitsRoute
+  '/_authenticated/bulk-generator': typeof AuthenticatedBulkGeneratorRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/db-shell': typeof AuthenticatedDbShellRoute
+  '/_authenticated/developer-playground': typeof AuthenticatedDeveloperPlaygroundRoute
+  '/_authenticated/editor-studio': typeof AuthenticatedEditorStudioRoute
+  '/_authenticated/fonts': typeof AuthenticatedFontsRoute
+  '/_authenticated/inpainting': typeof AuthenticatedInpaintingRoute
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
   '/_authenticated/manage-users': typeof AuthenticatedManageUsersRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
+  '/_authenticated/payment-gateways': typeof AuthenticatedPaymentGatewaysRoute
+  '/_authenticated/personas': typeof AuthenticatedPersonasRoute
+  '/_authenticated/playground': typeof AuthenticatedPlaygroundRoute
+  '/_authenticated/preset-theme': typeof AuthenticatedPresetThemeRoute
   '/_authenticated/project': typeof AuthenticatedProjectRoute
   '/_authenticated/references': typeof AuthenticatedReferencesRoute
+  '/_authenticated/reviews': typeof AuthenticatedReviewsRoute
+  '/_authenticated/scheduler': typeof AuthenticatedSchedulerRoute
+  '/_authenticated/security-logs': typeof AuthenticatedSecurityLogsRoute
+  '/_authenticated/seo-optimizer': typeof AuthenticatedSeoOptimizerRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/social-accounts': typeof AuthenticatedSocialAccountsRoute
+  '/_authenticated/stock-library': typeof AuthenticatedStockLibraryRoute
+  '/_authenticated/style-tuner': typeof AuthenticatedStyleTunerRoute
+  '/_authenticated/support': typeof AuthenticatedSupportRoute
+  '/_authenticated/system-logs': typeof AuthenticatedSystemLogsRoute
+  '/_authenticated/team': typeof AuthenticatedTeamRoute
+  '/_authenticated/templates': typeof AuthenticatedTemplatesRoute
   '/_authenticated/top-up': typeof AuthenticatedTopUpRoute
+  '/_authenticated/usage-limits': typeof AuthenticatedUsageLimitsRoute
+  '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
   '/_authenticated/workspace': typeof AuthenticatedWorkspaceRoute
 }
 export interface FileRouteTypes {
@@ -140,44 +430,137 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/ab-testing'
+    | '/affiliate'
+    | '/analytics'
     | '/api-doc'
+    | '/api-keys'
+    | '/assets'
     | '/auto-uploader'
+    | '/billing'
+    | '/brand-kits'
+    | '/bulk-generator'
     | '/dashboard'
+    | '/db-shell'
+    | '/developer-playground'
+    | '/editor-studio'
+    | '/fonts'
+    | '/inpainting'
     | '/integrations'
     | '/manage-users'
+    | '/notifications'
+    | '/payment-gateways'
+    | '/personas'
+    | '/playground'
+    | '/preset-theme'
     | '/project'
     | '/references'
+    | '/reviews'
+    | '/scheduler'
+    | '/security-logs'
+    | '/seo-optimizer'
     | '/settings'
+    | '/social-accounts'
+    | '/stock-library'
+    | '/style-tuner'
+    | '/support'
+    | '/system-logs'
+    | '/team'
+    | '/templates'
     | '/top-up'
+    | '/usage-limits'
+    | '/webhooks'
     | '/workspace'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/ab-testing'
+    | '/affiliate'
+    | '/analytics'
     | '/api-doc'
+    | '/api-keys'
+    | '/assets'
     | '/auto-uploader'
+    | '/billing'
+    | '/brand-kits'
+    | '/bulk-generator'
     | '/dashboard'
+    | '/db-shell'
+    | '/developer-playground'
+    | '/editor-studio'
+    | '/fonts'
+    | '/inpainting'
     | '/integrations'
     | '/manage-users'
+    | '/notifications'
+    | '/payment-gateways'
+    | '/personas'
+    | '/playground'
+    | '/preset-theme'
     | '/project'
     | '/references'
+    | '/reviews'
+    | '/scheduler'
+    | '/security-logs'
+    | '/seo-optimizer'
     | '/settings'
+    | '/social-accounts'
+    | '/stock-library'
+    | '/style-tuner'
+    | '/support'
+    | '/system-logs'
+    | '/team'
+    | '/templates'
     | '/top-up'
+    | '/usage-limits'
+    | '/webhooks'
     | '/workspace'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/ab-testing'
+    | '/_authenticated/affiliate'
+    | '/_authenticated/analytics'
     | '/_authenticated/api-doc'
+    | '/_authenticated/api-keys'
+    | '/_authenticated/assets'
     | '/_authenticated/auto-uploader'
+    | '/_authenticated/billing'
+    | '/_authenticated/brand-kits'
+    | '/_authenticated/bulk-generator'
     | '/_authenticated/dashboard'
+    | '/_authenticated/db-shell'
+    | '/_authenticated/developer-playground'
+    | '/_authenticated/editor-studio'
+    | '/_authenticated/fonts'
+    | '/_authenticated/inpainting'
     | '/_authenticated/integrations'
     | '/_authenticated/manage-users'
+    | '/_authenticated/notifications'
+    | '/_authenticated/payment-gateways'
+    | '/_authenticated/personas'
+    | '/_authenticated/playground'
+    | '/_authenticated/preset-theme'
     | '/_authenticated/project'
     | '/_authenticated/references'
+    | '/_authenticated/reviews'
+    | '/_authenticated/scheduler'
+    | '/_authenticated/security-logs'
+    | '/_authenticated/seo-optimizer'
     | '/_authenticated/settings'
+    | '/_authenticated/social-accounts'
+    | '/_authenticated/stock-library'
+    | '/_authenticated/style-tuner'
+    | '/_authenticated/support'
+    | '/_authenticated/system-logs'
+    | '/_authenticated/team'
+    | '/_authenticated/templates'
     | '/_authenticated/top-up'
+    | '/_authenticated/usage-limits'
+    | '/_authenticated/webhooks'
     | '/_authenticated/workspace'
   fileRoutesById: FileRoutesById
 }
@@ -217,6 +600,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkspaceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/webhooks': {
+      id: '/_authenticated/webhooks'
+      path: '/webhooks'
+      fullPath: '/webhooks'
+      preLoaderRoute: typeof AuthenticatedWebhooksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/usage-limits': {
+      id: '/_authenticated/usage-limits'
+      path: '/usage-limits'
+      fullPath: '/usage-limits'
+      preLoaderRoute: typeof AuthenticatedUsageLimitsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/top-up': {
       id: '/_authenticated/top-up'
       path: '/top-up'
@@ -224,11 +621,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTopUpRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/templates': {
+      id: '/_authenticated/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof AuthenticatedTemplatesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/team': {
+      id: '/_authenticated/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof AuthenticatedTeamRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/system-logs': {
+      id: '/_authenticated/system-logs'
+      path: '/system-logs'
+      fullPath: '/system-logs'
+      preLoaderRoute: typeof AuthenticatedSystemLogsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/support': {
+      id: '/_authenticated/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof AuthenticatedSupportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/style-tuner': {
+      id: '/_authenticated/style-tuner'
+      path: '/style-tuner'
+      fullPath: '/style-tuner'
+      preLoaderRoute: typeof AuthenticatedStyleTunerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/stock-library': {
+      id: '/_authenticated/stock-library'
+      path: '/stock-library'
+      fullPath: '/stock-library'
+      preLoaderRoute: typeof AuthenticatedStockLibraryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/social-accounts': {
+      id: '/_authenticated/social-accounts'
+      path: '/social-accounts'
+      fullPath: '/social-accounts'
+      preLoaderRoute: typeof AuthenticatedSocialAccountsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/seo-optimizer': {
+      id: '/_authenticated/seo-optimizer'
+      path: '/seo-optimizer'
+      fullPath: '/seo-optimizer'
+      preLoaderRoute: typeof AuthenticatedSeoOptimizerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/security-logs': {
+      id: '/_authenticated/security-logs'
+      path: '/security-logs'
+      fullPath: '/security-logs'
+      preLoaderRoute: typeof AuthenticatedSecurityLogsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/scheduler': {
+      id: '/_authenticated/scheduler'
+      path: '/scheduler'
+      fullPath: '/scheduler'
+      preLoaderRoute: typeof AuthenticatedSchedulerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/reviews': {
+      id: '/_authenticated/reviews'
+      path: '/reviews'
+      fullPath: '/reviews'
+      preLoaderRoute: typeof AuthenticatedReviewsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/references': {
@@ -245,6 +719,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/preset-theme': {
+      id: '/_authenticated/preset-theme'
+      path: '/preset-theme'
+      fullPath: '/preset-theme'
+      preLoaderRoute: typeof AuthenticatedPresetThemeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground': {
+      id: '/_authenticated/playground'
+      path: '/playground'
+      fullPath: '/playground'
+      preLoaderRoute: typeof AuthenticatedPlaygroundRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/personas': {
+      id: '/_authenticated/personas'
+      path: '/personas'
+      fullPath: '/personas'
+      preLoaderRoute: typeof AuthenticatedPersonasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/payment-gateways': {
+      id: '/_authenticated/payment-gateways'
+      path: '/payment-gateways'
+      fullPath: '/payment-gateways'
+      preLoaderRoute: typeof AuthenticatedPaymentGatewaysRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/manage-users': {
       id: '/_authenticated/manage-users'
       path: '/manage-users'
@@ -259,11 +768,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIntegrationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/inpainting': {
+      id: '/_authenticated/inpainting'
+      path: '/inpainting'
+      fullPath: '/inpainting'
+      preLoaderRoute: typeof AuthenticatedInpaintingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/fonts': {
+      id: '/_authenticated/fonts'
+      path: '/fonts'
+      fullPath: '/fonts'
+      preLoaderRoute: typeof AuthenticatedFontsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/editor-studio': {
+      id: '/_authenticated/editor-studio'
+      path: '/editor-studio'
+      fullPath: '/editor-studio'
+      preLoaderRoute: typeof AuthenticatedEditorStudioRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/developer-playground': {
+      id: '/_authenticated/developer-playground'
+      path: '/developer-playground'
+      fullPath: '/developer-playground'
+      preLoaderRoute: typeof AuthenticatedDeveloperPlaygroundRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/db-shell': {
+      id: '/_authenticated/db-shell'
+      path: '/db-shell'
+      fullPath: '/db-shell'
+      preLoaderRoute: typeof AuthenticatedDbShellRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/bulk-generator': {
+      id: '/_authenticated/bulk-generator'
+      path: '/bulk-generator'
+      fullPath: '/bulk-generator'
+      preLoaderRoute: typeof AuthenticatedBulkGeneratorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/brand-kits': {
+      id: '/_authenticated/brand-kits'
+      path: '/brand-kits'
+      fullPath: '/brand-kits'
+      preLoaderRoute: typeof AuthenticatedBrandKitsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/billing': {
+      id: '/_authenticated/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof AuthenticatedBillingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/auto-uploader': {
@@ -273,6 +838,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAutoUploaderRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/assets': {
+      id: '/_authenticated/assets'
+      path: '/assets'
+      fullPath: '/assets'
+      preLoaderRoute: typeof AuthenticatedAssetsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/api-keys': {
+      id: '/_authenticated/api-keys'
+      path: '/api-keys'
+      fullPath: '/api-keys'
+      preLoaderRoute: typeof AuthenticatedApiKeysRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/api-doc': {
       id: '/_authenticated/api-doc'
       path: '/api-doc'
@@ -280,32 +859,115 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApiDocRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/analytics': {
+      id: '/_authenticated/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/affiliate': {
+      id: '/_authenticated/affiliate'
+      path: '/affiliate'
+      fullPath: '/affiliate'
+      preLoaderRoute: typeof AuthenticatedAffiliateRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ab-testing': {
+      id: '/_authenticated/ab-testing'
+      path: '/ab-testing'
+      fullPath: '/ab-testing'
+      preLoaderRoute: typeof AuthenticatedAbTestingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAbTestingRoute: typeof AuthenticatedAbTestingRoute
+  AuthenticatedAffiliateRoute: typeof AuthenticatedAffiliateRoute
+  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedApiDocRoute: typeof AuthenticatedApiDocRoute
+  AuthenticatedApiKeysRoute: typeof AuthenticatedApiKeysRoute
+  AuthenticatedAssetsRoute: typeof AuthenticatedAssetsRoute
   AuthenticatedAutoUploaderRoute: typeof AuthenticatedAutoUploaderRoute
+  AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
+  AuthenticatedBrandKitsRoute: typeof AuthenticatedBrandKitsRoute
+  AuthenticatedBulkGeneratorRoute: typeof AuthenticatedBulkGeneratorRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDbShellRoute: typeof AuthenticatedDbShellRoute
+  AuthenticatedDeveloperPlaygroundRoute: typeof AuthenticatedDeveloperPlaygroundRoute
+  AuthenticatedEditorStudioRoute: typeof AuthenticatedEditorStudioRoute
+  AuthenticatedFontsRoute: typeof AuthenticatedFontsRoute
+  AuthenticatedInpaintingRoute: typeof AuthenticatedInpaintingRoute
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
   AuthenticatedManageUsersRoute: typeof AuthenticatedManageUsersRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
+  AuthenticatedPaymentGatewaysRoute: typeof AuthenticatedPaymentGatewaysRoute
+  AuthenticatedPersonasRoute: typeof AuthenticatedPersonasRoute
+  AuthenticatedPlaygroundRoute: typeof AuthenticatedPlaygroundRoute
+  AuthenticatedPresetThemeRoute: typeof AuthenticatedPresetThemeRoute
   AuthenticatedProjectRoute: typeof AuthenticatedProjectRoute
   AuthenticatedReferencesRoute: typeof AuthenticatedReferencesRoute
+  AuthenticatedReviewsRoute: typeof AuthenticatedReviewsRoute
+  AuthenticatedSchedulerRoute: typeof AuthenticatedSchedulerRoute
+  AuthenticatedSecurityLogsRoute: typeof AuthenticatedSecurityLogsRoute
+  AuthenticatedSeoOptimizerRoute: typeof AuthenticatedSeoOptimizerRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSocialAccountsRoute: typeof AuthenticatedSocialAccountsRoute
+  AuthenticatedStockLibraryRoute: typeof AuthenticatedStockLibraryRoute
+  AuthenticatedStyleTunerRoute: typeof AuthenticatedStyleTunerRoute
+  AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
+  AuthenticatedSystemLogsRoute: typeof AuthenticatedSystemLogsRoute
+  AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
+  AuthenticatedTemplatesRoute: typeof AuthenticatedTemplatesRoute
   AuthenticatedTopUpRoute: typeof AuthenticatedTopUpRoute
+  AuthenticatedUsageLimitsRoute: typeof AuthenticatedUsageLimitsRoute
+  AuthenticatedWebhooksRoute: typeof AuthenticatedWebhooksRoute
   AuthenticatedWorkspaceRoute: typeof AuthenticatedWorkspaceRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAbTestingRoute: AuthenticatedAbTestingRoute,
+  AuthenticatedAffiliateRoute: AuthenticatedAffiliateRoute,
+  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedApiDocRoute: AuthenticatedApiDocRoute,
+  AuthenticatedApiKeysRoute: AuthenticatedApiKeysRoute,
+  AuthenticatedAssetsRoute: AuthenticatedAssetsRoute,
   AuthenticatedAutoUploaderRoute: AuthenticatedAutoUploaderRoute,
+  AuthenticatedBillingRoute: AuthenticatedBillingRoute,
+  AuthenticatedBrandKitsRoute: AuthenticatedBrandKitsRoute,
+  AuthenticatedBulkGeneratorRoute: AuthenticatedBulkGeneratorRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDbShellRoute: AuthenticatedDbShellRoute,
+  AuthenticatedDeveloperPlaygroundRoute: AuthenticatedDeveloperPlaygroundRoute,
+  AuthenticatedEditorStudioRoute: AuthenticatedEditorStudioRoute,
+  AuthenticatedFontsRoute: AuthenticatedFontsRoute,
+  AuthenticatedInpaintingRoute: AuthenticatedInpaintingRoute,
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
   AuthenticatedManageUsersRoute: AuthenticatedManageUsersRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
+  AuthenticatedPaymentGatewaysRoute: AuthenticatedPaymentGatewaysRoute,
+  AuthenticatedPersonasRoute: AuthenticatedPersonasRoute,
+  AuthenticatedPlaygroundRoute: AuthenticatedPlaygroundRoute,
+  AuthenticatedPresetThemeRoute: AuthenticatedPresetThemeRoute,
   AuthenticatedProjectRoute: AuthenticatedProjectRoute,
   AuthenticatedReferencesRoute: AuthenticatedReferencesRoute,
+  AuthenticatedReviewsRoute: AuthenticatedReviewsRoute,
+  AuthenticatedSchedulerRoute: AuthenticatedSchedulerRoute,
+  AuthenticatedSecurityLogsRoute: AuthenticatedSecurityLogsRoute,
+  AuthenticatedSeoOptimizerRoute: AuthenticatedSeoOptimizerRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSocialAccountsRoute: AuthenticatedSocialAccountsRoute,
+  AuthenticatedStockLibraryRoute: AuthenticatedStockLibraryRoute,
+  AuthenticatedStyleTunerRoute: AuthenticatedStyleTunerRoute,
+  AuthenticatedSupportRoute: AuthenticatedSupportRoute,
+  AuthenticatedSystemLogsRoute: AuthenticatedSystemLogsRoute,
+  AuthenticatedTeamRoute: AuthenticatedTeamRoute,
+  AuthenticatedTemplatesRoute: AuthenticatedTemplatesRoute,
   AuthenticatedTopUpRoute: AuthenticatedTopUpRoute,
+  AuthenticatedUsageLimitsRoute: AuthenticatedUsageLimitsRoute,
+  AuthenticatedWebhooksRoute: AuthenticatedWebhooksRoute,
   AuthenticatedWorkspaceRoute: AuthenticatedWorkspaceRoute,
 }
 
@@ -320,3 +982,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

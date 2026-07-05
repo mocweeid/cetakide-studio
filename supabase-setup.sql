@@ -11,6 +11,8 @@ CREATE TABLE public.profiles (
   username TEXT UNIQUE,
   full_name TEXT,
   avatar_url TEXT,
+  birth_date DATE,
+  email_verified BOOLEAN DEFAULT FALSE,
   saldo INTEGER NOT NULL DEFAULT 50000,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -79,11 +81,13 @@ CREATE POLICY "Admins manage blogs" ON public.blogs FOR ALL TO authenticated USI
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
-  INSERT INTO public.profiles (id, username, full_name, saldo)
+  INSERT INTO public.profiles (id, username, full_name, avatar_url, email_verified, saldo)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
-    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture', ''),
+    COALESCE((NEW.raw_user_meta_data->>'email_verified')::boolean, FALSE),
     50000
   );
   INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'user_starter');

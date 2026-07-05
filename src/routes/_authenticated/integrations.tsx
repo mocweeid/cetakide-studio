@@ -3,10 +3,23 @@ import { useEffect, useState } from "react";
 import { AppShell, useAppUser } from "@/components/app-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plug, Plus, Trash2, KeyRound, Loader2, X, CheckCircle2, XCircle, Eye, EyeOff } from "lucide-react";
+import {
+  Plug,
+  Plus,
+  Trash2,
+  KeyRound,
+  Loader2,
+  X,
+  CheckCircle2,
+  XCircle,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/integrations")({
-  head: () => ({ meta: [{ title: "Integrasi API — CetakIde" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [{ title: "Integrasi API — CetakIde" }, { name: "robots", content: "noindex" }],
+  }),
   component: IntegrationsPage,
 });
 
@@ -20,7 +33,16 @@ type ApiProvider = {
   created_at: string;
 };
 
-const PROVIDER_OPTIONS = ["OpenAI", "Anthropic", "Google Gemini", "Groq", "Replicate", "Stability AI", "Fal.ai", "Custom"];
+const PROVIDER_OPTIONS = [
+  "OpenAI",
+  "Anthropic",
+  "Google Gemini",
+  "Groq",
+  "Replicate",
+  "Stability AI",
+  "Fal.ai",
+  "Custom",
+];
 
 function maskKey(k: string) {
   if (!k) return "";
@@ -35,7 +57,12 @@ function IntegrationsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [reveal, setReveal] = useState<Record<string, boolean>>({});
-  const [form, setForm] = useState({ provider: PROVIDER_OPTIONS[0], model: "", api_key: "", label: "" });
+  const [form, setForm] = useState({
+    provider: PROVIDER_OPTIONS[0],
+    model: "",
+    api_key: "",
+    label: "",
+  });
 
   async function refresh() {
     if (!user?.userId) return;
@@ -138,7 +165,8 @@ function IntegrationsPage() {
               {!loading && rows.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
-                    Belum ada API. Klik <span className="text-primary">Tambah API</span> untuk memulai.
+                    Belum ada API. Klik <span className="text-primary">Tambah API</span> untuk
+                    memulai.
                   </td>
                 </tr>
               )}
@@ -161,7 +189,11 @@ function IntegrationsPage() {
                         className="text-muted-foreground hover:text-foreground"
                         title={reveal[r.id] ? "Sembunyikan" : "Tampilkan"}
                       >
-                        {reveal[r.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        {reveal[r.id] ? (
+                          <EyeOff className="h-3.5 w-3.5" />
+                        ) : (
+                          <Eye className="h-3.5 w-3.5" />
+                        )}
                       </button>
                     </div>
                   </td>
@@ -174,7 +206,11 @@ function IntegrationsPage() {
                           : "bg-white/10 text-muted-foreground"
                       }`}
                     >
-                      {r.is_active ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                      {r.is_active ? (
+                        <CheckCircle2 className="h-3 w-3" />
+                      ) : (
+                        <XCircle className="h-3 w-3" />
+                      )}
                       {r.is_active ? "Aktif" : "Nonaktif"}
                     </button>
                   </td>
@@ -218,19 +254,25 @@ function IntegrationsPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Provider</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                  Provider
+                </label>
                 <select
                   value={form.provider}
                   onChange={(e) => setForm({ ...form, provider: e.target.value })}
                   className="w-full rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-sm focus:border-primary focus:outline-none"
                 >
                   {PROVIDER_OPTIONS.map((p) => (
-                    <option key={p} value={p}>{p}</option>
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Model</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                  Model
+                </label>
                 <input
                   value={form.model}
                   onChange={(e) => setForm({ ...form, model: e.target.value })}
@@ -239,7 +281,9 @@ function IntegrationsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">API Key</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                  API Key
+                </label>
                 <input
                   value={form.api_key}
                   onChange={(e) => setForm({ ...form, api_key: e.target.value })}
@@ -248,7 +292,9 @@ function IntegrationsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">Label (opsional)</label>
+                <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                  Label (opsional)
+                </label>
                 <input
                   value={form.label}
                   onChange={(e) => setForm({ ...form, label: e.target.value })}

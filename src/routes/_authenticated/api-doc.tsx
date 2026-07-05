@@ -89,7 +89,9 @@ function ApiDocPage() {
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Terminal className="h-4 w-4 text-primary" /> Base URL
         </div>
-        <code className="flex-1 rounded-lg bg-black/50 px-3 py-1.5 font-mono text-sm">{BASE_URL}</code>
+        <code className="flex-1 rounded-lg bg-black/50 px-3 py-1.5 font-mono text-sm">
+          {BASE_URL}
+        </code>
         <button
           onClick={() => copy(BASE_URL)}
           className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs hover:bg-white/10"
@@ -112,10 +114,14 @@ function ApiDocPage() {
                 key={e.path}
                 onClick={() => setActive(i)}
                 className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition ${
-                  i === active ? "bg-white/10 text-foreground" : "text-muted-foreground hover:bg-white/5"
+                  i === active
+                    ? "bg-white/10 text-foreground"
+                    : "text-muted-foreground hover:bg-white/5"
                 }`}
               >
-                <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${METHOD_COLOR[e.method]}`}>
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${METHOD_COLOR[e.method]}`}
+                >
                   {e.method}
                 </span>
                 <span className="truncate font-mono text-xs">{e.path}</span>
@@ -149,7 +155,9 @@ function ApiDocPage() {
                   <Copy className="mr-1 inline h-3 w-3" /> Copy
                 </button>
               </div>
-              <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/50 p-3 font-mono text-xs">{ep.body}</pre>
+              <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/50 p-3 font-mono text-xs">
+                {ep.body}
+              </pre>
             </div>
           )}
 
@@ -166,13 +174,19 @@ function ApiDocPage() {
                   <Copy className="mr-1 inline h-3 w-3" /> Copy
                 </button>
               </div>
-              <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/50 p-3 font-mono text-xs">{ep.response}</pre>
+              <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/50 p-3 font-mono text-xs">
+                {ep.response}
+              </pre>
             </div>
           )}
 
           <div className="mt-5">
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">cURL</p>
-            <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/50 p-3 font-mono text-xs">{curl}</pre>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              cURL
+            </p>
+            <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/50 p-3 font-mono text-xs">
+              {curl}
+            </pre>
           </div>
         </div>
       </div>

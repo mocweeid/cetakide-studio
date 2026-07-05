@@ -12,7 +12,6 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
-import { FloatingWA } from "@/components/floating-wa";
 
 function NotFoundComponent() {
   return (
@@ -135,7 +134,6 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <Toaster theme="dark" position="top-center" richColors />
-      <FloatingWA />
     </QueryClientProvider>
   );
 }

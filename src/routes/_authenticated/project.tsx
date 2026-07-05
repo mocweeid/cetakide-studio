@@ -1,55 +1,323 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, useAppUser } from "@/components/app-shell";
-import { FolderKanban } from "lucide-react";
+import {
+  FolderKanban,
+  Plus,
+  Download,
+  Trash2,
+  Search,
+  Filter,
+  Image as ImageIcon,
+  CheckCircle2,
+  XCircle,
+  Clock,
+} from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/project")({
-  head: () => ({ meta: [{ title: "Project — CetakIde" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [{ title: "Project — CetakIde" }, { name: "robots", content: "noindex" }],
+  }),
   component: ProjectPage,
 });
 
-type P = { id: string; kebutuhan: string; image_url: string | null; created_at: string };
+type Project = {
+  id: string;
+  kebutuhan: string;
+  image_url: string | null;
+  platform: string;
+  aspect_ratio: string;
+  status: string;
+  created_at: string;
+};
+
+const MOCK_PROJECTS: Project[] = [
+  {
+    id: "m1",
+    kebutuhan: "Banner sneakers premium hitam gold luxury edition",
+    image_url: "https://placehold.co/400x400/0a0a0a/EAB308?text=Sneaker+01",
+    platform: "Instagram",
+    aspect_ratio: "1:1",
+    status: "sukses",
+    created_at: "2026-07-03T10:00:00Z",
+  },
+  {
+    id: "m2",
+    kebutuhan: "Story flash sale fashion wanita summer collection",
+    image_url: "https://placehold.co/300x530/111111/EAB308?text=Story+01",
+    platform: "Instagram",
+    aspect_ratio: "9:16",
+    status: "sukses",
+    created_at: "2026-07-02T14:00:00Z",
+  },
+  {
+    id: "m3",
+    kebutuhan: "Banner promo weekend restoran padang",
+    image_url: "https://placehold.co/600x315/141414/EAB308?text=FB+Ads",
+    platform: "Facebook",
+    aspect_ratio: "1.91:1",
+    status: "sukses",
+    created_at: "2026-07-01T09:00:00Z",
+  },
+  {
+    id: "m4",
+    kebutuhan: "Thumbnail YouTube review laptop gaming terbaru",
+    image_url: "https://placehold.co/640x360/181818/EAB308?text=YT+Thumb",
+    platform: "YouTube",
+    aspect_ratio: "16:9",
+    status: "sukses",
+    created_at: "2026-06-30T20:00:00Z",
+  },
+  {
+    id: "m5",
+    kebutuhan: "Banner marketplace Shopee campaign 7.7",
+    image_url: "https://placehold.co/400x400/0f0f0f/EAB308?text=Shopee",
+    platform: "Marketplace",
+    aspect_ratio: "1:1",
+    status: "gagal",
+    created_at: "2026-06-29T16:00:00Z",
+  },
+  {
+    id: "m6",
+    kebutuhan: "Konten feed kuliner artisanal coffee shop",
+    image_url: "https://placehold.co/400x500/0a0a0a/EAB308?text=Kuliner",
+    platform: "Instagram",
+    aspect_ratio: "4:5",
+    status: "sukses",
+    created_at: "2026-06-28T11:00:00Z",
+  },
+  {
+    id: "m7",
+    kebutuhan: "Iklan properti residensial premium BSD City",
+    image_url: null,
+    platform: "Facebook",
+    aspect_ratio: "1.91:1",
+    status: "proses",
+    created_at: "2026-06-27T08:00:00Z",
+  },
+  {
+    id: "m8",
+    kebutuhan: "Banner promo skincare natural glowing",
+    image_url: "https://placehold.co/400x400/141414/EAB308?text=Skincare",
+    platform: "Instagram",
+    aspect_ratio: "1:1",
+    status: "sukses",
+    created_at: "2026-06-26T15:00:00Z",
+  },
+];
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === "sukses")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-green-400">
+        <CheckCircle2 className="h-2.5 w-2.5" /> Sukses
+      </span>
+    );
+  if (status === "gagal")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-red-400">
+        <XCircle className="h-2.5 w-2.5" /> Gagal
+      </span>
+    );
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-yellow-400">
+      <Clock className="h-2.5 w-2.5" /> Proses
+    </span>
+  );
+}
 
 function ProjectPage() {
   const { user } = useAppUser();
-  const [items, setItems] = useState<P[]>([]);
+  const navigate = useNavigate();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("Semua");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
   useEffect(() => {
     if (!user) return;
     supabase
       .from("projects")
-      .select("id, kebutuhan, image_url, created_at")
+      .select("*")
       .eq("user_id", user.userId)
       .order("created_at", { ascending: false })
-      .then(({ data }) => setItems((data ?? []) as P[]));
+      .then(({ data }) => {
+        setProjects((data as Project[]) ?? []);
+        setLoading(false);
+      });
   }, [user]);
 
+  const displayProjects = projects.length > 0 ? projects : MOCK_PROJECTS;
+  const filtered = displayProjects.filter((p) => {
+    const matchStatus = filterStatus === "Semua" || p.status === filterStatus.toLowerCase();
+    const matchSearch =
+      !search ||
+      p.kebutuhan.toLowerCase().includes(search.toLowerCase()) ||
+      p.platform.toLowerCase().includes(search.toLowerCase());
+    return matchStatus && matchSearch;
+  });
+
+  async function deleteProject(id: string) {
+    if (projects.length > 0) {
+      await supabase.from("projects").delete().eq("id", id);
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+    } else {
+      setProjects([]);
+    }
+    toast.success("Project berhasil dihapus.");
+  }
+
+  const statusCounts = {
+    sukses: displayProjects.filter((p) => p.status === "sukses").length,
+    gagal: displayProjects.filter((p) => p.status === "gagal").length,
+    proses: displayProjects.filter((p) => p.status === "proses").length,
+  };
+
   return (
-    <AppShell title="Project" subtitle="Semua hasil generate Anda" user={user}>
-      {items.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-white/15 bg-white/[0.04] p-12 text-center backdrop-blur-md">
-          <FolderKanban className="h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Belum ada project.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {items.map((p) => (
-            <div key={p.id} className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-md">
-              {p.image_url ? (
-                <img src={p.image_url} alt="" className="aspect-square w-full object-cover" />
-              ) : (
-                <div className="aspect-square bg-white/5" />
-              )}
-              <div className="p-3">
-                <p className="truncate text-xs font-medium">{p.kebutuhan}</p>
-                <p className="text-[10px] text-muted-foreground">
-                  {new Date(p.created_at).toLocaleDateString("id-ID")}
-                </p>
-              </div>
+    <AppShell title="Project" subtitle="Semua visual yang pernah Anda generate" user={user}>
+      <div className="space-y-4">
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Total Project", value: displayProjects.length.toString() },
+            { label: "Sukses", value: statusCounts.sukses.toString(), color: "#10b981" },
+            { label: "Gagal", value: statusCounts.gagal.toString(), color: "#ef4444" },
+            { label: "Proses", value: statusCounts.proses.toString(), color: "#f59e0b" },
+          ].map(({ label, value, color }) => (
+            <div
+              key={label}
+              className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4 text-center backdrop-blur-md"
+            >
+              <p
+                className="font-display text-xl sm:text-2xl font-bold"
+                style={color ? { color } : { color: "#EAB308" }}
+              >
+                {value}
+              </p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{label}</p>
             </div>
           ))}
         </div>
-      )}
+
+        {/* Controls */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari berdasarkan deskripsi atau platform..."
+              className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-2.5 pl-9 pr-4 text-sm placeholder:text-white/30 focus:border-primary/50 focus:outline-none"
+            />
+          </div>
+          <div className="flex gap-2">
+            {["Semua", "Sukses", "Gagal", "Proses"].map((s) => (
+              <button
+                key={s}
+                onClick={() => setFilterStatus(s)}
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition ${filterStatus === s ? "border-primary bg-primary/20 text-primary" : "border-white/10 text-white/60 hover:border-white/30 hover:text-white"}`}
+              >
+                {s}
+              </button>
+            ))}
+            <button
+              onClick={() => navigate({ to: "/workspace" })}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold text-black transition hover:brightness-110"
+              style={{ background: "linear-gradient(135deg, #EAB308, #CA8A04)" }}
+            >
+              <Plus className="h-3.5 w-3.5" /> Baru
+            </button>
+          </div>
+        </div>
+
+        {/* Project Grid */}
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.02] py-16 text-center">
+            <FolderKanban className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+            <p className="text-sm font-medium text-white/80 mb-2">Belum ada project</p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Mulai generate visual pertama Anda sekarang!
+            </p>
+            <button
+              onClick={() => navigate({ to: "/workspace" })}
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black"
+              style={{ background: "linear-gradient(135deg, #EAB308, #CA8A04)" }}
+            >
+              <Plus className="h-4 w-4" /> Generate Visual Baru
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {filtered.map((project) => (
+              <div
+                key={project.id}
+                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]"
+              >
+                {/* Image */}
+                <div className="relative aspect-square overflow-hidden">
+                  {project.image_url ? (
+                    <img
+                      src={project.image_url}
+                      alt={project.kebutuhan}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-white/5">
+                      <ImageIcon className="h-8 w-8 text-white/20" />
+                    </div>
+                  )}
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100 p-2.5">
+                    <div className="flex justify-end gap-1">
+                      {project.image_url && (
+                        <a
+                          href={project.image_url}
+                          download
+                          className="rounded-lg bg-white/20 p-1.5 text-white hover:bg-white/30"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                      <button
+                        onClick={() => deleteProject(project.id)}
+                        className="rounded-lg bg-red-500/30 p-1.5 text-red-300 hover:bg-red-500/50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div>
+                      <StatusBadge status={project.status} />
+                    </div>
+                  </div>
+                </div>
+                {/* Info */}
+                <div className="p-2.5">
+                  <p className="truncate text-[11px] font-medium text-white/90">
+                    {project.kebutuhan}
+                  </p>
+                  <div className="mt-1 flex items-center justify-between">
+                    <span className="text-[9px] text-muted-foreground">{project.platform}</span>
+                    <span className="text-[9px] text-muted-foreground">{project.aspect_ratio}</span>
+                  </div>
+                  <p className="mt-0.5 text-[9px] text-muted-foreground">
+                    {new Date(project.created_at).toLocaleDateString("id-ID", {
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </AppShell>
   );
 }

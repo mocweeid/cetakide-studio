@@ -6,7 +6,9 @@ import { AppShell, useAppUser } from "@/components/app-shell";
 import { Wallet, Check, Clock, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/top-up")({
-  head: () => ({ meta: [{ title: "Top Up Saldo — CetakIde" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [{ title: "Top Up Saldo — CetakIde" }, { name: "robots", content: "noindex" }],
+  }),
   component: TopUpPage,
 });
 
@@ -40,7 +42,7 @@ function TopUpPage() {
 
   useEffect(loadTx, [user]);
 
-  const amount = custom ? Number(custom) : selected ?? 0;
+  const amount = custom ? Number(custom) : (selected ?? 0);
 
   function validate(n: number) {
     if (!n || n < 10000 || n % 10000 !== 0) {
@@ -62,7 +64,9 @@ function TopUpPage() {
         status: "pending",
       });
       if (error) throw error;
-      toast.success("Permintaan top up dibuat.", { description: "Cek riwayat untuk instruksi pembayaran." });
+      toast.success("Permintaan top up dibuat.", {
+        description: "Cek riwayat untuk instruksi pembayaran.",
+      });
       setSelected(null);
       setCustom("");
       loadTx();
@@ -75,7 +79,11 @@ function TopUpPage() {
   }
 
   return (
-    <AppShell title="Top Up Saldo" subtitle="Isi ulang balance untuk generate lebih banyak" user={user}>
+    <AppShell
+      title="Top Up Saldo"
+      subtitle="Isi ulang balance untuk generate lebih banyak"
+      user={user}
+    >
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
         <div className="space-y-4">
           <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-5 backdrop-blur-md">
@@ -157,12 +165,17 @@ function TopUpPage() {
                   {txs.map((t) => (
                     <tr key={t.id} className="border-t border-white/5 hover:bg-white/5">
                       <td className="px-4 py-3 text-muted-foreground">
-                        {new Date(t.created_at).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
+                        {new Date(t.created_at).toLocaleString("id-ID", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                         {t.id.slice(0, 8).toUpperCase()}
                       </td>
-                      <td className="px-4 py-3 font-semibold">Rp {t.amount.toLocaleString("id-ID")}</td>
+                      <td className="px-4 py-3 font-semibold">
+                        Rp {t.amount.toLocaleString("id-ID")}
+                      </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={t.status} />
                       </td>
@@ -186,7 +199,8 @@ function TopUpPage() {
           <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-5 backdrop-blur-md">
             <h3 className="mb-2 text-sm font-semibold">Info Pembayaran</h3>
             <p className="text-xs text-muted-foreground">
-              Setelah membuat transaksi, admin akan memverifikasi & mengaktifkan saldo maksimal 15 menit di jam kerja.
+              Setelah membuat transaksi, admin akan memverifikasi & mengaktifkan saldo maksimal 15
+              menit di jam kerja.
             </p>
           </div>
         </aside>

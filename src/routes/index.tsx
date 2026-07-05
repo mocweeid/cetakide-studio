@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 import { motion, AnimatePresence } from "framer-motion";
 import useEmblaCarousel from "embla-carousel-react";
+import AutoScroll from "embla-carousel-auto-scroll";
 import {
   Sparkles,
   ArrowRight,
@@ -16,6 +19,10 @@ import {
   Send,
   Loader2,
   Check,
+  LayoutTemplate,
+  Type,
+  ImagePlus,
+  Wallet,
 } from "lucide-react";
 import {
   Accordion,
@@ -107,7 +114,7 @@ function HeroMockup() {
   ];
 
   return (
-    <div className="relative mx-auto mt-14 w-full max-w-5xl [perspective:1600px]">
+    <div id="ai-visual-builder" className="relative mx-auto mt-14 w-full max-w-5xl [perspective:1600px] scroll-mt-24">
       <div className="rounded-2xl border border-white/10 bg-[#0a0a0a]/90 shadow-[0_30px_80px_-30px_rgba(234,179,8,0.35)] backdrop-blur">
         {/* browser bar */}
         <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
@@ -243,21 +250,18 @@ function HeroMockup() {
 /*  Auto-play infinite embla row                                              */
 /* -------------------------------------------------------------------------- */
 
-function AutoCarousel({ images, size = 220 }: { images: string[]; size?: number }) {
-  const [ref, api] = useEmblaCarousel({ loop: true, align: "start", dragFree: true });
-  useEffect(() => {
-    if (!api) return;
-    const id = setInterval(() => api.scrollNext(), 2400);
-    return () => clearInterval(id);
-  }, [api]);
-  const doubled = useMemo(() => [...images, ...images], [images]);
+function AutoCarousel({ images, size = 220, aspectClass = "aspect-square" }: { images: string[]; size?: number; aspectClass?: string }) {
+  const [ref] = useEmblaCarousel({ loop: true, align: "start", dragFree: true }, [
+    AutoScroll({ playOnInit: true, speed: 0.5, stopOnInteraction: false }),
+  ]);
+  const repeated = useMemo(() => [...images, ...images, ...images, ...images], [images]);
   return (
     <div className="overflow-hidden" ref={ref}>
       <div className="flex gap-4">
-        {doubled.map((src, i) => (
+        {repeated.map((src, i) => (
           <div
             key={i}
-            className="relative aspect-square shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
+            className={`relative shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] ${aspectClass}`}
             style={{ width: size }}
           >
             <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
@@ -273,17 +277,14 @@ function AutoCarousel({ images, size = 220 }: { images: string[]; size?: number 
 /* -------------------------------------------------------------------------- */
 
 function LogoAuto({ images }: { images: string[] }) {
-  const [ref, api] = useEmblaCarousel({ loop: true, align: "start", dragFree: true });
-  useEffect(() => {
-    if (!api) return;
-    const id = setInterval(() => api.scrollNext(), 2000);
-    return () => clearInterval(id);
-  }, [api]);
-  const doubled = useMemo(() => [...images, ...images], [images]);
+  const [ref] = useEmblaCarousel({ loop: true, align: "start", dragFree: true }, [
+    AutoScroll({ playOnInit: true, speed: 0.4, stopOnInteraction: false }),
+  ]);
+  const repeated = useMemo(() => [...images, ...images, ...images, ...images], [images]);
   return (
     <div className="overflow-hidden" ref={ref}>
       <div className="flex gap-6">
-        {doubled.map((src, i) => (
+        {repeated.map((src, i) => (
           <div
             key={i}
             className="flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-full border p-2 sm:h-40 sm:w-40"
@@ -380,11 +381,27 @@ function Bento() {
 /* -------------------------------------------------------------------------- */
 
 function Index() {
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
-    <div className="min-h-screen text-white" style={{ background: BRAND.bg }}>
+    <div className="min-h-screen overflow-x-hidden text-white" style={{ background: BRAND.bg }}>
       <Navbar />
       {/* HERO */}
-      <section className="relative overflow-hidden pt-28 pb-20 sm:pt-36 sm:pb-28">
+      <section id="hero" className="relative overflow-hidden pt-28 pb-20 sm:pt-36 sm:pb-28">
         {/* Background image */}
         <div className="absolute inset-0">
           <img
@@ -445,39 +462,57 @@ function Index() {
           </h1>
 
           {/* Mini Instagram Feed Carousel — seamless infinite */}
-          <div className="mt-8 w-full overflow-hidden py-4">
-            <div className="flex w-max animate-marquee gap-3 will-change-transform">
-              {Array.from({ length: 16 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="relative aspect-square h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-20 sm:w-20 md:h-24 md:w-24"
-                >
-                  <img
-                    src={`https://placehold.co/200x200/0a0a0a/EAB308?text=IG+${(i % 8) + 1}`}
-                    alt={`Instagram ${(i % 8) + 1}`}
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                </div>
-              ))}
-            </div>
+          <div className="mt-8 flex w-full overflow-hidden py-4 gap-3">
+            {[0, 1].map((set) => (
+              <div key={set} className="flex shrink-0 animate-marquee gap-3 will-change-transform" aria-hidden={set === 1}>
+                {Array.from({ length: 32 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="relative aspect-square h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/5 sm:h-20 sm:w-20 md:h-24 md:w-24"
+                  >
+                    <img
+                      src={`/assets/feed-ig/ig-${(i % 8) + 1}.png`}
+                      alt={`Instagram ${(i % 8) + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              to="/auth"
-              search={{ mode: "register" }}
-              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-7 py-3.5 font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-2xl"
-              style={{
-                background: BRAND.goldGradient,
-                boxShadow: `0 12px 40px -10px ${BRAND.gold}`,
-              }}
-            >
-              <span className="relative z-10">Coba Gratis Sekarang</span>
-              <ArrowRight className="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full transition-transform duration-700 group-hover:translate-x-full" />
-            </Link>
+            {session ? (
+              <Link
+                to="/dashboard"
+                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-7 py-3.5 font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                style={{
+                  background: BRAND.goldGradient,
+                  boxShadow: `0 12px 40px -10px ${BRAND.gold}`,
+                }}
+              >
+                <span className="relative z-10">Ke Dashboard Saya</span>
+                <ArrowRight className="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full transition-transform duration-700 group-hover:translate-x-full" />
+              </Link>
+            ) : (
+              <Link
+                to="/auth"
+                search={{ mode: "register" }}
+                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-7 py-3.5 font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                style={{
+                  background: BRAND.goldGradient,
+                  boxShadow: `0 12px 40px -10px ${BRAND.gold}`,
+                }}
+              >
+                <span className="relative z-10">Coba Gratis Sekarang</span>
+                <ArrowRight className="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full transition-transform duration-700 group-hover:translate-x-full" />
+              </Link>
+            )}
             <a
               href="#showcase"
               className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-white/15 px-6 py-3.5 text-sm font-medium text-white/85 transition-all duration-300 hover:scale-105 hover:border-white/30"
@@ -531,7 +566,7 @@ function Index() {
                     Auto-generated
                   </span>
                 </div>
-                <AutoCarousel images={c.images} />
+                <AutoCarousel images={c.images} aspectClass={c.aspectClass} size={c.width} />
               </div>
             ))}
           </div>
@@ -610,7 +645,7 @@ function Index() {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {whyUs.map((w, i) => {
-              const Icon = [Rocket, ShieldCheck, Palette][i] ?? Rocket;
+              const Icon = [Sparkles, Palette, LayoutTemplate, Type, ImagePlus, Wallet][i] ?? Rocket;
               return (
                 <div
                   key={w.title}
@@ -631,6 +666,116 @@ function Index() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* DASHBOARD PREVIEW SECTION */}
+      <section id="fitur-preview" className="relative py-16 sm:py-20 border-y border-white/5 bg-[#0a0a0a]/50">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mx-auto mb-16 max-w-2xl text-center">
+            <span
+              className="text-xs font-semibold uppercase tracking-[0.2em]"
+              style={{ color: BRAND.gold }}
+            >
+              Fitur Lengkap Dashboard
+            </span>
+            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Semua yang Anda Butuhkan</h2>
+            <p className="mt-4 text-white/60">Tidak sekadar meng-generate gambar, kami memberikan kontrol penuh atas identitas brand Anda di dalam satu Workspace.</p>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-3">
+            
+            {/* BRAND KIT MOCKUP */}
+            <div className="rounded-2xl border border-white/10 bg-[#0d0d0d] p-6 shadow-2xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="mb-4 flex items-center gap-2">
+                <Palette className="h-5 w-5 text-yellow-500" />
+                <h3 className="font-semibold">Manajemen Brand Kit</h3>
+              </div>
+              <p className="text-sm text-white/50 mb-6">Terapkan warna perusahaan Anda secara otomatis ke setiap desain.</p>
+              
+              <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+                <div className="flex items-center justify-between">
+                   <span className="text-xs font-medium">Tech Startup</span>
+                   <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded">Aktif</span>
+                </div>
+                <div className="flex gap-2">
+                  {["#3B82F6", "#1E293B", "#F8FAFC"].map(color => (
+                    <div key={color} className="group/color relative h-8 w-8 rounded-md shadow-sm border border-white/20" style={{ backgroundColor: color }}>
+                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/color:opacity-100 transition-opacity bg-black text-[10px] px-2 py-1 rounded">
+                          {color}
+                       </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-3 space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm opacity-50">
+                <div className="flex items-center justify-between">
+                   <span className="text-xs font-medium">Eco Friendly</span>
+                </div>
+                <div className="flex gap-2">
+                  {["#22C55E", "#14532D", "#F0FDF4"].map(color => (
+                    <div key={color} className="h-8 w-8 rounded-md border border-white/20" style={{ backgroundColor: color }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* CUSTOM FONT MOCKUP */}
+            <div className="rounded-2xl border border-white/10 bg-[#0d0d0d] p-6 shadow-2xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="mb-4 flex items-center gap-2">
+                <Type className="h-5 w-5 text-blue-400" />
+                <h3 className="font-semibold">Font Kustom</h3>
+              </div>
+              <p className="text-sm text-white/50 mb-6">Ubah tipografi sesuka hati dari pilihan font premium populer.</p>
+              
+              <div className="grid grid-cols-2 gap-3">
+                 {[
+                   {name: "Inter", fam: "sans-serif"},
+                   {name: "Playfair", fam: "serif"},
+                   {name: "Montserrat", fam: "sans-serif"},
+                   {name: "Pacifico", fam: "cursive"}
+                 ].map((f, i) => (
+                    <div key={f.name} className={`rounded-xl border ${i===0 ? 'border-blue-400/50 bg-blue-400/10' : 'border-white/10 bg-white/5'} p-3 flex flex-col items-center justify-center min-h-[80px]`}>
+                       <p className={`text-2xl mb-1 ${i===0 ? 'text-blue-400' : 'text-white'}`} style={{ fontFamily: f.fam }}>Aa</p>
+                       <p className="text-[10px] text-white/60">{f.name}</p>
+                    </div>
+                 ))}
+              </div>
+            </div>
+
+            {/* AUTO UPLOADER MOCKUP */}
+            <div className="rounded-2xl border border-white/10 bg-[#0d0d0d] p-6 shadow-2xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="mb-4 flex items-center gap-2">
+                <ImagePlus className="h-5 w-5 text-green-400" />
+                <h3 className="font-semibold">Auto Uploader Media</h3>
+              </div>
+              <p className="text-sm text-white/50 mb-6">Unggah produk atau logo, AI akan menghapus background otomatis.</p>
+              
+              <div className="rounded-xl border border-dashed border-white/20 bg-white/[0.02] p-4 text-center mb-4">
+                 <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-green-500/20 mb-2">
+                    <ArrowRight className="h-4 w-4 text-green-400 -rotate-90" />
+                 </div>
+                 <p className="text-[11px] text-white/60">Klik untuk upload gambar</p>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2">
+                 {[1,2,3].map(n => (
+                    <div key={n} className="aspect-square rounded-lg bg-white/10 overflow-hidden border border-white/5 relative">
+                       <img src={`/assets/feed-ig/ig-${n}.png`} alt="" className="w-full h-full object-cover opacity-70" />
+                       {n === 1 && (
+                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                            <Check className="h-4 w-4 text-green-400" />
+                         </div>
+                       )}
+                    </div>
+                 ))}
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -739,14 +884,24 @@ function Index() {
                 Rp 65.000
               </span>
             </div>
-            <Link
-              to="/auth"
-              search={{ mode: "register" }}
-              className="mt-8 inline-flex items-center gap-2 rounded-full px-8 py-4 font-semibold text-black transition hover:brightness-110"
-              style={{ background: BRAND.gold, boxShadow: `0 12px 40px -10px ${BRAND.gold}` }}
-            >
-              Ambil Promo <ArrowRight className="h-4 w-4" />
-            </Link>
+            {session ? (
+              <Link
+                to="/dashboard"
+                className="mt-8 inline-flex items-center gap-2 rounded-full px-8 py-4 font-semibold text-black transition hover:brightness-110"
+                style={{ background: BRAND.gold, boxShadow: `0 12px 40px -10px ${BRAND.gold}` }}
+              >
+                Ke Dashboard <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <Link
+                to="/auth"
+                search={{ mode: "register" }}
+                className="mt-8 inline-flex items-center gap-2 rounded-full px-8 py-4 font-semibold text-black transition hover:brightness-110"
+                style={{ background: BRAND.gold, boxShadow: `0 12px 40px -10px ${BRAND.gold}` }}
+              >
+                Ambil Promo <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
           </div>
         </div>
       </section>

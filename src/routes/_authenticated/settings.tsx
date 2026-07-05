@@ -6,14 +6,16 @@ import { LogOut, Upload, Loader2, User } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ title: "Settings — CetakIde" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [{ title: "Settings — CetakIde" }, { name: "robots", content: "noindex" }],
+  }),
   component: SettingsPage,
 });
 
 function SettingsPage() {
   const { user, refresh } = useAppUser();
   const navigate = useNavigate();
-  
+
   // State untuk form edit
   const [username, setUsername] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -37,11 +39,8 @@ function SettingsPage() {
     if (!user?.userId) return;
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ username })
-        .eq("id", user.userId);
-      
+      const { error } = await supabase.from("profiles").update({ username }).eq("id", user.userId);
+
       if (error) throw error;
       toast.success("Profil berhasil diperbarui!");
       refresh(); // Perbarui header otomatis
@@ -63,16 +62,12 @@ function SettingsPage() {
       const filePath = `${user?.userId}-${Math.random()}.${fileExt}`;
 
       // 1. Upload ke Supabase Storage (Bucket: avatars)
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file);
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       // 2. Dapatkan URL publik dari foto yang di-upload
-      const { data: publicUrlData } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
+      const { data: publicUrlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
       // 3. Simpan URL tersebut ke tabel profiles
       if (!user?.userId) throw new Error("User tidak ditemukan.");
@@ -95,11 +90,10 @@ function SettingsPage() {
   return (
     <AppShell title="Settings" subtitle="Preferensi dan Edit Akun Anda" user={user}>
       <div className="mx-auto max-w-3xl space-y-6">
-        
         {/* --- KARTU EDIT PROFIL --- */}
         <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-5 backdrop-blur-md sm:p-6">
           <h2 className="mb-5 font-display text-lg font-semibold text-white">Edit Profil</h2>
-          
+
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
             {/* Bagian Foto Profil */}
             <div className="relative flex shrink-0 flex-col items-center gap-3">
@@ -114,10 +108,10 @@ function SettingsPage() {
               </div>
               <label className="cursor-pointer rounded-full bg-white/10 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-white/20">
                 {isUploading ? "Mengunggah..." : "Ganti Foto"}
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
                   onChange={uploadAvatar}
                   disabled={isUploading}
                 />
@@ -127,7 +121,9 @@ function SettingsPage() {
             {/* Bagian Input Form */}
             <div className="flex-1 space-y-4">
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Username Anda</label>
+                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                  Username Anda
+                </label>
                 <input
                   type="text"
                   value={username}
@@ -136,7 +132,7 @@ function SettingsPage() {
                   placeholder="Ketik username baru..."
                 />
               </div>
-              
+
               <button
                 onClick={saveProfile}
                 disabled={isSaving || username === user?.username}
@@ -161,7 +157,9 @@ function SettingsPage() {
 
           <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-5 backdrop-blur-md">
             <h2 className="mb-2 font-display text-base font-semibold text-red-400">Sesi Aktif</h2>
-            <p className="mb-4 text-xs text-muted-foreground">Keluar dari akun ini di perangkat ini dengan aman.</p>
+            <p className="mb-4 text-xs text-muted-foreground">
+              Keluar dari akun ini di perangkat ini dengan aman.
+            </p>
             <button
               onClick={signOut}
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-500/20"
@@ -170,7 +168,6 @@ function SettingsPage() {
             </button>
           </div>
         </div>
-
       </div>
     </AppShell>
   );
