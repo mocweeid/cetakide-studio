@@ -1,8 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { AppShell, useAppUser } from "@/components/app-shell";
-import { Palette, Plus, Trash2, CheckCircle2, Edit2, Copy } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Edit2, Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/brand-kits")({
   head: () => ({
@@ -11,114 +12,130 @@ export const Route = createFileRoute("/_authenticated/brand-kits")({
   component: BrandKitsPage,
 });
 
-const INIT_BRANDS = [
-  {
-    id: "1",
-    name: "Sneaker Studio",
-    colors: ["#EAB308", "#0A0F1E", "#FFFFFF", "#CA8A04", "#F5F5F5"],
-    font: "Plus Jakarta Sans",
-    active: true,
-    logo: "/assets/logo-preset/logo-11.png",
-  },
-  {
-    id: "2",
-    name: "Kuliner Nusantara",
-    colors: ["#DC2626", "#F97316", "#FBBF24", "#78350F", "#FEF3C7"],
-    font: "Inter",
-    active: false,
-    logo: "/assets/logo-preset/logo-12.png",
-  },
-  {
-    id: "3",
-    name: "Properti Prima",
-    colors: ["#1E40AF", "#3B82F6", "#BFDBFE", "#0F172A", "#F8FAFC"],
-    font: "Outfit",
-    active: false,
-    logo: "/assets/logo-preset/logo-13.png",
-  },
-];
+type BrandRow = {
+  id: string;
+  name: string;
+  primary_color: string | null;
+  secondary_color: string | null;
+  accent_color: string | null;
+  background_color: string | null;
+  text_color: string | null;
+  primary_font: string | null;
+  brand_voice: string | null;
+  logo_url: string | null;
+  is_default: boolean;
+};
+
+const DEFAULT_COLORS = ["#EAB308", "#FFFFFF", "#0A0F1E", "#CA8A04", "#F5F5F5"];
 
 function BrandKitsPage() {
   const { user } = useAppUser();
-  const [brands, setBrands] = useState(INIT_BRANDS);
+  const [brands, setBrands] = useState<BrandRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", font: "Inter" });
-  const [colors, setColors] = useState(["#EAB308", "#FFFFFF", "#0A0F1E", "#CA8A04", "#F5F5F5"]);
+  const [form, setForm] = useState({ name: "", font: "Inter", voice: "" });
+  const [colors, setColors] = useState<string[]>(DEFAULT_COLORS);
 
-  function saveBrand() {
+  async function load() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("brand_kits")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) toast.error(error.message);
+    else setBrands((data as BrandRow[]) ?? []);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    if (user) load();
+  }, [user]);
+
+  async function saveBrand() {
     if (!form.name.trim()) {
       toast.error("Masukkan nama brand!");
       return;
     }
-
+    if (!user) return;
+    const payload = {
+      name: form.name,
+      primary_color: colors[0] ?? null,
+      secondary_color: colors[1] ?? null,
+      accent_color: colors[2] ?? null,
+      background_color: colors[3] ?? null,
+      text_color: colors[4] ?? null,
+      primary_font: form.font,
+      brand_voice: form.voice || null,
+    };
     if (editingId) {
-      setBrands((prev) =>
-        prev.map((b) =>
-          b.id === editingId
-            ? {
-                ...b,
-                name: form.name,
-                font: form.font,
-                colors,
-                logo: form.name.charAt(0).toUpperCase(),
-              }
-            : b,
-        ),
-      );
+      const { error } = await supabase.from("brand_kits").update(payload).eq("id", editingId);
+      if (error) return toast.error(error.message);
       toast.success("Brand Kit diperbarui!");
     } else {
-      setBrands((prev) => [
-        ...prev,
-        {
-          id: String(Date.now()),
-          name: form.name,
-          colors,
-          font: form.font,
-          active: false,
-          logo: form.name.charAt(0).toUpperCase(),
-        },
-      ]);
+      const { error } = await supabase
+        .from("brand_kits")
+        .insert({ ...payload, user_id: user.userId });
+      if (error) return toast.error(error.message);
       toast.success("Brand Kit berhasil ditambahkan!");
     }
     closeForm();
+    await load();
   }
 
   function closeForm() {
     setShowForm(false);
-    setForm({ name: "", font: "Inter" });
-    setColors(["#EAB308", "#FFFFFF", "#0A0F1E", "#CA8A04", "#F5F5F5"]);
+    setForm({ name: "", font: "Inter", voice: "" });
+    setColors(DEFAULT_COLORS);
     setEditingId(null);
   }
 
-  function openEdit(brand: (typeof INIT_BRANDS)[0]) {
-    setForm({ name: brand.name, font: brand.font });
-    setColors(brand.colors);
+  function openEdit(brand: BrandRow) {
+    setForm({
+      name: brand.name,
+      font: brand.primary_font ?? "Inter",
+      voice: brand.brand_voice ?? "",
+    });
+    setColors([
+      brand.primary_color ?? DEFAULT_COLORS[0],
+      brand.secondary_color ?? DEFAULT_COLORS[1],
+      brand.accent_color ?? DEFAULT_COLORS[2],
+      brand.background_color ?? DEFAULT_COLORS[3],
+      brand.text_color ?? DEFAULT_COLORS[4],
+    ]);
     setEditingId(brand.id);
     setShowForm(true);
   }
 
-  function duplicateBrand(brand: (typeof INIT_BRANDS)[0]) {
-    setBrands((prev) => [
-      ...prev,
-      {
-        ...brand,
-        id: String(Date.now()),
-        name: `${brand.name} (Copy)`,
-        active: false,
-      },
-    ]);
+  async function duplicateBrand(brand: BrandRow) {
+    if (!user) return;
+    const { id: _id, ...rest } = brand;
+    void _id;
+    const { error } = await supabase.from("brand_kits").insert({
+      ...rest,
+      name: `${brand.name} (Copy)`,
+      is_default: false,
+      user_id: user.userId,
+    });
+    if (error) return toast.error(error.message);
     toast.success("Brand Kit diduplikasi!");
+    await load();
   }
 
-  function setActive(id: string) {
-    setBrands((prev) => prev.map((b) => ({ ...b, active: b.id === id })));
+  async function setActive(id: string) {
+    if (!user) return;
+    await supabase.from("brand_kits").update({ is_default: false }).eq("user_id", user.userId);
+    const { error } = await supabase.from("brand_kits").update({ is_default: true }).eq("id", id);
+    if (error) return toast.error(error.message);
     toast.success("Brand Kit diaktifkan!");
+    await load();
   }
 
-  function deleteBrand(id: string) {
-    setBrands((prev) => prev.filter((b) => b.id !== id));
+  async function deleteBrand(id: string) {
+    const { error } = await supabase.from("brand_kits").delete().eq("id", id);
+    if (error) return toast.error(error.message);
     toast.success("Brand Kit dihapus.");
+    await load();
   }
 
   return (
@@ -132,13 +149,13 @@ function BrandKitsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm text-muted-foreground">
-              {brands.length} Brand Kit tersimpan · {brands.filter((b) => b.active).length} aktif
+              {brands.length} Brand Kit tersimpan · {brands.filter((b) => b.is_default).length} aktif
             </p>
           </div>
           <button
             onClick={() => {
-              setForm({ name: "", font: "Inter" });
-              setColors(["#EAB308", "#FFFFFF", "#0A0F1E", "#CA8A04", "#F5F5F5"]);
+              setForm({ name: "", font: "Inter", voice: "" });
+              setColors(DEFAULT_COLORS);
               setEditingId(null);
               setShowForm(true);
             }}
@@ -149,32 +166,47 @@ function BrandKitsPage() {
           </button>
         </div>
 
+        {loading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Memuat brand kits…
+          </div>
+        )}
+
         {/* Brand Cards Grid */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {brands.map((brand) => (
+          {brands.map((brand) => {
+            const palette = [
+              brand.primary_color,
+              brand.secondary_color,
+              brand.accent_color,
+              brand.background_color,
+              brand.text_color,
+            ].filter(Boolean) as string[];
+            const font = brand.primary_font ?? "Inter";
+            return (
             <div
               key={brand.id}
-              className={`rounded-2xl border p-5 backdrop-blur-md transition ${brand.active ? "border-primary/60 bg-primary/5" : "border-white/10 bg-white/[0.04]"}`}
+              className={`rounded-2xl border p-5 backdrop-blur-md transition ${brand.is_default ? "border-primary/60 bg-primary/5" : "border-white/10 bg-white/[0.04]"}`}
             >
               {/* Brand Header */}
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div
                     className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl text-xl font-bold text-black"
-                    style={{ background: brand.colors[0] }}
+                    style={{ background: palette[0] ?? "#EAB308" }}
                   >
-                    {brand.logo.startsWith("/") ? (
-                      <img src={brand.logo} alt="" className="h-full w-full object-cover" />
+                    {brand.logo_url ? (
+                      <img src={brand.logo_url} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      brand.logo
+                      brand.name.charAt(0).toUpperCase()
                     )}
                   </div>
                   <div>
                     <p className="font-display font-semibold text-white">{brand.name}</p>
-                    <p className="text-xs text-muted-foreground">{brand.font}</p>
+                    <p className="text-xs text-muted-foreground">{font}</p>
                   </div>
                 </div>
-                {brand.active && (
+                {brand.is_default && (
                   <span className="flex items-center gap-1 rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary">
                     <CheckCircle2 className="h-3 w-3" /> Aktif
                   </span>
@@ -187,7 +219,7 @@ function BrandKitsPage() {
                   Palet Warna
                 </p>
                 <div className="flex gap-2">
-                  {brand.colors.map((color, i) => (
+                  {palette.map((color, i) => (
                     <div key={i} className="group relative">
                       <div
                         className="h-8 w-8 rounded-lg border border-white/10 shadow-sm transition group-hover:scale-110"
@@ -204,14 +236,14 @@ function BrandKitsPage() {
               {/* Font Preview */}
               <div className="mb-4 rounded-xl bg-white/5 px-3 py-2">
                 <p className="text-[10px] text-muted-foreground">Font Preview:</p>
-                <p className="text-base font-bold" style={{ fontFamily: brand.font }}>
+                <p className="text-base font-bold" style={{ fontFamily: font }}>
                   {brand.name}
                 </p>
               </div>
 
               {/* Actions */}
               <div className="flex gap-2">
-                {!brand.active && (
+                {!brand.is_default && (
                   <button
                     onClick={() => setActive(brand.id)}
                     className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-primary/10 py-2 text-xs font-medium text-primary hover:bg-primary/20"
@@ -239,13 +271,14 @@ function BrandKitsPage() {
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
 
           {/* Add New Card */}
           <button
             onClick={() => {
-              setForm({ name: "", font: "Inter" });
-              setColors(["#EAB308", "#FFFFFF", "#0A0F1E", "#CA8A04", "#F5F5F5"]);
+              setForm({ name: "", font: "Inter", voice: "" });
+              setColors(DEFAULT_COLORS);
               setEditingId(null);
               setShowForm(true);
             }}
@@ -299,8 +332,19 @@ function BrandKitsPage() {
                   </select>
                 </div>
                 <div>
+                  <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                    Tone / Voice Brand (opsional)
+                  </label>
+                  <input
+                    value={form.voice}
+                    onChange={(e) => setForm((f) => ({ ...f, voice: e.target.value }))}
+                    placeholder="cth: modern, elegan, playful"
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm placeholder:text-white/30 focus:border-primary/50 focus:outline-none"
+                  />
+                </div>
+                <div>
                   <label className="mb-2 block text-xs font-medium text-muted-foreground">
-                    Palet Warna (5 warna)
+                    Palet Warna (primer, sekunder, aksen, bg, teks)
                   </label>
                   <div className="flex gap-2">
                     {colors.map((c, i) => (
