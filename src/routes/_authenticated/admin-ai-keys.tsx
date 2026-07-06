@@ -74,7 +74,7 @@ function AdminAiKeysPage() {
     const { error } = await supabase.from("ai_providers").insert({
       user_id: user!.userId,
       provider: form.provider.trim().toLowerCase(),
-      model: form.model.trim() || null,
+      model: form.model.trim() || "default",
       api_key: form.api_key.trim(),
       label: form.label.trim() || null,
       priority: form.priority,
