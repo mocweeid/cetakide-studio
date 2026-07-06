@@ -32,6 +32,43 @@ export const Route = createFileRoute("/_authenticated/integrations")({
 
 type ApiProvider = ProviderKey & { created_at: string };
 
+function StatusBadge({ row }: { row: ApiProvider }) {
+  const disabledUntil = row.disabled_until ? new Date(row.disabled_until) : null;
+  const cooling = disabledUntil && disabledUntil > new Date();
+  if (cooling) {
+    const mins = Math.max(1, Math.round((disabledUntil.getTime() - Date.now()) / 60000));
+    const label = row.last_status === "out_of_credit" ? "Saldo habis" : "Rate-limit";
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-400">
+        <Clock className="h-3 w-3" /> {label} · retry {mins}m
+      </span>
+    );
+  }
+  if (row.last_status === "invalid")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-400">
+        <AlertTriangle className="h-3 w-3" /> Key invalid
+      </span>
+    );
+  if (row.last_status === "ok")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-2 py-0.5 text-xs text-green-400">
+        <CheckCircle2 className="h-3 w-3" /> Sehat
+      </span>
+    );
+  if (row.last_status === "error")
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-400">
+        <AlertTriangle className="h-3 w-3" /> Error
+      </span>
+    );
+  return (
+    <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-muted-foreground">
+      Belum dipakai
+    </span>
+  );
+}
+
 const PROVIDER_OPTIONS = [
   "OpenAI",
   "Anthropic",
