@@ -396,6 +396,20 @@ function Workspace() {
                             </div>
                           </>
                         )}
+                        {v.status === "streaming" && (
+                          <>
+                            <img
+                              src={v.imageUrl}
+                              alt={`Preview ${i + 1}`}
+                              className="h-full w-full object-cover blur-lg scale-105 transition-[filter]"
+                            />
+                            <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                              <span className="rounded-full bg-primary/20 border border-primary/40 px-2 py-0.5 text-[10px] font-semibold text-primary flex items-center gap-1">
+                                <Loader2 className="h-3 w-3 animate-spin" /> streaming
+                              </span>
+                            </div>
+                          </>
+                        )}
                         {v.status === "sukses" && (
                           <>
                             <img
