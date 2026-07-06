@@ -20,6 +20,7 @@ import {
   Palette,
   LayoutTemplate,
   CloudUpload,
+  Layers,
 } from "lucide-react";
 import { PRESET_THEMES, getThemeStyles, DEFAULT_IMG } from "./preset-theme";
 import { generateImageServer } from "@/lib/generateImage.functions";
@@ -82,6 +83,47 @@ const TEMPLATES = [
   "Event Poster",
 ];
 
+type BrandKit = {
+  id: string;
+  name: string;
+  primary_color: string | null;
+  secondary_color: string | null;
+  accent_color: string | null;
+  background_color: string | null;
+  text_color: string | null;
+  primary_font: string | null;
+  brand_voice: string | null;
+  logo_url: string | null;
+  is_default: boolean;
+};
+
+function buildBrandInstructions(kit: BrandKit | null): string {
+  if (!kit) return "";
+  const colors = [
+    kit.primary_color && `primary ${kit.primary_color}`,
+    kit.secondary_color && `secondary ${kit.secondary_color}`,
+    kit.accent_color && `accent ${kit.accent_color}`,
+    kit.background_color && `background ${kit.background_color}`,
+    kit.text_color && `text ${kit.text_color}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const parts = [
+    `Brand: ${kit.name}.`,
+    colors && `Use these brand colors as the dominant palette: ${colors}.`,
+    kit.primary_font && `Typography style similar to ${kit.primary_font}.`,
+    kit.brand_voice && `Visual tone/voice: ${kit.brand_voice}.`,
+    "Keep the design consistent with this brand identity.",
+  ].filter(Boolean);
+  return parts.join(" ");
+}
+
+function ratioToSize(r: string): string {
+  if (r === "9:16" || r === "4:5") return "1024x1536";
+  if (r === "16:9" || r === "1.91:1") return "1536x1024";
+  return "1024x1024";
+}
+
 function Workspace() {
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -91,7 +133,10 @@ function Workspace() {
   const [generateCount, setGenerateCount] = useState(5);
   const [selectedPreset, setSelectedPreset] = useState<string>(search.preset || "");
   const [selectedFont, setSelectedFont] = useState("Inter (Default)");
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const [brandKits, setBrandKits] = useState<BrandKit[]>([]);
+  const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
+  const [allRatios, setAllRatios] = useState(false);
+  const selectedBrand = brandKits.find((b) => b.id === selectedBrandId) ?? null;
 
   const [form, setForm] = useState({
     prompt: "",
@@ -129,6 +174,22 @@ function Workspace() {
   const generateImage = useServerFn(generateImageServer);
   const enhancePrompt = useServerFn(enhancePromptServer);
   const [enhancing, setEnhancing] = useState(false);
+
+  // Load brand kits from DB
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("brand_kits")
+      .select("*")
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        const list = (data as BrandKit[]) ?? [];
+        setBrandKits(list);
+        const def = list.find((b) => b.is_default) ?? list[0];
+        if (def) setSelectedBrandId((prev) => prev ?? def.id);
+      });
+  }, [user]);
 
   async function handleEnhance() {
     if (!form.prompt.trim()) {
@@ -176,12 +237,24 @@ function Workspace() {
       return;
     }
     if (!user) return;
+
+    // Build target ratios (multi-ratio 1-klik or single)
+    const targetRatios: string[] = allRatios
+      ? PLATFORMS[platform].ratios.map((r) => r.key)
+      : Array.from({ length: generateCount }, () => ratio);
+    const totalJobs = targetRatios.length;
+
+    const brandInstructions = buildBrandInstructions(selectedBrand);
+    const finalBasePrompt = brandInstructions
+      ? `${form.prompt}\n\n${brandInstructions}`
+      : form.prompt;
+
     setGenerating(true);
     setResults([]);
-    setVariants(Array.from({ length: generateCount }, () => ({ status: "proses" as const })));
+    setVariants(Array.from({ length: totalJobs }, () => ({ status: "proses" as const })));
     try {
       // Potong saldo sesuai jumlah generate jika di backend diimplementasi
-      for (let i = 0; i < generateCount; i++) {
+      for (let i = 0; i < totalJobs; i++) {
         const { data: ok, error } = await supabase.rpc("potong_saldo_generate");
         if (error) throw error;
         if (!ok) {
@@ -192,26 +265,20 @@ function Workspace() {
         }
       }
 
-      // Pilih ukuran OpenAI terdekat dari rasio
-      const size =
-        ratio === "9:16" || ratio === "4:5"
-          ? "1024x1536"
-          : ratio === "16:9"
-          ? "1536x1024"
-          : "1024x1024";
-
       const newResults = [];
       let totalFailovers = 0;
       const usedKeys = new Set<string>();
       let failedCount = 0;
-      for (let i = 0; i < generateCount; i++) {
+      for (let i = 0; i < totalJobs; i++) {
+        const jobRatio = targetRatios[i];
+        const size = ratioToSize(jobRatio);
         // 1) Catat proyek dengan status "proses" dulu
         const { data: inserted, error: insertErr } = await supabase
           .from("projects")
           .insert({
             user_id: user.userId,
             kebutuhan: form.title || form.prompt.slice(0, 80),
-            prompt: form.prompt,
+            prompt: finalBasePrompt,
             title: form.title || null,
             subtitle: form.subtitle || null,
             whatsapp: form.whatsapp || null,
@@ -219,7 +286,7 @@ function Workspace() {
             body_content: form.body_content || null,
             reference_url: reference,
             image_url: null,
-            aspect_ratio: ratio,
+            aspect_ratio: jobRatio,
             platform,
             status: "proses",
           })
@@ -232,7 +299,7 @@ function Workspace() {
         // 2) Jalankan generate; update ke sukses / gagal sesuai hasil
         try {
           let finalUrl = "";
-          await streamImage(form.prompt, size, (dataUrl, isFinal) => {
+          await streamImage(finalBasePrompt, size, (dataUrl, isFinal) => {
             setVariants((prev) => {
               const next = [...prev];
               next[i] = isFinal
@@ -355,6 +422,7 @@ function Workspace() {
               <select
                 value={generateCount}
                 onChange={(e) => setGenerateCount(Number(e.target.value))}
+                disabled={allRatios}
                 className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-sm outline-none"
               >
                 {[1, 2, 3, 4].map((n) => (
@@ -363,8 +431,40 @@ function Workspace() {
                   </option>
                 ))}
               </select>
+              <label className="flex items-center gap-1.5 pl-3 text-xs font-medium text-white/70 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allRatios}
+                  onChange={(e) => setAllRatios(e.target.checked)}
+                  className="accent-primary"
+                />
+                <Layers className="h-3.5 w-3.5 text-primary" />
+                Semua Rasio ({PLATFORMS[platform].ratios.length})
+              </label>
             </div>
           </div>
+          {selectedBrand && (
+            <div className="mb-3 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5">
+              <Palette className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs text-white/80">
+                Brand aktif: <b className="text-primary">{selectedBrand.name}</b>
+              </span>
+              <div className="flex gap-1 ml-auto">
+                {[selectedBrand.primary_color, selectedBrand.secondary_color, selectedBrand.accent_color]
+                  .filter(Boolean)
+                  .map((c) => (
+                    <span key={c!} className="h-3 w-3 rounded-full border border-white/20" style={{ background: c! }} />
+                  ))}
+              </div>
+              <button
+                onClick={() => setSelectedBrandId(null)}
+                className="text-white/50 hover:text-white"
+                title="Nonaktifkan brand"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
 
           {/* Results Grid */}
           <div className="flex-1 flex items-center justify-center min-h-[400px]">
@@ -377,12 +477,24 @@ function Workspace() {
                     v.status === "sukses"
                       ? variants.slice(0, i + 1).filter((x) => x.status === "sukses").length - 1
                       : -1;
+                  const jobRatioKey = allRatios
+                    ? PLATFORMS[platform].ratios[i % PLATFORMS[platform].ratios.length].key
+                    : ratio;
+                  const jobActive =
+                    PLATFORMS[platform].ratios.find((r) => r.key === jobRatioKey) ??
+                    PLATFORMS[platform].ratios[0];
+                  const jobCanvasStyle = { aspectRatio: `${jobActive.w} / ${jobActive.h}` };
                   return (
                     <div key={i} className="flex flex-col gap-3">
                       <div
                         className="relative w-full overflow-hidden rounded-xl border border-white/10 bg-black/40 group"
-                        style={canvasStyle}
+                        style={jobCanvasStyle}
                       >
+                        {allRatios && (
+                          <span className="absolute top-2 right-2 z-20 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-primary border border-primary/30">
+                            {jobRatioKey}
+                          </span>
+                        )}
                         {v.status === "proses" && (
                           <>
                             {/* Skeleton shimmer */}
@@ -498,7 +610,10 @@ function Workspace() {
                 onClick={() => setBrandModalOpen(true)}
                 className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/20 transition text-xs text-white/70"
               >
-                <Palette className="h-4 w-4 text-primary" /> Brand Kit
+                <Palette className="h-4 w-4 text-primary" />
+                <span className="truncate max-w-full">
+                  {selectedBrand ? selectedBrand.name : "Brand Kit"}
+                </span>
               </button>
             </div>
 
@@ -1064,47 +1179,70 @@ function Workspace() {
                 </button>
               </div>
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
-              {[
-                { name: "Cetak Ide Official", colors: ["#EAB308", "#0A0F1E", "#FFFFFF"] },
-                { name: "Tech Startup", colors: ["#3B82F6", "#1E293B", "#F8FAFC"] },
-                { name: "Eco Friendly", colors: ["#22C55E", "#14532D", "#F0FDF4"] },
-                { name: "Luxury Brand", colors: ["#D4AF37", "#000000", "#1A1A1A"] },
-              ].map((brand) => {
-                const isSelected = selectedBrand === brand.name;
-                return (
-                  <button
-                    key={brand.name}
-                    onClick={() => {
-                      setSelectedBrand(brand.name);
-                      toast.success(`Brand Kit ${brand.name} dipilih!`);
-                      setBrandModalOpen(false);
-                    }}
-                    className={`rounded-xl border bg-white/5 p-4 text-left transition group flex flex-col justify-between min-h-[100px] relative ${isSelected ? "border-primary ring-2 ring-primary bg-primary/10" : "border-white/10 hover:border-primary/60"}`}
-                  >
-                    {isSelected && (
-                      <div className="absolute top-3 right-3 bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
-                        Terpilih
-                      </div>
-                    )}
-                    <p
-                      className={`text-sm font-semibold mb-3 pr-12 ${isSelected ? "text-primary" : "text-white/90 group-hover:text-primary"}`}
+            {brandKits.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-white/15 p-6 text-center text-sm text-white/60">
+                Belum ada brand kit. Klik <b>+ Tambah Brand Kit Baru</b> untuk mulai menyimpan
+                identitas brand-mu.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <button
+                  onClick={() => {
+                    setSelectedBrandId(null);
+                    toast.success("Brand Kit dinonaktifkan.");
+                    setBrandModalOpen(false);
+                  }}
+                  className={`rounded-xl border p-4 text-left transition ${selectedBrandId === null ? "border-primary ring-2 ring-primary bg-primary/10" : "border-white/10 bg-white/5 hover:border-primary/60"}`}
+                >
+                  <p className="text-sm font-semibold text-white/90">Tanpa Brand Kit</p>
+                  <p className="mt-1 text-xs text-white/50">Generate murni dari prompt</p>
+                </button>
+                {brandKits.map((brand) => {
+                  const isSelected = selectedBrandId === brand.id;
+                  const palette = [
+                    brand.primary_color,
+                    brand.secondary_color,
+                    brand.accent_color,
+                    brand.background_color,
+                    brand.text_color,
+                  ].filter(Boolean) as string[];
+                  return (
+                    <button
+                      key={brand.id}
+                      onClick={() => {
+                        setSelectedBrandId(brand.id);
+                        toast.success(`Brand Kit ${brand.name} dipilih!`);
+                        setBrandModalOpen(false);
+                      }}
+                      className={`rounded-xl border p-4 text-left transition group flex flex-col justify-between min-h-[100px] relative ${isSelected ? "border-primary ring-2 ring-primary bg-primary/10" : "border-white/10 bg-white/5 hover:border-primary/60"}`}
                     >
-                      {brand.name}
-                    </p>
-                    <div className="flex gap-2">
-                      {brand.colors.map((color) => (
-                        <div
-                          key={color}
-                          className="h-6 w-6 rounded-full border border-white/20 shadow-sm"
-                          style={{ backgroundColor: color }}
-                        ></div>
-                      ))}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                      {isSelected && (
+                        <div className="absolute top-3 right-3 bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                          Terpilih
+                        </div>
+                      )}
+                      <p className={`text-sm font-semibold mb-3 pr-12 ${isSelected ? "text-primary" : "text-white/90 group-hover:text-primary"}`}>
+                        {brand.name}
+                      </p>
+                      <div className="flex gap-2">
+                        {palette.map((color) => (
+                          <div
+                            key={color}
+                            className="h-6 w-6 rounded-full border border-white/20 shadow-sm"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                      {brand.brand_voice && (
+                        <p className="mt-2 text-[10px] text-white/50 italic">
+                          Voice: {brand.brand_voice}
+                        </p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
