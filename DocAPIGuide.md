@@ -1,8 +1,96 @@
-# DocAPIGuide — Menyambungkan API AI (Generate Visual ala Lovable)
+# DocAPIGuide — Menyambungkan AI untuk Generate Visual
 
-Dokumen ini menjelaskan **untuk developer** cara menyambungkan API AI ke dashboard
-**Cetak Ide** agar tombol *Cetak Ide Sekarang* di `/workspace` benar-benar menghasilkan
-gambar (bukan mock). Stack: **TanStack Start + Lovable Cloud (Supabase)**.
+Dokumen ini punya **dua bagian**:
+
+1. **Bagian A — Panduan Non-Teknis (via Dashboard)** — Anda tidak perlu ngoding.
+   Cukup buka menu di dashboard, tempel API key, selesai.
+2. **Bagian B — Panduan Teknis (untuk developer)** — arsitektur, server route,
+   streaming SSE. Lewati kalau Anda tidak butuh.
+
+---
+
+## BAGIAN A — Cara Sambungin OpenAI Tanpa Ngoding
+
+### Ringkasan singkat
+
+Sistem ini sudah punya **AI bawaan (Lovable AI Gateway)** yang aktif otomatis —
+jadi tombol *Cetak Ide Sekarang* di menu **Workspace** sudah bisa dipakai tanpa
+setup apa pun. Anda **baru perlu masuk ke pengaturan** kalau ingin:
+
+- Pakai akun **OpenAI pribadi** (billing masuk ke akun OpenAI Anda sendiri), atau
+- Pakai model spesifik OpenAI (mis. `gpt-image-1`, `dall-e-3`) yang tidak ada di AI bawaan.
+
+### Langkah demi langkah (5 menit)
+
+**1. Ambil API key dari OpenAI**
+
+- Buka https://platform.openai.com/api-keys (login akun OpenAI Anda).
+- Klik **Create new secret key** → beri nama bebas (mis. `CetakIde`) → **Create**.
+- **Copy** kunci yang muncul (formatnya `sk-...`). Simpan sementara di Notepad —
+  OpenAI **tidak akan menampilkan lagi** kunci ini setelah ditutup.
+- Pastikan akun OpenAI Anda punya **saldo/billing aktif** di
+  https://platform.openai.com/account/billing — tanpa saldo, request akan ditolak.
+
+**2. Masukkan ke Dashboard Cetak Ide**
+
+- Login ke dashboard Cetak Ide.
+- Di sidebar kiri, klik menu **Integrations** (ikon plug/steker).
+- Klik tombol **+ Tambah Provider**.
+- Isi form:
+  - **Provider**: pilih `OpenAI`
+  - **Model**: ketik `gpt-image-1` (atau `dall-e-3`)
+  - **API Key**: tempel kunci `sk-...` dari langkah 1
+  - **Label**: bebas (mis. "OpenAI Utama")
+- Klik **Simpan**. Kunci akan tersimpan aman di database (tidak pernah tampil ke
+  publik).
+
+**3. Aktifkan sebagai default (opsional)**
+
+- Di baris provider yang baru dibuat, geser toggle **Aktif** ke ON.
+- Semua provider lain akan otomatis nonaktif (hanya satu yang aktif dalam satu
+  waktu).
+
+**4. Coba di Workspace**
+
+- Masuk menu **Workspace** → tulis prompt → klik **Cetak Ide Sekarang**.
+- Kalau muncul gambar → sudah tersambung ✅.
+- Kalau muncul error → lihat tabel **Troubleshooting** di bawah.
+
+### Troubleshooting (baca kalau ada masalah)
+
+| Pesan error di dashboard | Artinya | Solusi (tanpa coding) |
+|---|---|---|
+| `Invalid API key` / `401` | Key salah ketik / sudah dihapus di OpenAI. | Buat key baru di OpenAI, edit provider di menu Integrations, tempel ulang. |
+| `Insufficient quota` / `402` | Saldo OpenAI habis. | Top up di https://platform.openai.com/account/billing. |
+| `Rate limit` / `429` | Terlalu banyak request dalam waktu singkat. | Tunggu 30 detik, coba lagi. Atau upgrade limit di dashboard OpenAI. |
+| `Model not found` | Nama model salah ketik. | Edit provider, pastikan model persis `gpt-image-1` atau `dall-e-3`. |
+| Tombol *Cetak* diam saja | Belum ada provider aktif. | Buka Integrations, pastikan toggle **Aktif** menyala di salah satu baris. |
+
+### Yang **tidak perlu** Anda lakukan
+
+- ❌ Tidak perlu edit file `.env` di server.
+- ❌ Tidak perlu deploy ulang aplikasi.
+- ❌ Tidak perlu install package apa pun.
+- ❌ Tidak perlu paham istilah *server route*, *SSE*, atau *TanStack*.
+- ❌ Tidak perlu hubungi developer — semua bisa dari menu **Integrations**.
+
+### Kapan panggil developer?
+
+Panggil developer / kirim link Bagian B di bawah **hanya jika**:
+
+- Anda ingin **streaming preview progresif** (gambar muncul buram → tajam bertahap).
+- Anda ingin **model image di luar OpenAI** (mis. Stability AI, Midjourney API).
+- Anda ingin **kustom prompt enhancer** otomatis.
+
+Untuk pemakaian standar (prompt → gambar jadi), Bagian A sudah cukup.
+
+---
+
+## BAGIAN B — Panduan Teknis (untuk developer)
+
+Bagian di bawah ini menjelaskan cara developer menyambungkan API AI ke dashboard
+**Cetak Ide** agar tombol *Cetak Ide Sekarang* di `/workspace` benar-benar
+menghasilkan gambar (bukan mock). Stack: **TanStack Start + Lovable Cloud (Supabase)**.
 
 Kita punya dua opsi:
 
