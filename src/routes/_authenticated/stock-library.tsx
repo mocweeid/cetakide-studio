@@ -3,6 +3,7 @@ import { useState } from "react";
 import { AppShell, useAppUser } from "@/components/app-shell";
 import { Search, Download, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { bentoByNiche, carouselData, logoShowcase } from "@/config/site-assets";
 
 export const Route = createFileRoute("/_authenticated/stock-library")({
   head: () => ({
@@ -11,127 +12,46 @@ export const Route = createFileRoute("/_authenticated/stock-library")({
   component: StockLibraryPage,
 });
 
-const CATEGORIES = [
-  "Semua",
-  "Bisnis",
-  "Fashion",
-  "Kuliner",
-  "Teknologi",
-  "Alam",
-  "Arsitektur",
-  "Orang",
-];
+// Semua stock library kini dibangun dari asset yang sudah ada di web
+// (bentoByNiche + carouselData + logoShowcase) — tidak lagi memakai Unsplash.
+type Stock = { id: string; title: string; category: string; author: string; url: string };
+const STOCK_IMAGES: Stock[] = (() => {
+  const list: Stock[] = [];
+  Object.entries(bentoByNiche).forEach(([niche, group]) => {
+    [group.main, ...group.small].forEach((url, i) =>
+      list.push({
+        id: `${niche}-${i}`,
+        title: `Referensi ${niche} #${i + 1}`,
+        category: niche,
+        author: "Cetak Ide",
+        url,
+      }),
+    );
+  });
+  carouselData.forEach((c) =>
+    c.images.forEach((url, i) =>
+      list.push({
+        id: `${c.title}-${i}`,
+        title: `${c.title} #${i + 1}`,
+        category: c.title,
+        author: "Cetak Ide",
+        url,
+      }),
+    ),
+  );
+  logoShowcase.forEach((url, i) =>
+    list.push({
+      id: `logo-${i}`,
+      title: `Logo Preset #${i + 1}`,
+      category: "Logo",
+      author: "Cetak Ide",
+      url,
+    }),
+  );
+  return list;
+})();
 
-const STOCK_IMAGES = [
-  {
-    id: "1",
-    title: "Profil bisnis profesional",
-    category: "Bisnis",
-    author: "Unsplash",
-    w: 400,
-    h: 400,
-    url: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&h=400&fit=crop",
-  },
-  {
-    id: "2",
-    title: "Laptop workspace minimal",
-    category: "Bisnis",
-    author: "Unsplash",
-    w: 400,
-    h: 300,
-    url: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=300&fit=crop",
-  },
-  {
-    id: "3",
-    title: "Fashion street style",
-    category: "Fashion",
-    author: "User",
-    w: 300,
-    h: 400,
-    url: "/assets/kategori/fashion/fashion-6.webp",
-  },
-  {
-    id: "4",
-    title: "Makanan premium plating",
-    category: "Kuliner",
-    author: "User",
-    w: 400,
-    h: 400,
-    url: "/assets/kategori/kuliner/kuliner-2.webp",
-  },
-  {
-    id: "5",
-    title: "Smartphone modern",
-    category: "Teknologi",
-    author: "Unsplash",
-    w: 400,
-    h: 500,
-    url: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=500&fit=crop",
-  },
-  {
-    id: "6",
-    title: "Hutan tropis hijau",
-    category: "Alam",
-    author: "Unsplash",
-    w: 400,
-    h: 300,
-    url: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=400&h=300&fit=crop",
-  },
-  {
-    id: "7",
-    title: "Gedung arsitektur modern",
-    category: "Arsitektur",
-    author: "Unsplash",
-    w: 400,
-    h: 600,
-    url: "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=400&h=600&fit=crop",
-  },
-  {
-    id: "8",
-    title: "Tim kerja meeting",
-    category: "Bisnis",
-    author: "Unsplash",
-    w: 600,
-    h: 400,
-    url: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&h=400&fit=crop",
-  },
-  {
-    id: "9",
-    title: "Sepatu sneaker hitam",
-    category: "Fashion",
-    author: "User",
-    w: 400,
-    h: 400,
-    url: "/assets/kategori/fashion/fashion-7.webp",
-  },
-  {
-    id: "10",
-    title: "Kopi dan laptop",
-    category: "Bisnis",
-    author: "Unsplash",
-    w: 400,
-    h: 300,
-    url: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop",
-  },
-  {
-    id: "11",
-    title: "Burger artisanal",
-    category: "Kuliner",
-    author: "User",
-    w: 400,
-    h: 400,
-    url: "/assets/kategori/kuliner/kuliner-3.webp",
-  },
-  {
-    id: "12",
-    title: "Programmer coding",
-    category: "Teknologi",
-    author: "Unsplash",
-    w: 500,
-    h: 400,
-    url: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=500&h=400&fit=crop",
-  },
-];
+const CATEGORIES = ["Semua", ...Array.from(new Set(STOCK_IMAGES.map((s) => s.category)))];
 
 function StockLibraryPage() {
   const { user } = useAppUser();
@@ -189,7 +109,7 @@ function StockLibraryPage() {
           <p className="text-sm text-muted-foreground">
             Menampilkan <span className="text-white font-medium">{filtered.length}</span> gambar
           </p>
-          <p className="text-xs text-muted-foreground">Sumber: Unsplash · Lisensi bebas royalti</p>
+          <p className="text-xs text-muted-foreground">Sumber: Koleksi Cetak Ide · Bebas dipakai</p>
         </div>
 
         {/* Masonry Grid */}
@@ -238,14 +158,13 @@ function StockLibraryPage() {
                       >
                         <Download className="h-3.5 w-3.5" />
                       </a>
-                      <a
-                        href={`https://unsplash.com/s/photos/${encodeURIComponent(img.title)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => toast.info("Membuka detail asset...")}
                         className="flex items-center justify-center rounded-lg bg-white/20 p-1.5 text-white hover:bg-white/30"
+                        aria-label="Detail"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
+                      </button>
                     </div>
                   </div>
                 </div>
