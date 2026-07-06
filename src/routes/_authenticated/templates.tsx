@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AppShell, useAppUser } from "@/components/app-shell";
-import { LayoutGrid, Star, Lock, Wand2 } from "lucide-react";
+import { Star, Lock, Wand2 } from "lucide-react";
 import { toast } from "sonner";
+import { bentoByNiche, logoShowcase, carouselData } from "@/config/site-assets";
 
 export const Route = createFileRoute("/_authenticated/templates")({
   head: () => ({
@@ -11,106 +12,85 @@ export const Route = createFileRoute("/_authenticated/templates")({
   component: TemplatesPage,
 });
 
-const CATEGORIES = ["Semua", "Instagram", "Facebook Ads", "YouTube", "Marketplace", "Logo"];
+type TemplateItem = {
+  id: string;
+  name: string;
+  category: string;
+  ratio: string;
+  premium: boolean;
+  img: string;
+};
 
-const TEMPLATES = [
-  {
-    id: "1",
-    name: "Sneaker Flash Sale",
-    category: "Instagram",
-    ratio: "1:1",
-    premium: false,
-    img: "https://placehold.co/400x400/0a0a0a/EAB308?text=Sneaker+Sale",
-  },
-  {
-    id: "2",
-    name: "Food Promo Story",
-    category: "Instagram",
-    ratio: "9:16",
-    premium: false,
-    img: "https://placehold.co/300x530/111111/EAB308?text=Food+Story",
-  },
-  {
-    id: "3",
-    name: "Luxury Brand Banner",
-    category: "Instagram",
-    ratio: "4:5",
-    premium: true,
-    img: "https://placehold.co/400x500/141414/EAB308?text=Luxury+Brand",
-  },
-  {
-    id: "4",
-    name: "Facebook Retargeting Ad",
-    category: "Facebook Ads",
-    ratio: "1.91:1",
-    premium: false,
-    img: "https://placehold.co/600x315/181818/EAB308?text=FB+Retarget",
-  },
-  {
-    id: "5",
-    name: "eCommerce Product Ad",
-    category: "Facebook Ads",
-    ratio: "1:1",
-    premium: true,
-    img: "https://placehold.co/400x400/0f0f0f/EAB308?text=eCommerce",
-  },
-  {
-    id: "6",
-    name: "Tech Review Thumbnail",
-    category: "YouTube",
-    ratio: "16:9",
-    premium: false,
-    img: "https://placehold.co/640x360/1a1a1a/EAB308?text=Tech+Review",
-  },
-  {
-    id: "7",
-    name: "Gaming Thumbnail Bold",
-    category: "YouTube",
-    ratio: "16:9",
-    premium: true,
-    img: "https://placehold.co/640x360/0a0a0a/EAB308?text=Gaming+YT",
-  },
-  {
-    id: "8",
-    name: "Shopee Product Banner",
-    category: "Marketplace",
-    ratio: "1:1",
-    premium: false,
-    img: "https://placehold.co/400x400/141414/EAB308?text=Shopee",
-  },
-  {
-    id: "9",
-    name: "TikTok Shop Campaign",
-    category: "Marketplace",
-    ratio: "9:16",
-    premium: false,
-    img: "https://placehold.co/300x530/181818/EAB308?text=TikTok+Shop",
-  },
-  {
-    id: "10",
-    name: "Minimal Brand Logo",
-    category: "Logo",
-    ratio: "1:1",
-    premium: false,
-    img: "https://placehold.co/400x400/0a0a0a/EAB308?text=Logo+Minimal",
-  },
-  {
-    id: "11",
-    name: "Bold Corporate Logo",
-    category: "Logo",
-    ratio: "1:1",
-    premium: true,
-    img: "https://placehold.co/400x400/111111/EAB308?text=Corporate",
-  },
-  {
-    id: "12",
-    name: "Culinary Food Reel",
-    category: "Instagram",
-    ratio: "9:16",
-    premium: false,
-    img: "https://placehold.co/300x530/141414/EAB308?text=Food+Reel",
-  },
-];
+// Auto-build template library from every asset already shipped in the app.
+const TEMPLATES: TemplateItem[] = (() => {
+  const list: TemplateItem[] = [];
+
+  // 1. All niche posters (1:1) -> "Niche Poster" category, split by niche
+  Object.entries(bentoByNiche).forEach(([niche, group]) => {
+    [group.main, ...group.small].forEach((img, i) => {
+      list.push({
+        id: `niche-${niche}-${i}`,
+        name: `Poster ${niche} #${i + 1}`,
+        category: niche,
+        ratio: "1:1",
+        premium: i >= 4, // last of each niche = premium
+        img,
+      });
+    });
+  });
+
+  // 2. Instagram Feed
+  carouselData[0]?.images.forEach((img, i) => {
+    list.push({
+      id: `ig-${i}`,
+      name: `Instagram Feed #${i + 1}`,
+      category: "Instagram Feed",
+      ratio: "1:1",
+      premium: i >= 6,
+      img,
+    });
+  });
+
+  // 3. Instagram Story
+  carouselData[1]?.images.forEach((img, i) => {
+    list.push({
+      id: `story-${i}`,
+      name: `Story & Reels #${i + 1}`,
+      category: "Story & Reels",
+      ratio: "9:16",
+      premium: i >= 6,
+      img,
+    });
+  });
+
+  // 4. Facebook Ads
+  carouselData[2]?.images.forEach((img, i) => {
+    list.push({
+      id: `fb-${i}`,
+      name: `Facebook Ads #${i + 1}`,
+      category: "Facebook Ads",
+      ratio: "1:1",
+      premium: i >= 6,
+      img,
+    });
+  });
+
+  // 5. Logo library
+  logoShowcase.forEach((img, i) => {
+    list.push({
+      id: `logo-${i}`,
+      name: `Logo Preset #${i + 1}`,
+      category: "Logo",
+      ratio: "1:1",
+      premium: i >= 7,
+      img,
+    });
+  });
+
+  return list;
+})();
+
+const CATEGORIES = ["Semua", ...Array.from(new Set(TEMPLATES.map((t) => t.category)))];
 
 function TemplatesPage() {
   const { user } = useAppUser();
@@ -118,9 +98,9 @@ function TemplatesPage() {
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [favorites, setFavorites] = useState<string[]>(["1", "6"]);
 
-  const filtered = TEMPLATES.filter(
+  const filtered = useMemo(() => TEMPLATES.filter(
     (t) => activeCategory === "Semua" || t.category === activeCategory,
-  );
+  ), [activeCategory]);
 
   function toggleFav(id: string) {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]));

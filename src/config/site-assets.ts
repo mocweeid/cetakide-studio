@@ -90,9 +90,40 @@ export const carouselData: {
 
 // ---------- BENTO: multi-niche visual grid ----------
 // Each niche = 1 main (4:5) + 4 small (1:1).
-export type Niche = "Semua" | "Kuliner" | "Fashion" | "Otomotif" | "Properti";
+export type Niche =
+  | "Semua"
+  | "Kuliner"
+  | "Fashion"
+  | "Otomotif"
+  | "Properti"
+  | "Kecantikan"
+  | "Gadget"
+  | "Kesehatan"
+  | "Hewan"
+  | "Logistik"
+  | "Finansial"
+  | "Perabotan"
+  | "Edukasi"
+  | "Hiburan"
+  | "Kreatif";
 
-export const nicheTabs: Niche[] = ["Semua", "Kuliner", "Fashion", "Otomotif", "Properti"];
+export const nicheTabs: Niche[] = [
+  "Semua",
+  "Kuliner",
+  "Fashion",
+  "Otomotif",
+  "Properti",
+  "Kecantikan",
+  "Gadget",
+  "Kesehatan",
+  "Hewan",
+  "Logistik",
+  "Finansial",
+  "Perabotan",
+  "Edukasi",
+  "Hiburan",
+  "Kreatif",
+];
 
 export const bentoByNiche: Record<Exclude<Niche, "Semua">, { main: string; small: string[] }> = {
   Kuliner: {
@@ -129,6 +160,96 @@ export const bentoByNiche: Record<Exclude<Niche, "Semua">, { main: string; small
       "/assets/kategori/properti/properti-3.png",
       "/assets/kategori/properti/properti-4.png",
       "/assets/kategori/properti/properti-5.png",
+    ],
+  },
+  Kecantikan: {
+    main: "/assets/kategori/kecantikan/kecantikan-1.png",
+    small: [
+      "/assets/kategori/kecantikan/kecantikan-2.png",
+      "/assets/kategori/kecantikan/kecantikan-3.png",
+      "/assets/kategori/kecantikan/kecantikan-4.png",
+      "/assets/kategori/kecantikan/kecantikan-5.png",
+    ],
+  },
+  Gadget: {
+    main: "/assets/kategori/gadget/gadget-1.png",
+    small: [
+      "/assets/kategori/gadget/gadget-2.png",
+      "/assets/kategori/gadget/gadget-3.png",
+      "/assets/kategori/gadget/gadget-4.png",
+      "/assets/kategori/gadget/gadget-5.png",
+    ],
+  },
+  Kesehatan: {
+    main: "/assets/kategori/kesehatan/kesehatan-1.png",
+    small: [
+      "/assets/kategori/kesehatan/kesehatan-2.png",
+      "/assets/kategori/kesehatan/kesehatan-3.png",
+      "/assets/kategori/kesehatan/kesehatan-4.png",
+      "/assets/kategori/kesehatan/kesehatan-5.png",
+    ],
+  },
+  Hewan: {
+    main: "/assets/kategori/hewan/hewan-1.png",
+    small: [
+      "/assets/kategori/hewan/hewan-2.png",
+      "/assets/kategori/hewan/hewan-3.png",
+      "/assets/kategori/hewan/hewan-4.png",
+      "/assets/kategori/hewan/hewan-5.png",
+    ],
+  },
+  Logistik: {
+    main: "/assets/kategori/logistik/logistik-1.png",
+    small: [
+      "/assets/kategori/logistik/logistik-2.png",
+      "/assets/kategori/logistik/logistik-3.png",
+      "/assets/kategori/logistik/logistik-4.png",
+      "/assets/kategori/logistik/logistik-5.png",
+    ],
+  },
+  Finansial: {
+    main: "/assets/kategori/finansial/finansial-1.png",
+    small: [
+      "/assets/kategori/finansial/finansial-2.png",
+      "/assets/kategori/finansial/finansial-3.png",
+      "/assets/kategori/finansial/finansial-4.png",
+      "/assets/kategori/finansial/finansial-5.png",
+    ],
+  },
+  Perabotan: {
+    main: "/assets/kategori/perabotan/perabotan-1.png",
+    small: [
+      "/assets/kategori/perabotan/perabotan-2.png",
+      "/assets/kategori/perabotan/perabotan-3.png",
+      "/assets/kategori/perabotan/perabotan-4.png",
+      "/assets/kategori/perabotan/perabotan-5.png",
+    ],
+  },
+  Edukasi: {
+    main: "/assets/kategori/edukasi/edukasi-1.png",
+    small: [
+      "/assets/kategori/edukasi/edukasi-2.png",
+      "/assets/kategori/edukasi/edukasi-3.png",
+      "/assets/kategori/edukasi/edukasi-4.png",
+      "/assets/kategori/edukasi/edukasi-5.png",
+    ],
+  },
+  Hiburan: {
+    main: "/assets/kategori/hiburan/hiburan-1.png",
+    small: [
+      "/assets/kategori/hiburan/hiburan-2.png",
+      "/assets/kategori/hiburan/hiburan-3.png",
+      "/assets/kategori/hiburan/hiburan-4.png",
+      "/assets/kategori/hiburan/hiburan-5.png",
+    ],
+  },
+  Kreatif: {
+    main: "/assets/kategori/kreatif/kreatif-1.png",
+    small: [
+      "/assets/kategori/kreatif/kreatif-2.png",
+      "/assets/kategori/kreatif/kreatif-3.png",
+      "/assets/kategori/kreatif/kreatif-4.png",
+      "/assets/kategori/kreatif/kreatif-5.png",
     ],
   },
 };
