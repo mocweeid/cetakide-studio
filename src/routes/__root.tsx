@@ -83,25 +83,46 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Generate banner iklan, YouTube thumbnail, dan logo brand dalam 1 klik dengan AI. Cocok untuk UMKM, dropshipper & digital marketer.",
+          "Cetak Ide adalah SaaS AI Visual Builder untuk UMKM & digital marketer. Generate banner iklan Facebook, thumbnail YouTube, feed Instagram, story, dan logo brand hanya dalam hitungan detik. Hemat waktu, hemat biaya desainer, hasil profesional siap upload.",
+      },
+      {
+        name: "keywords",
+        content:
+          "AI visual builder, generate banner iklan, thumbnail youtube AI, desain instagram otomatis, AI untuk UMKM, cetak ide, ai design generator indonesia, logo maker ai",
       },
       { name: "author", content: "Cetak Ide" },
+      { name: "robots", content: "index, follow" },
+      { property: "og:site_name", content: "Cetak Ide" },
       { property: "og:title", content: "Cetak Ide — AI Visual Builder Instan" },
       {
         property: "og:description",
-        content: "Banner, Thumbnail, Logo — jadi dalam hitungan detik. Promo starter Rp65.000.",
+        content:
+          "Banner iklan, thumbnail YouTube, feed & story Instagram, sampai logo brand — semua jadi dalam hitungan detik dengan AI. Promo starter Rp65.000.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/og-cover.jpg" },
+      { property: "og:image:width", content: "1216" },
+      { property: "og:image:height", content: "640" },
+      { property: "og:image:alt", content: "Cetak Ide — AI Visual Builder Instan" },
+      { property: "og:locale", content: "id_ID" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Cetak Ide — AI Visual Builder Instan" },
+      {
+        name: "twitter:description",
+        content:
+          "Generate banner iklan, thumbnail YouTube, feed IG, dan logo brand dalam hitungan detik dengan AI.",
+      },
+      { name: "twitter:image", content: "/og-cover.jpg" },
+      { name: "theme-color", content: "#0b0b0f" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/logo/ChatGPT Image 6 Jul 2026, 13.04.45.png", type: "image/png" },
-      { rel: "shortcut icon", href: "/logo/ChatGPT Image 6 Jul 2026, 13.04.45.png", type: "image/png" },
-      { rel: "apple-touch-icon", href: "/logo/ChatGPT Image 6 Jul 2026, 13.04.45.png" },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "shortcut icon", href: "/favicon.png", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/favicon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

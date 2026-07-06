@@ -128,14 +128,15 @@ export function AppShell({
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-3">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
               {right}
               <Link
                 to="/top-up"
-                className="flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 sm:inline-flex"
+                className="flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2 py-1.5 text-[11px] font-semibold text-primary hover:bg-primary/20 sm:gap-2 sm:px-3 sm:text-xs"
               >
                 <Wallet className="h-3.5 w-3.5" />
-                Rp {(user?.saldo ?? 0).toLocaleString("id-ID")}
+                <span className="hidden sm:inline">Rp </span>
+                {(user?.saldo ?? 0).toLocaleString("id-ID")}
                 {user?.isDeveloper && (
                   <span className="rounded-full bg-primary/30 px-1.5 py-0.5 text-[9px]">∞</span>
                 )}
@@ -143,7 +144,7 @@ export function AppShell({
 
               <button
                 onClick={toggleLang}
-                className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90 transition-colors hover:bg-white/20"
+                className="hidden sm:flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90 transition-colors hover:bg-white/20"
               >
                 <Globe className="h-4 w-4" />
                 {lang}
