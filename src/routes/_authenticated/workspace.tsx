@@ -25,8 +25,10 @@ import {
 import { PRESET_THEMES, getThemeStyles, DEFAULT_IMG } from "./preset-theme";
 import { generateImageServer } from "@/lib/generateImage.functions";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
+import { autofillFieldServer } from "@/lib/autofillField.functions";
 import { streamImage } from "@/lib/streamImage";
 import { useServerFn } from "@tanstack/react-start";
+import JSZip from "jszip";
 
 export const Route = createFileRoute("/_authenticated/workspace")({
   validateSearch: z.object({
@@ -173,7 +175,74 @@ function Workspace() {
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
   const generateImage = useServerFn(generateImageServer);
   const enhancePrompt = useServerFn(enhancePromptServer);
+  const autofillField = useServerFn(autofillFieldServer);
   const [enhancing, setEnhancing] = useState(false);
+  const [autofillingKey, setAutofillingKey] = useState<string | null>(null);
+  const [exportingZip, setExportingZip] = useState(false);
+
+  async function runAutofill(field:
+    | "prompt"
+    | "title"
+    | "subtitle"
+    | "whatsapp"
+    | "facebook_url"
+    | "instagram_url"
+    | "twitter_url"
+    | "social_url"
+    | "body_content") {
+    setAutofillingKey(field);
+    try {
+      const context = [
+        form.prompt && `Prompt: ${form.prompt}`,
+        form.title && `Judul: ${form.title}`,
+        form.subtitle && `Subjudul: ${form.subtitle}`,
+        selectedBrand && `Brand: ${selectedBrand.name}`,
+        selectedBrand?.brand_voice && `Voice: ${selectedBrand.brand_voice}`,
+      ]
+        .filter(Boolean)
+        .join(" | ");
+      const { value } = await autofillField({
+        data: { field, context, currentValue: form[field] || undefined },
+      });
+      setForm((f) => ({ ...f, [field]: value }));
+      toast.success("Terisi otomatis oleh AI ✨");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Autofill gagal");
+    } finally {
+      setAutofillingKey(null);
+    }
+  }
+
+  async function handleExportAll() {
+    const successes = variants.flatMap((v, i) =>
+      v.status === "sukses" ? [{ i, url: v.imageUrl }] : [],
+    );
+    if (successes.length === 0) {
+      toast.error("Belum ada varian sukses untuk diekspor.");
+      return;
+    }
+    setExportingZip(true);
+    try {
+      const zip = new JSZip();
+      for (const s of successes) {
+        // dataURL → binary
+        const res = await fetch(s.url);
+        const blob = await res.blob();
+        zip.file(`cetakide-varian-${s.i + 1}.png`, blob);
+      }
+      const content = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(content);
+      link.download = `cetakide-${Date.now()}.zip`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      toast.success(`${successes.length} varian diekspor sebagai ZIP.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Ekspor gagal");
+    } finally {
+      setExportingZip(false);
+    }
+  }
 
   // Load brand kits from DB
   useEffect(() => {
