@@ -414,10 +414,12 @@ function Bento() {
       const all = Object.values(bentoByNiche);
       return {
         main: all[0].main,
-        small: all
-          .slice(1)
-          .map((n) => n.main)
-          .slice(0, 4),
+        small: [
+          all[1]?.main || "",
+          all[2]?.main || "",
+          all[3]?.main || "",
+          all[0]?.small[0] || "",
+        ].filter(Boolean),
       };
     }
     return bentoByNiche[active];

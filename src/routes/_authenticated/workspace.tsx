@@ -84,7 +84,7 @@ function Workspace() {
   const { user, refresh } = useAppUser();
   const [platform, setPlatform] = useState<keyof typeof PLATFORMS>("instagram");
   const [ratio, setRatio] = useState("1:1");
-  const [generateCount, setGenerateCount] = useState(1);
+  const [generateCount, setGenerateCount] = useState(5);
   const [selectedPreset, setSelectedPreset] = useState<string>(search.preset || "");
   const [selectedFont, setSelectedFont] = useState("Inter (Default)");
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
@@ -171,6 +171,8 @@ function Workspace() {
 
       if (platform === "instagram" && ratio === "1:1") {
         stockPool = Array.from({ length: 8 }).map((_, i) => `/assets/feed-ig/ig-${i + 1}.png`);
+      } else if (platform === "facebook" && ratio === "1:1") {
+        stockPool = Array.from({ length: 8 }).map((_, i) => `/assets/fb-ads-standart/fb-${i + 1}.png`);
       }
 
       const newResults = [];

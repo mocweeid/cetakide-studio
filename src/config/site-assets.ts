@@ -21,6 +21,7 @@ export const heroMockupCards: string[] = [
   "/assets/story-ig/story-2.png",
   "/assets/feed-ig/ig-3.png",
   "/assets/story-ig/story-4.png",
+  "/assets/fb-ads-standart/fb-1.png",
 ];
 
 export const heroPrompt =
