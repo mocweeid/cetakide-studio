@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { PRESET_THEMES, getThemeStyles, DEFAULT_IMG } from "./preset-theme";
 import { generateImageServer } from "@/lib/generateImage.functions";
+import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
+import { streamImage } from "@/lib/streamImage";
 import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/_authenticated/workspace")({
