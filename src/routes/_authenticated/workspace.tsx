@@ -22,7 +22,8 @@ import {
   CloudUpload,
 } from "lucide-react";
 import { PRESET_THEMES, getThemeStyles, DEFAULT_IMG } from "./preset-theme";
-import { generateWithFailover } from "@/lib/keyRotation";
+import { generateImageServer } from "@/lib/generateImage.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/_authenticated/workspace")({
   validateSearch: z.object({
@@ -117,6 +118,7 @@ function Workspace() {
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<string[]>([]);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
+  const generateImage = useServerFn(generateImageServer);
 
   useEffect(() => {
     setRatio(PLATFORMS[platform].ratios[0].key);
@@ -162,30 +164,23 @@ function Workspace() {
 
       await new Promise((r) => setTimeout(r, 2500));
 
-      let stockPool = [
-        "https://pintardigital.b-cdn.net/Banner/banner-14.webp",
-        "https://pintardigital.b-cdn.net/reel/reel-1.webp",
-        "https://pintardigital.b-cdn.net/Banner/YT/YT-Thumb-5.webp",
-        "https://images.unsplash.com/photo-1559925393-8be0afac473c?q=80&w=600&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=600&auto=format&fit=crop",
-      ];
-
-      if (platform === "instagram" && ratio === "1:1") {
-        stockPool = Array.from({ length: 8 }).map((_, i) => `/assets/feed-ig/ig-${i + 1}.png`);
-      } else if (platform === "facebook" && ratio === "1:1") {
-        stockPool = Array.from({ length: 8 }).map((_, i) => `/assets/fb-ads-standart/fb-${i + 1}.png`);
-      }
+      // Pilih ukuran OpenAI terdekat dari rasio
+      const size =
+        ratio === "9:16" || ratio === "4:5"
+          ? "1024x1536"
+          : ratio === "16:9"
+          ? "1536x1024"
+          : "1024x1024";
 
       const newResults = [];
       let totalFailovers = 0;
       const usedKeys = new Set<string>();
       for (let i = 0; i < generateCount; i++) {
-        const { imageUrl: image_url, usedKey, failovers } = await generateWithFailover(
-          user.userId,
-          stockPool,
-        );
+        const { imageUrl: image_url, usedKeyLabel, failovers } = await generateImage({
+          data: { prompt: form.prompt, size },
+        });
         totalFailovers += failovers;
-        if (usedKey) usedKeys.add(usedKey.label || usedKey.provider);
+        if (usedKeyLabel) usedKeys.add(usedKeyLabel);
         newResults.push(image_url);
 
         await supabase.from("projects").insert({

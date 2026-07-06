@@ -1,5 +1,12 @@
 # DocAPIGuide — Menyambungkan AI untuk Generate Visual
 
+> **Update (default provider): OpenAI aktif untuk semua fitur AI.**
+> Tombol *Cetak Ide Sekarang* sekarang benar-benar memanggil OpenAI
+> (`gpt-image-1` bila Anda pasang API key OpenAI pribadi di menu **Integrations**,
+> atau `openai/gpt-image-2` via Lovable AI Gateway bila belum). Failover antar
+> key OpenAI (402 saldo habis / 429 rate-limit / 401 invalid) berjalan otomatis
+> sesuai prioritas.
+
 Dokumen ini punya **dua bagian**:
 
 1. **Bagian A — Panduan Non-Teknis (via Dashboard)** — Anda tidak perlu ngoding.
