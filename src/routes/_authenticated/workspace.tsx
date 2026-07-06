@@ -1131,47 +1131,70 @@ function Workspace() {
                 </button>
               </div>
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
-              {[
-                { name: "Cetak Ide Official", colors: ["#EAB308", "#0A0F1E", "#FFFFFF"] },
-                { name: "Tech Startup", colors: ["#3B82F6", "#1E293B", "#F8FAFC"] },
-                { name: "Eco Friendly", colors: ["#22C55E", "#14532D", "#F0FDF4"] },
-                { name: "Luxury Brand", colors: ["#D4AF37", "#000000", "#1A1A1A"] },
-              ].map((brand) => {
-                const isSelected = selectedBrand === brand.name;
-                return (
-                  <button
-                    key={brand.name}
-                    onClick={() => {
-                      setSelectedBrand(brand.name);
-                      toast.success(`Brand Kit ${brand.name} dipilih!`);
-                      setBrandModalOpen(false);
-                    }}
-                    className={`rounded-xl border bg-white/5 p-4 text-left transition group flex flex-col justify-between min-h-[100px] relative ${isSelected ? "border-primary ring-2 ring-primary bg-primary/10" : "border-white/10 hover:border-primary/60"}`}
-                  >
-                    {isSelected && (
-                      <div className="absolute top-3 right-3 bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
-                        Terpilih
-                      </div>
-                    )}
-                    <p
-                      className={`text-sm font-semibold mb-3 pr-12 ${isSelected ? "text-primary" : "text-white/90 group-hover:text-primary"}`}
+            {brandKits.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-white/15 p-6 text-center text-sm text-white/60">
+                Belum ada brand kit. Klik <b>+ Tambah Brand Kit Baru</b> untuk mulai menyimpan
+                identitas brand-mu.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <button
+                  onClick={() => {
+                    setSelectedBrandId(null);
+                    toast.success("Brand Kit dinonaktifkan.");
+                    setBrandModalOpen(false);
+                  }}
+                  className={`rounded-xl border p-4 text-left transition ${selectedBrandId === null ? "border-primary ring-2 ring-primary bg-primary/10" : "border-white/10 bg-white/5 hover:border-primary/60"}`}
+                >
+                  <p className="text-sm font-semibold text-white/90">Tanpa Brand Kit</p>
+                  <p className="mt-1 text-xs text-white/50">Generate murni dari prompt</p>
+                </button>
+                {brandKits.map((brand) => {
+                  const isSelected = selectedBrandId === brand.id;
+                  const palette = [
+                    brand.primary_color,
+                    brand.secondary_color,
+                    brand.accent_color,
+                    brand.background_color,
+                    brand.text_color,
+                  ].filter(Boolean) as string[];
+                  return (
+                    <button
+                      key={brand.id}
+                      onClick={() => {
+                        setSelectedBrandId(brand.id);
+                        toast.success(`Brand Kit ${brand.name} dipilih!`);
+                        setBrandModalOpen(false);
+                      }}
+                      className={`rounded-xl border p-4 text-left transition group flex flex-col justify-between min-h-[100px] relative ${isSelected ? "border-primary ring-2 ring-primary bg-primary/10" : "border-white/10 bg-white/5 hover:border-primary/60"}`}
                     >
-                      {brand.name}
-                    </p>
-                    <div className="flex gap-2">
-                      {brand.colors.map((color) => (
-                        <div
-                          key={color}
-                          className="h-6 w-6 rounded-full border border-white/20 shadow-sm"
-                          style={{ backgroundColor: color }}
-                        ></div>
-                      ))}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                      {isSelected && (
+                        <div className="absolute top-3 right-3 bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                          Terpilih
+                        </div>
+                      )}
+                      <p className={`text-sm font-semibold mb-3 pr-12 ${isSelected ? "text-primary" : "text-white/90 group-hover:text-primary"}`}>
+                        {brand.name}
+                      </p>
+                      <div className="flex gap-2">
+                        {palette.map((color) => (
+                          <div
+                            key={color}
+                            className="h-6 w-6 rounded-full border border-white/20 shadow-sm"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                      {brand.brand_voice && (
+                        <p className="mt-2 text-[10px] text-white/50 italic">
+                          Voice: {brand.brand_voice}
+                        </p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
