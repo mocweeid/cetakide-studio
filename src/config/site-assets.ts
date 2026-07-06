@@ -6,7 +6,6 @@
 
 export const BRAND = {
   name: "Cetak Ide",
-  footerBrand: "Garata",
   whatsapp: "https://wa.me/6288975958005",
   gold: "#EAB308",
   goldGradient: "linear-gradient(135deg, #EAB308, #CA8A04, #FACC15)",
@@ -115,21 +114,21 @@ export const bentoByNiche: Record<Exclude<Niche, "Semua">, { main: string; small
     ],
   },
   Otomotif: {
-    main: "https://images.unsplash.com/photo-1503376710777-62b1a13fa09f?q=80&w=800&h=1000&auto=format&fit=crop",
+    main: "https://images.unsplash.com/photo-1503376710777-62b1a13fa09f?q=55&w=600&h=800&auto=format&fit=crop",
     small: [
-      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=400&h=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1583121274602-3e2820c69888?q=80&w=400&h=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=400&h=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1553440569-bcc63803a83d?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=55&w=300&h=300&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1583121274602-3e2820c69888?q=55&w=300&h=300&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=55&w=300&h=300&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1553440569-bcc63803a83d?q=55&w=300&h=300&auto=format&fit=crop",
     ],
   },
   Properti: {
-    main: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800&h=1000&auto=format&fit=crop",
+    main: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=55&w=600&h=800&auto=format&fit=crop",
     small: [
-      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=400&h=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?q=80&w=400&h=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=400&h=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=400&h=400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=55&w=300&h=300&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?q=55&w=300&h=300&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=55&w=300&h=300&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=55&w=300&h=300&auto=format&fit=crop",
     ],
   },
 };

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { Sparkles, Menu, X, ChevronDown, Globe } from "lucide-react";
+import { Menu, X, ChevronDown, Globe } from "lucide-react";
 import { BRAND } from "@/config/site-assets";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
@@ -63,14 +63,18 @@ export function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex items-center justify-between py-4">
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2 font-display text-lg font-bold text-white">
+          <a href="#" className="flex items-center gap-2">
+            <img
+              src="/logo/ChatGPT Image 6 Jul 2026, 13.04.45.png"
+              alt={BRAND.name}
+              className="h-14 w-auto object-contain"
+            />
             <span
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-black"
-              style={{ background: BRAND.gold }}
+              className="font-display text-lg font-bold tracking-tight"
+              style={{ color: BRAND.gold }}
             >
-              <Sparkles className="h-4 w-4" />
+              {BRAND.name}
             </span>
-            <span>{BRAND.name}</span>
           </a>
 
           {/* Desktop Menu */}
@@ -168,19 +172,19 @@ export function Navbar() {
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="border-t border-white/10 py-4 md:hidden">
-            <div className="flex flex-col gap-4">
+          <div className="border-t border-white/20 bg-[#0a0f1e]/95 backdrop-blur-xl py-5 md:hidden">
+            <div className="flex flex-col gap-5 px-2">
               {navLinks.map((link) =>
                 link.children ? (
                   <div key={link.label} className="flex flex-col gap-2">
-                    <span className="text-sm font-semibold text-white/90">{link.label}</span>
-                    <div className="ml-4 flex flex-col gap-2 border-l border-white/10 pl-4">
+                    <span className="text-xs font-bold uppercase tracking-widest text-white/50 px-1">{link.label}</span>
+                    <div className="flex flex-col gap-1 rounded-xl bg-white/5 p-2">
                       {link.children.map((child) => (
                         <a
                           key={child.label}
                           href={child.to}
                           onClick={closeMenu}
-                          className="text-sm text-white/60 hover:text-white transition"
+                          className="rounded-lg px-3 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
                         >
                           {child.label}
                         </a>
@@ -191,11 +195,10 @@ export function Navbar() {
                   <a
                     key={link.to}
                     href={link.to}
-                    className="group relative text-sm text-white/70 transition-all duration-300 hover:text-white"
+                    className="rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold text-white/90 transition hover:bg-white/10 hover:text-white"
                     onClick={closeMenu}
                   >
                     {link.label}
-                    <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transition-all duration-300 group-hover:w-full" />
                   </a>
                 ),
               )}

@@ -99,7 +99,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/logo/ChatGPT Image 6 Jul 2026, 13.04.45.png", type: "image/png" },
+      { rel: "shortcut icon", href: "/logo/ChatGPT Image 6 Jul 2026, 13.04.45.png", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/logo/ChatGPT Image 6 Jul 2026, 13.04.45.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

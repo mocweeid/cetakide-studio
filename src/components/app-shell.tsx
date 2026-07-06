@@ -87,7 +87,7 @@ export function AppShell({
         <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-secondary/10 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto flex max-w-[1500px] gap-4 p-4">
+      <div className="relative mx-auto flex max-w-[1500px] gap-3 p-2 sm:gap-4 sm:p-4">
         <div className="hidden md:block md:w-64 shrink-0">
           <div className="sticky top-4 h-[calc(100vh-2rem)]">
             <DashboardSidebar isDeveloper={!!user?.isDeveloper} />
@@ -97,10 +97,10 @@ export function AppShell({
         {sidebarOpen && (
           <div className="fixed inset-0 z-50 flex md:hidden">
             <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
               onClick={() => setSidebarOpen(false)}
             />
-            <div className="relative z-10 h-full w-72 p-3">
+            <div className="relative z-10 h-full w-[280px] p-3 animate-in slide-in-from-left duration-300">
               <DashboardSidebar
                 isDeveloper={!!user?.isDeveloper}
                 onNavigate={() => setSidebarOpen(false)}
@@ -132,7 +132,7 @@ export function AppShell({
               {right}
               <Link
                 to="/top-up"
-                className="hidden items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 sm:inline-flex"
+                className="flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 sm:inline-flex"
               >
                 <Wallet className="h-3.5 w-3.5" />
                 Rp {(user?.saldo ?? 0).toLocaleString("id-ID")}

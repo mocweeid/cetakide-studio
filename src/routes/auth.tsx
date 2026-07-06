@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Sparkles, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Loader2, Eye, EyeOff, Sparkles } from "lucide-react";
 import { Instagram, Facebook, Youtube, Twitter, Send } from "lucide-react";
 import { BRAND, footerColumns } from "@/config/site-assets";
 
@@ -100,8 +100,12 @@ function AuthPage() {
         </Link>
         <div className="mx-auto w-full max-w-sm">
           <div className="mb-8 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white/10 mb-4 text-white">
-              <Sparkles className="h-6 w-6" />
+            <div className="mx-auto mb-4 flex items-center justify-center">
+              <img
+                src="/sub-logo/ChatGPT Image 6 Jul 2026, 12.36.50.png"
+                alt="Cetak Ide"
+                className="h-14 w-auto object-contain"
+              />
             </div>
             <h2 className="font-display text-2xl font-semibold tracking-tight text-white">
               {mode === "login" ? "Sign in to Cetak Ide" : "Create your account"}

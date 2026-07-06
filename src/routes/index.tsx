@@ -138,6 +138,14 @@ function HeroMockup() {
   const [runKey, setRunKey] = useState(0);
   const { out: typed, done: typedDone } = useTypewriter(t(heroPrompt), 32, 700, runKey);
   const [phase, setPhase] = useState<"typing" | "generating" | "done">("typing");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     if (!typedDone) return;
@@ -168,19 +176,29 @@ function HeroMockup() {
     handleRegenerate();
   };
 
-  const scatterPositions = [
-    { x: -200, y: -20, r: -15, z: 1 },
-    { x: -100, y: 30, r: -5, z: 2 },
-    { x: 0, y: -10, r: 0, z: 4 },
-    { x: 100, y: -30, r: 5, z: 3 },
-    { x: 200, y: 20, r: 15, z: 2 },
-  ];
+  // Mobile: 3 cards with tight spread — Desktop: 5 cards with full spread
+  const scatterPositions = isMobile
+    ? [
+        { x: -88, y: 10, r: -8, z: 1 },
+        { x: 0,   y: -12, r: 0, z: 4 },
+        { x: 88,  y: 10, r: 8,  z: 2 },
+      ]
+    : [
+        { x: -200, y: -20, r: -15, z: 1 },
+        { x: -100, y: 30,  r: -5,  z: 2 },
+        { x: 0,    y: -10, r: 0,   z: 4 },
+        { x: 100,  y: -30, r: 5,   z: 3 },
+        { x: 200,  y: 20,  r: 15,  z: 2 },
+      ];
 
+  // Pick which images to show: 3 center images on mobile, all 5 on desktop
+  const visibleImages = isMobile
+    ? FORMAT_CONFIG[activeFormat].images.slice(1, 4)
+    : FORMAT_CONFIG[activeFormat].images;
 
   return (
     <div
-      id="ai-visual-builder"
-      className="relative mx-auto mt-14 w-full max-w-5xl [perspective:1600px] scroll-mt-24"
+      className="relative mx-auto w-full max-w-5xl [perspective:1600px]"
     >
       <div className="rounded-2xl border border-white/10 bg-[#0a0a0a]/90 shadow-[0_30px_80px_-30px_rgba(234,179,8,0.35)] backdrop-blur">
         {/* browser bar */}
@@ -263,7 +281,7 @@ function HeroMockup() {
         </div>
 
         {/* canvas */}
-        <div className="relative h-[320px] overflow-hidden sm:h-[400px] md:h-[440px]">
+        <div className="relative h-[300px] overflow-hidden sm:h-[400px] md:h-[440px]">
           {/* soft grid backdrop */}
           <div
             className="absolute inset-0 opacity-[0.15]"
@@ -289,7 +307,7 @@ function HeroMockup() {
               >
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="h-8 w-8 animate-spin" style={{ color: BRAND.gold }} />
-                  <p className="text-sm text-white/70">{t("Menyusun 5 visual...")}</p>
+                  <p className="text-sm text-white/70">{t(isMobile ? "Menyusun 3 visual..." : "Menyusun 5 visual...")}</p>
                 </div>
               </motion.div>
             )}
@@ -299,9 +317,12 @@ function HeroMockup() {
           <div className="absolute inset-0 flex items-center justify-center [transform-style:preserve-3d]">
             <AnimatePresence>
               {phase === "done" &&
-                FORMAT_CONFIG[activeFormat].images.map((src, i) => {
+                visibleImages.map((src, i) => {
                   const p = scatterPositions[i];
                   const f = FORMAT_CONFIG[activeFormat];
+                  const cardWidth = isMobile
+                    ? `clamp(90px, 28vw, 130px)`
+                    : `clamp(120px, 25vw, ${f.width}px)`;
                   return (
                     <motion.div
                       key={`${activeFormat}-${runKey}-${i}`}
@@ -309,7 +330,7 @@ function HeroMockup() {
                       animate={{ opacity: 1, scale: 1, x: p.x, y: p.y, rotate: p.r }}
                       exit={{ opacity: 0, scale: 0.6 }}
                       transition={{ delay: i * 0.12, type: "spring", stiffness: 140, damping: 16 }}
-                      style={{ zIndex: p.z, aspectRatio: f.aspect, width: `clamp(120px, 25vw, ${f.width}px)` }}
+                      style={{ zIndex: p.z, aspectRatio: f.aspect, width: cardWidth }}
                       className="absolute overflow-hidden rounded-xl border border-white/15 bg-black shadow-2xl"
                     >
                       <img
@@ -504,19 +525,34 @@ function Index() {
       <Navbar />
       {/* HERO */}
       <section id="hero" className="relative overflow-hidden pt-28 pb-20 sm:pt-36 sm:pb-28">
-        {/* Background image */}
-        <div className="absolute inset-0">
+        {/* Background image — completely frozen, isolated from all child animations */}
+        <div
+          className="absolute inset-0"
+          style={{
+            contain: "strict",
+            isolation: "isolate",
+            transform: "translateZ(0)",
+            willChange: "auto",
+            backfaceVisibility: "hidden",
+          }}
+        >
           <img
-            src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop"
+            src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=50&w=1200&auto=format&fit=crop"
             alt="Background"
             className="h-full w-full object-cover"
+            style={{ transform: "translateZ(0)", willChange: "auto" }}
+            fetchPriority="high"
+            decoding="async"
           />
           {/* Dark overlay for text readability */}
           <div className="absolute inset-0 bg-gradient-to-b from-[#0A0F1E]/95 via-[#0A0F1E]/85 to-[#0A0F1E]/95" />
         </div>
 
-        {/* Background layers */}
-        <div className="pointer-events-none absolute inset-0">
+        {/* Background layers — static decorative glows, also frozen */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ contain: "paint", transform: "translateZ(0)" }}
+        >
           {/* Gradient glow */}
           <div
             className="absolute left-1/2 top-24 h-[520px] w-[520px] -translate-x-1/2 rounded-full blur-[160px]"
@@ -564,11 +600,15 @@ function Index() {
           </h1>
 
           {/* Mini Instagram Feed Carousel — seamless infinite */}
-          <div className="mt-8 flex w-full overflow-hidden py-4 gap-3">
+          <div
+            className="mt-8 flex w-full overflow-hidden py-4 gap-3"
+            style={{ isolation: "isolate", contain: "layout style" }}
+          >
             {[0, 1].map((set) => (
               <div
                 key={set}
                 className="flex shrink-0 animate-marquee gap-3 will-change-transform"
+                style={{ backfaceVisibility: "hidden", transform: "translateZ(0)" }}
                 aria-hidden={set === 1}
               >
                 {Array.from({ length: 32 }).map((_, i) => (
@@ -634,7 +674,16 @@ function Index() {
           <p className="mx-auto mt-5 max-w-2xl text-base text-white/70 sm:text-lg">
             {t("hero.subtitle")}
           </p>
+        </div>
+      </section>
 
+      {/* AI VISUAL BUILDER MOCKUP — separate section, fully isolated from hero background */}
+      <section
+        id="ai-visual-builder"
+        className="relative py-10 sm:py-14"
+        style={{ background: BRAND.bg }}
+      >
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <HeroMockup />
         </div>
       </section>
@@ -1051,16 +1100,12 @@ function Index() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="grid gap-10 pb-12 md:grid-cols-2 lg:grid-cols-5">
             <div className="lg:col-span-2">
-              <div className="flex items-center gap-2">
-                <div
-                  className="grid h-10 w-10 place-items-center rounded-xl text-lg font-black"
-                  style={{ background: BRAND.gold, color: "#000" }}
-                >
-                  G
-                </div>
-                <span className="font-display text-2xl font-extrabold tracking-tight">
-                  {BRAND.footerBrand}
-                </span>
+              <div className="flex items-center">
+                <img
+                  src="/sub-logo/ChatGPT Image 6 Jul 2026, 12.36.50.png"
+                  alt={BRAND.name}
+                  className="h-12 w-auto object-contain"
+                />
               </div>
               <p className="mt-4 max-w-sm text-sm text-white/60">
                 {t("Platform AI visual builder untuk brand, marketer, dan kreator. Cetak visual iklan dalam hitungan detik — tanpa desainer, tanpa langganan.")}
@@ -1102,7 +1147,7 @@ function Index() {
 
           <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 py-6 sm:flex-row">
             <p className="text-xs text-white/50">
-              © {new Date().getFullYear()} {BRAND.footerBrand}. All rights reserved.
+              © {new Date().getFullYear()} {BRAND.name}. All rights reserved.
             </p>
             <p className="text-xs text-white/50">
               {t("Butuh bantuan?")}{" "}

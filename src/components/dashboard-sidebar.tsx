@@ -10,7 +10,6 @@ import {
   FileCode,
   Settings,
   LogOut,
-  Sparkles,
   ShieldCheck,
   X,
   Users,
@@ -165,11 +164,12 @@ export function DashboardSidebar({
   return (
     <aside className="flex h-full w-full flex-col overflow-y-auto rounded-2xl border border-white/15 bg-white/[0.04] p-4 backdrop-blur-xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]">
       <div className="mb-6 flex items-center justify-between px-2">
-        <Link to="/" className="flex items-center gap-2 font-display font-bold">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg gradient-gold text-black">
-            <Sparkles className="h-4 w-4" />
-          </span>
-          Cetak<span className="text-gradient-gold">Ide</span>
+        <Link to="/" className="flex items-center gap-2">
+          <img
+            src="/logo/ChatGPT Image 6 Jul 2026, 13.04.45.png"
+            alt="Cetak Ide"
+            className="h-12 w-auto object-contain"
+          />
         </Link>
         {showClose && (
           <button
