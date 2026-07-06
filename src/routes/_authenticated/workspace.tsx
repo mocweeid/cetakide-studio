@@ -717,8 +717,9 @@ function Workspace() {
                   onChange={updateField("prompt")}
                   rows={4}
                   placeholder="Contoh: Banner promo kopi susu, warna coklat gold"
-                  className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-2 text-sm outline-none focus:border-primary/60"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-9 text-sm outline-none focus:border-primary/60"
                 />
+                <AiFillBtn onClick={() => runAutofill("prompt")} loading={autofillingKey === "prompt"} />
                 <button
                   type="button"
                   onClick={handleEnhance}
