@@ -117,6 +117,11 @@ function Workspace() {
 
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<string[]>([]);
+  type Variant =
+    | { status: "proses" }
+    | { status: "sukses"; imageUrl: string }
+    | { status: "gagal"; error: string };
+  const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
   const generateImage = useServerFn(generateImageServer);
 
@@ -149,6 +154,7 @@ function Workspace() {
     if (!user) return;
     setGenerating(true);
     setResults([]);
+    setVariants(Array.from({ length: generateCount }, () => ({ status: "proses" as const })));
     try {
       // Potong saldo sesuai jumlah generate jika di backend diimplementasi
       for (let i = 0; i < generateCount; i++) {
@@ -209,17 +215,27 @@ function Workspace() {
           totalFailovers += failovers;
           if (usedKeyLabel) usedKeys.add(usedKeyLabel);
           newResults.push(image_url);
+          setVariants((prev) => {
+            const next = [...prev];
+            next[i] = { status: "sukses", imageUrl: image_url };
+            return next;
+          });
           await supabase
             .from("projects")
             .update({ image_url, status: "sukses" })
             .eq("id", projectId);
         } catch (genErr) {
           failedCount++;
+          const msg = genErr instanceof Error ? genErr.message : "Generate gagal";
+          setVariants((prev) => {
+            const next = [...prev];
+            next[i] = { status: "gagal", error: msg };
+            return next;
+          });
           await supabase
             .from("projects")
             .update({ status: "gagal" })
             .eq("id", projectId);
-          const msg = genErr instanceof Error ? genErr.message : "Generate gagal";
           toast.error(`Variasi ${i + 1} gagal`, { description: msg });
         }
         await refresh();
