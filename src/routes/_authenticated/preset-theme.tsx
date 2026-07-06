@@ -1,12 +1,80 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell, useAppUser } from "@/components/app-shell";
-import { useState } from "react";
 import { toast } from "sonner";
-import { LayoutTemplate, X } from "lucide-react";
 
 export const PRESET_THEMES = ["Glassmorphism", "Neumorphism (Soft UI)", "Brutalism", "Minimalism"];
 
 export const DEFAULT_IMG = "/assets/preset-default.jpg";
+
+/**
+ * Skeleton prototype mini-preview per preset — memberi feel visual
+ * masing-masing gaya (Glassmorphism, Neumorphism, Brutalism, Minimalism)
+ * tanpa perlu load gambar sungguhan.
+ */
+function ThemeSkeletonPreview({ theme }: { theme: string }) {
+  const t = theme.toLowerCase();
+
+  if (t.includes("glass")) {
+    return (
+      <div className="relative h-40 w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-fuchsia-500/40 via-indigo-500/30 to-cyan-400/30">
+        <div className="absolute -left-6 top-6 h-24 w-24 rounded-full bg-pink-400/60 blur-2xl" />
+        <div className="absolute right-4 bottom-4 h-20 w-20 rounded-full bg-cyan-300/60 blur-2xl" />
+        <div className="absolute inset-3 rounded-xl border border-white/40 bg-white/10 backdrop-blur-md p-3 flex flex-col gap-2">
+          <div className="skeleton-shimmer h-2 w-1/2 rounded-full" />
+          <div className="skeleton-shimmer h-2 w-3/4 rounded-full" />
+          <div className="mt-auto flex gap-2">
+            <div className="skeleton-shimmer h-6 w-16 rounded-full" />
+            <div className="skeleton-shimmer h-6 w-6 rounded-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (t.includes("neu") || t.includes("soft")) {
+    return (
+      <div className="relative h-40 w-full overflow-hidden rounded-t-2xl bg-[#e0e5ec] p-4">
+        <div className="h-full w-full rounded-2xl bg-[#e0e5ec] shadow-[8px_8px_16px_#a3b1c6,-8px_-8px_16px_#ffffff] p-3 flex flex-col gap-2">
+          <div className="h-2 w-1/2 rounded-full bg-gray-300/60" />
+          <div className="h-2 w-3/4 rounded-full bg-gray-300/60" />
+          <div className="mt-auto flex gap-2">
+            <div className="h-6 w-16 rounded-lg bg-[#e0e5ec] shadow-[3px_3px_6px_#a3b1c6,-3px_-3px_6px_#ffffff]" />
+            <div className="h-6 w-6 rounded-lg bg-[#e0e5ec] shadow-[3px_3px_6px_#a3b1c6,-3px_-3px_6px_#ffffff]" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (t.includes("brutal")) {
+    return (
+      <div className="relative h-40 w-full overflow-hidden rounded-t-none border-b-4 border-black bg-yellow-400 p-4">
+        <div className="h-full w-full border-4 border-black bg-white p-3 shadow-[6px_6px_0px_#000] flex flex-col gap-2">
+          <div className="h-3 w-2/3 bg-black" />
+          <div className="h-2 w-full bg-black/70" />
+          <div className="h-2 w-4/5 bg-black/70" />
+          <div className="mt-auto flex gap-2">
+            <div className="h-6 w-16 border-2 border-black bg-black" />
+            <div className="h-6 w-6 border-2 border-black bg-red-500" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  // Minimalism (default)
+  return (
+    <div className="relative h-40 w-full overflow-hidden rounded-t-sm bg-white p-6">
+      <div className="flex h-full w-full flex-col gap-3">
+        <div className="h-1 w-8 bg-black" />
+        <div className="h-2 w-1/2 bg-gray-200" />
+        <div className="h-2 w-3/4 bg-gray-200" />
+        <div className="h-2 w-1/3 bg-gray-200" />
+        <div className="mt-auto flex items-center gap-3">
+          <div className="h-6 w-20 bg-black" />
+          <div className="h-[1px] flex-1 bg-gray-200" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export const getThemeStyles = (theme: string) => {
   const t = theme.toLowerCase();
@@ -99,6 +167,7 @@ function PresetTheme() {
       to: "/workspace",
       search: { preset: theme },
     });
+    toast.success(`Preset ${theme} dipilih.`);
   };
 
   return (
@@ -116,11 +185,7 @@ function PresetTheme() {
               onClick={() => handleSelect(theme)}
               className={`group relative flex flex-col overflow-hidden text-left transition-transform hover:scale-[1.02] active:scale-95 ${styles.wrapper}`}
             >
-              <img
-                src={DEFAULT_IMG}
-                alt={theme}
-                className={`h-40 w-full object-cover ${styles.image}`}
-              />
+              <ThemeSkeletonPreview theme={theme} />
               <div className="flex flex-col p-4 flex-1">
                 <h2 className={`text-base font-bold flex-1 ${styles.title}`}>{theme}</h2>
                 <div className="mt-4 flex items-center justify-between">
