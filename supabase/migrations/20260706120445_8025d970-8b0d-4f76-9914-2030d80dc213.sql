@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "ai_providers owner all" ON public.ai_providers;
+CREATE POLICY "ai_providers developer all" ON public.ai_providers FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'developer')) WITH CHECK (public.has_role(auth.uid(), 'developer'));
