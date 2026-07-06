@@ -117,6 +117,11 @@ function Workspace() {
 
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<string[]>([]);
+  type Variant =
+    | { status: "proses" }
+    | { status: "sukses"; imageUrl: string }
+    | { status: "gagal"; error: string };
+  const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
   const generateImage = useServerFn(generateImageServer);
 
@@ -149,6 +154,7 @@ function Workspace() {
     if (!user) return;
     setGenerating(true);
     setResults([]);
+    setVariants(Array.from({ length: generateCount }, () => ({ status: "proses" as const })));
     try {
       // Potong saldo sesuai jumlah generate jika di backend diimplementasi
       for (let i = 0; i < generateCount; i++) {
@@ -209,17 +215,27 @@ function Workspace() {
           totalFailovers += failovers;
           if (usedKeyLabel) usedKeys.add(usedKeyLabel);
           newResults.push(image_url);
+          setVariants((prev) => {
+            const next = [...prev];
+            next[i] = { status: "sukses", imageUrl: image_url };
+            return next;
+          });
           await supabase
             .from("projects")
             .update({ image_url, status: "sukses" })
             .eq("id", projectId);
         } catch (genErr) {
           failedCount++;
+          const msg = genErr instanceof Error ? genErr.message : "Generate gagal";
+          setVariants((prev) => {
+            const next = [...prev];
+            next[i] = { status: "gagal", error: msg };
+            return next;
+          });
           await supabase
             .from("projects")
             .update({ status: "gagal" })
             .eq("id", projectId);
-          const msg = genErr instanceof Error ? genErr.message : "Generate gagal";
           toast.error(`Variasi ${i + 1} gagal`, { description: msg });
         }
         await refresh();
@@ -327,63 +343,96 @@ function Workspace() {
 
           {/* Results Grid */}
           <div className="flex-1 flex items-center justify-center min-h-[400px]">
-            {results.length > 0 ? (
+            {variants.length > 0 ? (
               <div
-                className={`grid gap-4 w-full ${results.length === 1 ? "grid-cols-1 max-w-xl mx-auto" : results.length === 2 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}
+                className={`grid gap-4 w-full ${variants.length === 1 ? "grid-cols-1 max-w-xl mx-auto" : "grid-cols-1 sm:grid-cols-2"}`}
               >
-                {results.map((res, i) => (
-                  <div key={i} className="flex flex-col gap-3">
-                    <div
-                      className="relative w-full overflow-hidden rounded-xl border border-white/10 bg-black/40 group"
-                      style={canvasStyle}
-                    >
-                      <img
-                        src={res}
-                        alt={`Hasil ${i + 1}`}
-                        className="h-full w-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button
-                          onClick={() => setEditImageIndex(i)}
-                          className="bg-primary text-black font-semibold rounded-full px-4 py-2 text-sm flex items-center gap-2"
-                        >
-                          <Settings2 className="h-4 w-4" /> Edit / Regenerate
-                        </button>
+                {variants.map((v, i) => {
+                  const successIdx =
+                    v.status === "sukses"
+                      ? variants.slice(0, i + 1).filter((x) => x.status === "sukses").length - 1
+                      : -1;
+                  return (
+                    <div key={i} className="flex flex-col gap-3">
+                      <div
+                        className="relative w-full overflow-hidden rounded-xl border border-white/10 bg-black/40 group"
+                        style={canvasStyle}
+                      >
+                        {v.status === "proses" && (
+                          <>
+                            {/* Skeleton shimmer */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] via-white/[0.08] to-white/[0.03] animate-pulse" />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
+                              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                              <p className="text-xs text-white/70">Variasi {i + 1} · sedang diproses…</p>
+                              <span className="rounded-full bg-yellow-500/20 border border-yellow-500/40 px-2 py-0.5 text-[10px] font-semibold text-yellow-300">
+                                proses
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        {v.status === "sukses" && (
+                          <>
+                            <img
+                              src={v.imageUrl}
+                              alt={`Hasil ${i + 1}`}
+                              className="h-full w-full object-cover"
+                            />
+                            <div className="absolute top-2 left-2">
+                              <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                                sukses
+                              </span>
+                            </div>
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <button
+                                onClick={() => setEditImageIndex(successIdx)}
+                                className="bg-primary text-black font-semibold rounded-full px-4 py-2 text-sm flex items-center gap-2"
+                              >
+                                <Settings2 className="h-4 w-4" /> Edit / Regenerate
+                              </button>
+                            </div>
+                          </>
+                        )}
+                        {v.status === "gagal" && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 bg-red-950/30">
+                            <span className="rounded-full bg-red-500/20 border border-red-500/40 px-2 py-0.5 text-[10px] font-semibold text-red-300">
+                              gagal
+                            </span>
+                            <p className="text-xs text-red-200/80 text-center line-clamp-3">
+                              {v.error}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    </div>
 
-                    <div className="flex flex-wrap gap-2 justify-center">
-                      <button
-                        onClick={() => handleDownload(res)}
-                        className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20"
-                      >
-                        <Download className="h-3.5 w-3.5" /> Download
-                      </button>
-                      <button
-                        onClick={() => handleAutoUpload(res)}
-                        className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold hover:bg-white/10"
-                      >
-                        <CloudUpload className="h-3.5 w-3.5" /> Auto Upload
-                      </button>
+                      {v.status === "sukses" && (
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          <button
+                            onClick={() => handleDownload(v.imageUrl)}
+                            className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20"
+                          >
+                            <Download className="h-3.5 w-3.5" /> Download
+                          </button>
+                          <button
+                            onClick={() => handleAutoUpload(v.imageUrl)}
+                            className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold hover:bg-white/10"
+                          >
+                            <CloudUpload className="h-3.5 w-3.5" /> Auto Upload
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div
                 className="relative w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-black/40 mx-auto"
                 style={canvasStyle}
               >
-                {generating ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/60 backdrop-blur-md">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="text-sm">Mencetak {generateCount} ide...</p>
-                  </div>
-                ) : (
                   <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
                     <Sparkles className="mr-2 h-4 w-4" /> Canvas siap dicetak
                   </div>
-                )}
               </div>
             )}
           </div>
