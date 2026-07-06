@@ -121,11 +121,33 @@ function Workspace() {
   const [results, setResults] = useState<string[]>([]);
   type Variant =
     | { status: "proses" }
+    | { status: "streaming"; imageUrl: string }
     | { status: "sukses"; imageUrl: string }
     | { status: "gagal"; error: string };
   const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
   const generateImage = useServerFn(generateImageServer);
+  const enhancePrompt = useServerFn(enhancePromptServer);
+  const [enhancing, setEnhancing] = useState(false);
+
+  async function handleEnhance() {
+    if (!form.prompt.trim()) {
+      toast.error("Isi prompt dulu untuk disempurnakan.");
+      return;
+    }
+    setEnhancing(true);
+    try {
+      const { enhanced } = await enhancePrompt({
+        data: { prompt: form.prompt, platform, ratio },
+      });
+      setForm((f) => ({ ...f, prompt: enhanced }));
+      toast.success("Prompt disempurnakan oleh AI.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyempurnakan prompt");
+    } finally {
+      setEnhancing(false);
+    }
+  }
 
   useEffect(() => {
     setRatio(PLATFORMS[platform].ratios[0].key);
