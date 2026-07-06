@@ -84,7 +84,7 @@ function AssetsPage() {
     {
       id: "m2",
       kebutuhan: "Story flash sale fashion",
-      image_url: "/assets/kategori/fashion/fashion-8.png",
+      image_url: "/assets/kategori/fashion/fashion-8.webp",
       platform: "Instagram",
       aspect_ratio: "9:16",
       status: "sukses",
@@ -120,7 +120,7 @@ function AssetsPage() {
     {
       id: "m6",
       kebutuhan: "Konten feed kuliner",
-      image_url: "/assets/kategori/kuliner/kuliner-1.png",
+      image_url: "/assets/kategori/kuliner/kuliner-1.webp",
       platform: "Instagram",
       aspect_ratio: "4:5",
       status: "sukses",

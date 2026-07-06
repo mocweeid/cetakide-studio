@@ -48,7 +48,7 @@ const STOCK_IMAGES = [
     author: "User",
     w: 300,
     h: 400,
-    url: "/assets/kategori/fashion/fashion-6.png",
+    url: "/assets/kategori/fashion/fashion-6.webp",
   },
   {
     id: "4",
@@ -57,7 +57,7 @@ const STOCK_IMAGES = [
     author: "User",
     w: 400,
     h: 400,
-    url: "/assets/kategori/kuliner/kuliner-2.png",
+    url: "/assets/kategori/kuliner/kuliner-2.webp",
   },
   {
     id: "5",
@@ -102,7 +102,7 @@ const STOCK_IMAGES = [
     author: "User",
     w: 400,
     h: 400,
-    url: "/assets/kategori/fashion/fashion-7.png",
+    url: "/assets/kategori/fashion/fashion-7.webp",
   },
   {
     id: "10",
@@ -120,7 +120,7 @@ const STOCK_IMAGES = [
     author: "User",
     w: 400,
     h: 400,
-    url: "/assets/kategori/kuliner/kuliner-3.png",
+    url: "/assets/kategori/kuliner/kuliner-3.webp",
   },
   {
     id: "12",

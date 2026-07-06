@@ -46,7 +46,7 @@ const MOCK_PROJECTS: Project[] = [
   {
     id: "m2",
     kebutuhan: "Story flash sale fashion wanita summer collection",
-    image_url: "/assets/kategori/fashion/fashion-8.png",
+    image_url: "/assets/kategori/fashion/fashion-8.webp",
     platform: "Instagram",
     aspect_ratio: "9:16",
     status: "sukses",
@@ -82,7 +82,7 @@ const MOCK_PROJECTS: Project[] = [
   {
     id: "m6",
     kebutuhan: "Konten feed kuliner artisanal coffee shop",
-    image_url: "/assets/kategori/kuliner/kuliner-1.png",
+    image_url: "/assets/kategori/kuliner/kuliner-1.webp",
     platform: "Instagram",
     aspect_ratio: "4:5",
     status: "sukses",
