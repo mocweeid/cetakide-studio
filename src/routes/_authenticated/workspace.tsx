@@ -192,8 +192,6 @@ function Workspace() {
         }
       }
 
-      await new Promise((r) => setTimeout(r, 2500));
-
       // Pilih ukuran OpenAI terdekat dari rasio
       const size =
         ratio === "9:16" || ratio === "4:5"
@@ -233,20 +231,23 @@ function Workspace() {
 
         // 2) Jalankan generate; update ke sukses / gagal sesuai hasil
         try {
-          const { imageUrl: image_url, usedKeyLabel, failovers } = await generateImage({
-            data: { prompt: form.prompt, size },
+          let finalUrl = "";
+          await streamImage(form.prompt, size, (dataUrl, isFinal) => {
+            setVariants((prev) => {
+              const next = [...prev];
+              next[i] = isFinal
+                ? { status: "sukses", imageUrl: dataUrl }
+                : { status: "streaming", imageUrl: dataUrl };
+              return next;
+            });
+            if (isFinal) finalUrl = dataUrl;
           });
-          totalFailovers += failovers;
-          if (usedKeyLabel) usedKeys.add(usedKeyLabel);
-          newResults.push(image_url);
-          setVariants((prev) => {
-            const next = [...prev];
-            next[i] = { status: "sukses", imageUrl: image_url };
-            return next;
-          });
+          if (!finalUrl) throw new Error("Tidak ada gambar final.");
+          usedKeys.add("OpenAI gpt-image-2");
+          newResults.push(finalUrl);
           await supabase
             .from("projects")
-            .update({ image_url, status: "sukses" })
+            .update({ image_url: finalUrl, status: "sukses" })
             .eq("id", projectId);
         } catch (genErr) {
           failedCount++;
