@@ -14,7 +14,14 @@ import {
   XCircle,
   Eye,
   EyeOff,
+  ArrowUp,
+  ArrowDown,
+  Zap,
+  RefreshCcw,
+  AlertTriangle,
+  Clock,
 } from "lucide-react";
+import { resetKey, markKeyResult, type ProviderKey } from "@/lib/keyRotation";
 
 export const Route = createFileRoute("/_authenticated/integrations")({
   head: () => ({
@@ -23,15 +30,7 @@ export const Route = createFileRoute("/_authenticated/integrations")({
   component: IntegrationsPage,
 });
 
-type ApiProvider = {
-  id: string;
-  provider: string;
-  model: string;
-  api_key: string;
-  label: string | null;
-  is_active: boolean;
-  created_at: string;
-};
+type ApiProvider = ProviderKey & { created_at: string };
 
 const PROVIDER_OPTIONS = [
   "OpenAI",
@@ -57,6 +56,8 @@ function IntegrationsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [reveal, setReveal] = useState<Record<string, boolean>>({});
+  const [failoverToday, setFailoverToday] = useState(0);
+  const [usedToday, setUsedToday] = useState(0);
   const [form, setForm] = useState({
     provider: PROVIDER_OPTIONS[0],
     model: "",
@@ -71,9 +72,22 @@ function IntegrationsPage() {
       .from("ai_providers")
       .select("*")
       .eq("user_id", user.userId)
-      .order("created_at", { ascending: false });
+      .order("priority", { ascending: true })
+      .order("created_at", { ascending: true });
     if (error) toast.error(error.message);
     setRows((data ?? []) as ApiProvider[]);
+
+    // Failover / usage counters for today
+    const since = new Date();
+    since.setHours(0, 0, 0, 0);
+    const { data: ev } = await supabase
+      .from("ai_key_events")
+      .select("event")
+      .eq("user_id", user.userId)
+      .gte("created_at", since.toISOString());
+    setFailoverToday((ev ?? []).filter((e) => e.event === "failover").length);
+    setUsedToday((ev ?? []).filter((e) => e.event === "used").length);
+
     setLoading(false);
   }
 
@@ -90,12 +104,15 @@ function IntegrationsPage() {
       return;
     }
     setSaving(true);
+    const nextPriority = rows.length > 0 ? Math.max(...rows.map((r) => r.priority)) + 1 : 1;
     const { error } = await supabase.from("ai_providers").insert({
       user_id: user.userId,
       provider: form.provider,
       model: form.model.trim(),
       api_key: form.api_key.trim(),
       label: form.label.trim() || null,
+      priority: nextPriority,
+      is_active: true,
     });
     setSaving(false);
     if (error) {
@@ -118,6 +135,45 @@ function IntegrationsPage() {
     void refresh();
   }
 
+  async function movePriority(row: ApiProvider, direction: -1 | 1) {
+    const sorted = [...rows].sort((a, b) => a.priority - b.priority);
+    const idx = sorted.findIndex((r) => r.id === row.id);
+    const swapIdx = idx + direction;
+    if (swapIdx < 0 || swapIdx >= sorted.length) return;
+    const other = sorted[swapIdx];
+    // swap priorities
+    await supabase
+      .from("ai_providers")
+      .update({ priority: other.priority })
+      .eq("id", row.id);
+    await supabase
+      .from("ai_providers")
+      .update({ priority: row.priority })
+      .eq("id", other.id);
+    void refresh();
+  }
+
+  async function testKey(row: ApiProvider) {
+    if (!user?.userId) return;
+    // Lightweight local validation of the key format. A full network test would
+    // hit each provider; this catches obvious typos and rotates state so the
+    // dashboard reflects a fresh "ok" badge.
+    const looksValid =
+      (row.provider === "OpenAI" && /^sk-[A-Za-z0-9_-]{16,}$/.test(row.api_key)) ||
+      (row.provider !== "OpenAI" && row.api_key.length >= 12);
+    await markKeyResult(user.userId, row, looksValid ? { kind: "ok" } : { kind: "invalid" });
+    toast[looksValid ? "success" : "error"](
+      looksValid ? "Format key valid — status di-reset." : "Format key tidak dikenali.",
+    );
+    void refresh();
+  }
+
+  async function handleReset(row: ApiProvider) {
+    await resetKey(row.id);
+    toast.success("Key diaktifkan lagi.");
+    void refresh();
+  }
+
   async function remove(row: ApiProvider) {
     if (!confirm(`Hapus API "${row.label || row.model}"?`)) return;
     const { error } = await supabase.from("ai_providers").delete().eq("id", row.id);
@@ -127,11 +183,42 @@ function IntegrationsPage() {
   }
 
   return (
-    <AppShell title="Integrasi API" subtitle="Kelola API Key model AI Anda" user={user}>
+    <AppShell
+      title="Integrasi API"
+      subtitle="Kelola banyak API Key dengan auto-fallback saat billing habis"
+      user={user}
+    >
+      {/* Summary panel */}
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-4">
+          <div className="text-xs text-muted-foreground">Key Aktif Tersedia</div>
+          <div className="mt-1 font-display text-2xl font-bold">
+            {
+              rows.filter(
+                (r) =>
+                  r.is_active &&
+                  (!r.disabled_until || new Date(r.disabled_until) < new Date()),
+              ).length
+            }{" "}
+            / {rows.length}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-4">
+          <div className="text-xs text-muted-foreground">Request Berhasil Hari Ini</div>
+          <div className="mt-1 font-display text-2xl font-bold">{usedToday}</div>
+        </div>
+        <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-4">
+          <div className="text-xs text-muted-foreground">Failover Hari Ini</div>
+          <div className="mt-1 font-display text-2xl font-bold text-amber-400">
+            {failoverToday}×
+          </div>
+        </div>
+      </div>
+
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Plug className="h-4 w-4 text-primary" />
-          <span>{rows.length} API terdaftar</span>
+          <span>Diurut berdasarkan prioritas (angka kecil dicoba lebih dulu)</span>
         </div>
         <button
           onClick={() => setModalOpen(true)}
@@ -146,32 +233,59 @@ function IntegrationsPage() {
           <table className="w-full text-sm">
             <thead className="bg-white/5 text-xs uppercase text-muted-foreground">
               <tr>
+                <th className="px-3 py-3 text-left">#</th>
                 <th className="px-4 py-3 text-left">Label</th>
                 <th className="px-4 py-3 text-left">Provider</th>
                 <th className="px-4 py-3 text-left">Model</th>
                 <th className="px-4 py-3 text-left">API Key</th>
-                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Status Terakhir</th>
+                <th className="px-4 py-3 text-left">Aktif</th>
                 <th className="px-4 py-3 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin" />
                   </td>
                 </tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
                     Belum ada API. Klik <span className="text-primary">Tambah API</span> untuk
                     memulai.
                   </td>
                 </tr>
               )}
-              {rows.map((r) => (
+              {rows.map((r, idx) => (
                 <tr key={r.id} className="border-t border-white/5 hover:bg-white/5">
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {r.priority}
+                      </span>
+                      <div className="flex flex-col">
+                        <button
+                          onClick={() => movePriority(r, -1)}
+                          disabled={idx === 0}
+                          className="text-muted-foreground hover:text-primary disabled:opacity-20"
+                          title="Naikkan prioritas"
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => movePriority(r, 1)}
+                          disabled={idx === rows.length - 1}
+                          className="text-muted-foreground hover:text-primary disabled:opacity-20"
+                          title="Turunkan prioritas"
+                        >
+                          <ArrowDown className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 font-medium">{r.label || "—"}</td>
                   <td className="px-4 py-3">
                     <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs">
@@ -198,6 +312,9 @@ function IntegrationsPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
+                    <StatusBadge row={r} />
+                  </td>
+                  <td className="px-4 py-3">
                     <button
                       onClick={() => toggleActive(r)}
                       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${
@@ -215,13 +332,31 @@ function IntegrationsPage() {
                     </button>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => remove(r)}
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary/15 hover:text-secondary"
-                      title="Hapus"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="flex justify-end gap-1">
+                      <button
+                        onClick={() => testKey(r)}
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-primary/15 hover:text-primary"
+                        title="Test key"
+                      >
+                        <Zap className="h-4 w-4" />
+                      </button>
+                      {(r.disabled_until || r.last_status === "invalid") && (
+                        <button
+                          onClick={() => handleReset(r)}
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-amber-500/15 hover:text-amber-400"
+                          title="Aktifkan lagi"
+                        >
+                          <RefreshCcw className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => remove(r)}
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary/15 hover:text-secondary"
+                        title="Hapus"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
