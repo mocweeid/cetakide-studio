@@ -135,7 +135,7 @@ export function AppShell({
                 className="flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2 py-1.5 text-[11px] font-semibold text-primary hover:bg-primary/20 sm:gap-2 sm:px-3 sm:text-xs"
               >
                 <Wallet className="h-3.5 w-3.5" />
-                <span className="hidden xs:inline">Rp </span>
+                <span className="hidden sm:inline">Rp </span>
                 {(user?.saldo ?? 0).toLocaleString("id-ID")}
                 {user?.isDeveloper && (
                   <span className="rounded-full bg-primary/30 px-1.5 py-0.5 text-[9px]">∞</span>
