@@ -88,6 +88,32 @@ export const carouselData: {
   },
 ];
 
+// ---------- YouTube Shorts 9:16 + YouTube Channel Banner 16:9 ----------
+carouselData.push(
+  {
+    title: "YouTube Shorts",
+    subtitle: "9:16 · viral thumbnail",
+    aspectClass: "aspect-[9/16]",
+    width: 160,
+    images: [
+      "/assets/yt-shorts/shorts-1.webp",
+      "/assets/yt-shorts/shorts-2.webp",
+      "/assets/yt-shorts/shorts-3.webp",
+    ],
+  },
+  {
+    title: "YouTube Channel Banner",
+    subtitle: "16:9 · header creator",
+    aspectClass: "aspect-video",
+    width: 360,
+    images: [
+      "/assets/yt-banner/banner-1.webp",
+      "/assets/yt-banner/banner-2.webp",
+      "/assets/yt-banner/banner-3.webp",
+    ],
+  },
+);
+
 // ---------- BENTO: multi-niche visual grid ----------
 // Each niche = 1 main (4:5) + 4 small (1:1).
 export type Niche =
