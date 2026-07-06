@@ -1332,3 +1332,27 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
+
+function AiFillBtn({
+  onClick,
+  loading,
+}: {
+  onClick: () => void;
+  loading: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      title="Isi otomatis dengan AI (Gemini)"
+      className="absolute right-1.5 top-1.5 z-10 inline-flex items-center justify-center rounded-md border border-primary/40 bg-primary/10 p-1.5 text-primary hover:bg-primary/20 disabled:opacity-50"
+    >
+      {loading ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : (
+        <Sparkles className="h-3 w-3" />
+      )}
+    </button>
+  );
+}
