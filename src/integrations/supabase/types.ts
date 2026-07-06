@@ -157,6 +157,60 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_kits: {
+        Row: {
+          accent_color: string | null
+          background_color: string | null
+          brand_voice: string | null
+          created_at: string
+          id: string
+          is_default: boolean
+          logo_url: string | null
+          name: string
+          primary_color: string | null
+          primary_font: string | null
+          secondary_color: string | null
+          secondary_font: string | null
+          text_color: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accent_color?: string | null
+          background_color?: string | null
+          brand_voice?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          logo_url?: string | null
+          name: string
+          primary_color?: string | null
+          primary_font?: string | null
+          secondary_color?: string | null
+          secondary_font?: string | null
+          text_color?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accent_color?: string | null
+          background_color?: string | null
+          brand_voice?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          logo_url?: string | null
+          name?: string
+          primary_color?: string | null
+          primary_font?: string | null
+          secondary_color?: string | null
+          secondary_font?: string | null
+          text_color?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
