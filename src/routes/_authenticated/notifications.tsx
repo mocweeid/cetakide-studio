@@ -232,7 +232,9 @@ function NotificationsPage() {
                                 onClick={() => toggleSetting(item.id, channel)}
                               />
                             ) : (
-                              <span title="Saluran nonaktif"><XCircle className="h-4 w-4 text-white/20" /></span>
+                              <span title="Saluran nonaktif">
+                                <XCircle className="h-4 w-4 text-white/20" />
+                              </span>
                             )}
                           </div>
                         ))}

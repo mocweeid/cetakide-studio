@@ -14,7 +14,7 @@ import {
   Clock,
   CheckCircle2,
   X,
-  Image as ImageIcon
+  Image as ImageIcon,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/auto-uploader")({
@@ -132,13 +132,23 @@ function AutoUploaderPage() {
                 onClick={() => setMediaModalOpen(true)}
                 className="flex w-full items-center justify-between rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-sm text-left hover:border-primary focus:border-primary focus:outline-none transition"
               >
-                {mediaUrl ? <span className="text-white truncate">{mediaUrl.split('/').pop()}</span> : <span className="text-muted-foreground">-- Klik untuk memilih dari Galeri --</span>}
+                {mediaUrl ? (
+                  <span className="text-white truncate">{mediaUrl.split("/").pop()}</span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    -- Klik untuk memilih dari Galeri --
+                  </span>
+                )}
                 <ImageIcon className="h-4 w-4 text-muted-foreground" />
               </button>
               {mediaUrl && (
-                 <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-black/40 max-w-[200px]">
-                    <img src={mediaUrl} alt="Preview" className="w-full h-auto aspect-square object-cover" />
-                 </div>
+                <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-black/40 max-w-[200px]">
+                  <img
+                    src={mediaUrl}
+                    alt="Preview"
+                    className="w-full h-auto aspect-square object-cover"
+                  />
+                </div>
               )}
             </div>
             <div>
@@ -252,22 +262,33 @@ function AutoUploaderPage() {
               <h3 className="font-display text-xl font-bold flex items-center gap-2">
                 <ImageIcon className="h-5 w-5 text-primary" /> Pilih Gambar dari Project
               </h3>
-              <button onClick={() => setMediaModalOpen(false)} className="rounded-md p-1.5 hover:bg-white/10">
+              <button
+                onClick={() => setMediaModalOpen(false)}
+                className="rounded-md p-1.5 hover:bg-white/10"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
-               {Array.from({length: 8}).map((_, i) => (
-                  <button key={i} onClick={() => {
-                     setMediaUrl(`/assets/feed-ig/ig-${i+1}.png`);
-                     setMediaModalOpen(false);
-                  }} className="shrink-0 w-[140px] sm:w-[160px] snap-start group relative overflow-hidden rounded-lg border border-white/10 hover:border-primary/60 transition">
-                     <img src={`/assets/feed-ig/ig-${i+1}.png`} alt={`Template ${i+1}`} className="aspect-square w-full object-cover transition group-hover:scale-105" />
-                     <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 text-xs text-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                        Pilih Gambar
-                     </div>
-                  </button>
-               ))}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setMediaUrl(`/assets/feed-ig/ig-${i + 1}.png`);
+                    setMediaModalOpen(false);
+                  }}
+                  className="shrink-0 w-[140px] sm:w-[160px] snap-start group relative overflow-hidden rounded-lg border border-white/10 hover:border-primary/60 transition"
+                >
+                  <img
+                    src={`/assets/feed-ig/ig-${i + 1}.png`}
+                    alt={`Template ${i + 1}`}
+                    className="aspect-square w-full object-cover transition group-hover:scale-105"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 text-xs text-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                    Pilih Gambar
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         </div>

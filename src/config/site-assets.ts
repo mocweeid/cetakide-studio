@@ -32,7 +32,13 @@ export const heroPrompt =
 const ph = (label: string, tint = "111111") =>
   `https://placehold.co/800x800/${tint}/EAB308?text=${encodeURIComponent(label)}`;
 
-export const carouselData: { title: string; subtitle: string; aspectClass?: string; width?: number; images: string[] }[] = [
+export const carouselData: {
+  title: string;
+  subtitle: string;
+  aspectClass?: string;
+  width?: number;
+  images: string[];
+}[] = [
   {
     title: "Iklan Instagram Feed",
     subtitle: "1:1 · siap posting",

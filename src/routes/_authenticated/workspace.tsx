@@ -70,7 +70,13 @@ const REFERENCE_CATALOG = [
   "/assets/feed-ig/ig-8.png",
 ];
 
-const TEMPLATES = ["Promo Feed", "Minimalist Story", "Product Showcase", "Testimonial", "Event Poster"];
+const TEMPLATES = [
+  "Promo Feed",
+  "Minimalist Story",
+  "Product Showcase",
+  "Testimonial",
+  "Event Poster",
+];
 
 function Workspace() {
   const navigate = useNavigate();
@@ -91,23 +97,25 @@ function Workspace() {
     facebook_url: "",
     instagram_url: "",
     twitter_url: "",
+    social_url: "",
     body_content: "",
   });
-  
+
   const [reference, setReference] = useState<string | null>(null);
-  
+
   // Modal states
   const [refModalOpen, setRefModalOpen] = useState(false);
   const [panduanOpen, setPanduanOpen] = useState(false);
   const [editImageIndex, setEditImageIndex] = useState<number | null>(null);
-  
+
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [fontModalOpen, setFontModalOpen] = useState(false);
   const [brandModalOpen, setBrandModalOpen] = useState(false);
   const [presetModalOpen, setPresetModalOpen] = useState(false);
-  
+
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<string[]>([]);
+  const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setRatio(PLATFORMS[platform].ratios[0].key);
@@ -118,7 +126,8 @@ function Workspace() {
   const canvasStyle = useMemo(() => ({ aspectRatio: `${active.w} / ${active.h}` }), [active]);
 
   const updateField =
-    (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    (k: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((f) => ({ ...f, [k]: e.target.value }));
 
   async function handleCustomUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -143,7 +152,9 @@ function Workspace() {
         const { data: ok, error } = await supabase.rpc("potong_saldo_generate");
         if (error) throw error;
         if (!ok) {
-          toast.error("Saldo tidak mencukupi untuk semua variasi!", { description: "Silakan top up." });
+          toast.error("Saldo tidak mencukupi untuk semua variasi!", {
+            description: "Silakan top up.",
+          });
           break;
         }
       }
@@ -157,33 +168,33 @@ function Workspace() {
         "https://images.unsplash.com/photo-1559925393-8be0afac473c?q=80&w=600&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=600&auto=format&fit=crop",
       ];
-      
+
       if (platform === "instagram" && ratio === "1:1") {
-        stockPool = Array.from({length: 8}).map((_, i) => `/assets/feed-ig/ig-${i + 1}.png`);
+        stockPool = Array.from({ length: 8 }).map((_, i) => `/assets/feed-ig/ig-${i + 1}.png`);
       }
-      
+
       const newResults = [];
-      for(let i=0; i<generateCount; i++) {
-         const image_url = stockPool[Math.floor(Math.random() * stockPool.length)];
-         newResults.push(image_url);
-         
-         await supabase.from("projects").insert({
-            user_id: user.userId,
-            kebutuhan: form.title || form.prompt.slice(0, 80),
-            prompt: form.prompt,
-            title: form.title || null,
-            subtitle: form.subtitle || null,
-            whatsapp: form.whatsapp || null,
-            social_url: form.social_url || null,
-            body_content: form.body_content || null,
-            reference_url: reference,
-            image_url,
-            aspect_ratio: ratio,
-            platform,
-            status: "sukses",
-          });
+      for (let i = 0; i < generateCount; i++) {
+        const image_url = stockPool[Math.floor(Math.random() * stockPool.length)];
+        newResults.push(image_url);
+
+        await supabase.from("projects").insert({
+          user_id: user.userId,
+          kebutuhan: form.title || form.prompt.slice(0, 80),
+          prompt: form.prompt,
+          title: form.title || null,
+          subtitle: form.subtitle || null,
+          whatsapp: form.whatsapp || null,
+          social_url: form.social_url || null,
+          body_content: form.body_content || null,
+          reference_url: reference,
+          image_url,
+          aspect_ratio: ratio,
+          platform,
+          status: "sukses",
+        });
       }
-      
+
       setResults(newResults);
       await refresh();
       toast.success(`${newResults.length} Variasi visual berhasil di-cetak!`);
@@ -203,11 +214,11 @@ function Workspace() {
   }
 
   function handleAutoUpload(imageUrl: string) {
-    toast.success("Tersimpan di Assets", { description: "Gambar berhasil di-upload ke Galeri Project Anda." });
+    toast.success("Tersimpan di Assets", {
+      description: "Gambar berhasil di-upload ke Galeri Project Anda.",
+    });
     console.log("Auto-uploaded image data:", imageUrl);
   }
-
-
 
   return (
     <AppShell
@@ -216,7 +227,10 @@ function Workspace() {
       user={user}
       right={
         <div className="flex items-center gap-3">
-          <button onClick={() => setPanduanOpen(true)} className="flex items-center gap-1.5 text-xs font-semibold text-white/70 hover:text-white transition">
+          <button
+            onClick={() => setPanduanOpen(true)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-white/70 hover:text-white transition"
+          >
             <HelpCircle className="h-4 w-4" /> Panduan
           </button>
         </div>
@@ -254,17 +268,19 @@ function Workspace() {
                 ))}
               </div>
             </div>
-            
+
             {/* Jumlah Generate Dropdown */}
             <div className="flex items-center gap-2 border-l border-white/10 pl-3">
-               <span className="text-xs font-medium text-white/60">Jumlah Generate:</span>
-               <select
+              <span className="text-xs font-medium text-white/60">Jumlah Generate:</span>
+              <select
                 value={generateCount}
                 onChange={(e) => setGenerateCount(Number(e.target.value))}
                 className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-sm outline-none"
               >
-                {[1, 2, 3, 4].map(n => (
-                   <option key={n} value={n} className="bg-background">{n} Gambar</option>
+                {[1, 2, 3, 4].map((n) => (
+                  <option key={n} value={n} className="bg-background">
+                    {n} Gambar
+                  </option>
                 ))}
               </select>
             </div>
@@ -272,74 +288,91 @@ function Workspace() {
 
           {/* Results Grid */}
           <div className="flex-1 flex items-center justify-center min-h-[400px]">
-             {results.length > 0 ? (
-               <div className={`grid gap-4 w-full ${results.length === 1 ? 'grid-cols-1 max-w-xl mx-auto' : results.length === 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
-                 {results.map((res, i) => (
-                   <div key={i} className="flex flex-col gap-3">
-                      <div
-                        className="relative w-full overflow-hidden rounded-xl border border-white/10 bg-black/40 group"
-                        style={canvasStyle}
+            {results.length > 0 ? (
+              <div
+                className={`grid gap-4 w-full ${results.length === 1 ? "grid-cols-1 max-w-xl mx-auto" : results.length === 2 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}
+              >
+                {results.map((res, i) => (
+                  <div key={i} className="flex flex-col gap-3">
+                    <div
+                      className="relative w-full overflow-hidden rounded-xl border border-white/10 bg-black/40 group"
+                      style={canvasStyle}
+                    >
+                      <img
+                        src={res}
+                        alt={`Hasil ${i + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          onClick={() => setEditImageIndex(i)}
+                          className="bg-primary text-black font-semibold rounded-full px-4 py-2 text-sm flex items-center gap-2"
+                        >
+                          <Settings2 className="h-4 w-4" /> Edit / Regenerate
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      <button
+                        onClick={() => handleDownload(res)}
+                        className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20"
                       >
-                        <img src={res} alt={`Hasil ${i+1}`} className="h-full w-full object-cover" />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                           <button onClick={() => setEditImageIndex(i)} className="bg-primary text-black font-semibold rounded-full px-4 py-2 text-sm flex items-center gap-2">
-                             <Settings2 className="h-4 w-4" /> Edit / Regenerate
-                           </button>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        <button
-                          onClick={() => handleDownload(res)}
-                          className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20"
-                        >
-                          <Download className="h-3.5 w-3.5" /> Download
-                        </button>
-                        <button
-                          onClick={() => handleAutoUpload(res)}
-                          className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold hover:bg-white/10"
-                        >
-                          <CloudUpload className="h-3.5 w-3.5" /> Auto Upload
-                        </button>
-                      </div>
-                   </div>
-                 ))}
-               </div>
-             ) : (
-                <div
-                  className="relative w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-black/40 mx-auto"
-                  style={canvasStyle}
-                >
-                  {generating ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/60 backdrop-blur-md">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      <p className="text-sm">Mencetak {generateCount} ide...</p>
+                        <Download className="h-3.5 w-3.5" /> Download
+                      </button>
+                      <button
+                        onClick={() => handleAutoUpload(res)}
+                        className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold hover:bg-white/10"
+                      >
+                        <CloudUpload className="h-3.5 w-3.5" /> Auto Upload
+                      </button>
                     </div>
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-                      <Sparkles className="mr-2 h-4 w-4" /> Canvas siap dicetak
-                    </div>
-                  )}
-                </div>
-             )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                className="relative w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-black/40 mx-auto"
+                style={canvasStyle}
+              >
+                {generating ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/60 backdrop-blur-md">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm">Mencetak {generateCount} ide...</p>
+                  </div>
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+                    <Sparkles className="mr-2 h-4 w-4" /> Canvas siap dicetak
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Controls */}
         <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-5 backdrop-blur-md overflow-y-auto max-h-[calc(100vh-100px)]">
           <div className="space-y-4">
-            
             {/* Quick Assets Pickers */}
             <div className="grid grid-cols-3 gap-2 pb-2 border-b border-white/10">
-               <button onClick={() => setPresetModalOpen(true)} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/20 transition text-xs text-white/70">
-                 <LayoutTemplate className="h-4 w-4 text-primary" /> Preset
-               </button>
-               <button onClick={() => setFontModalOpen(true)} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/20 transition text-xs text-white/70">
-                 <Type className="h-4 w-4 text-primary" /> Font
-               </button>
-               <button onClick={() => setBrandModalOpen(true)} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/20 transition text-xs text-white/70">
-                 <Palette className="h-4 w-4 text-primary" /> Brand Kit
-               </button>
+              <button
+                onClick={() => setPresetModalOpen(true)}
+                className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/20 transition text-xs text-white/70"
+              >
+                <LayoutTemplate className="h-4 w-4 text-primary" /> Preset
+              </button>
+              <button
+                onClick={() => setFontModalOpen(true)}
+                className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/20 transition text-xs text-white/70"
+              >
+                <Type className="h-4 w-4 text-primary" /> Font
+              </button>
+              <button
+                onClick={() => setBrandModalOpen(true)}
+                className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/20 transition text-xs text-white/70"
+              >
+                <Palette className="h-4 w-4 text-primary" /> Brand Kit
+              </button>
             </div>
 
             <Field label="Preset Theme">
@@ -537,50 +570,69 @@ function Workspace() {
               <h3 className="font-display text-xl font-bold flex items-center gap-2">
                 <Settings2 className="h-5 w-5 text-primary" /> Edit & Regenerate Spesifik
               </h3>
-              <button onClick={() => setEditImageIndex(null)} className="rounded-md p-1.5 hover:bg-white/10">
+              <button
+                onClick={() => setEditImageIndex(null)}
+                className="rounded-md p-1.5 hover:bg-white/10"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                 <div className="relative rounded-xl border border-white/10 bg-black/40 overflow-hidden" style={canvasStyle}>
-                    <img src={results[editImageIndex]} alt="Edit target" className="w-full h-full object-cover" />
-                 </div>
+                <div
+                  className="relative rounded-xl border border-white/10 bg-black/40 overflow-hidden"
+                  style={canvasStyle}
+                >
+                  <img
+                    src={results[editImageIndex]}
+                    alt="Edit target"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               </div>
               <div className="space-y-4">
-                 <p className="text-sm text-white/70">Sesuaikan properti visual khusus untuk variasi ini saja, lalu klik Regenerate.</p>
-                 
-                 <Field label="Ubah Font Spesifik">
-                    <select className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none">
-                       <option className="bg-background">Sesuai Brand Kit</option>
-                       <option className="bg-background">Inter (Modern)</option>
-                       <option className="bg-background">Playfair Display (Elegan)</option>
-                       <option className="bg-background">Bebas Neue (Bold)</option>
-                    </select>
-                 </Field>
-                 
-                 <Field label="Ubah Tipe Warna / Mood">
-                    <select className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none">
-                       <option className="bg-background">Sesuai Prompt Utama</option>
-                       <option className="bg-background">Dark Mode Minimalis</option>
-                       <option className="bg-background">Cerah & Pop (Vibrant)</option>
-                       <option className="bg-background">Monokrom Elegan</option>
-                    </select>
-                 </Field>
+                <p className="text-sm text-white/70">
+                  Sesuaikan properti visual khusus untuk variasi ini saja, lalu klik Regenerate.
+                </p>
 
-                 <Field label="Prompt Tambahan Khusus">
-                    <textarea rows={3} placeholder="Tambahkan instruksi spesifik untuk variasi ini..." className="w-full rounded-lg border border-white/10 bg-white/5 p-3 text-sm outline-none" />
-                 </Field>
-                 
-                 <div className="pt-2">
-                    <button onClick={() => {
-                        toast.success("Regenerate variasi spesifik sedang diproses!"); 
-                        setEditImageIndex(null);
-                    }} className="w-full rounded-lg gradient-gold text-black font-bold py-3">
-                       Regenerate Variasi Ini
-                    </button>
-                 </div>
+                <Field label="Ubah Font Spesifik">
+                  <select className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none">
+                    <option className="bg-background">Sesuai Brand Kit</option>
+                    <option className="bg-background">Inter (Modern)</option>
+                    <option className="bg-background">Playfair Display (Elegan)</option>
+                    <option className="bg-background">Bebas Neue (Bold)</option>
+                  </select>
+                </Field>
+
+                <Field label="Ubah Tipe Warna / Mood">
+                  <select className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none">
+                    <option className="bg-background">Sesuai Prompt Utama</option>
+                    <option className="bg-background">Dark Mode Minimalis</option>
+                    <option className="bg-background">Cerah & Pop (Vibrant)</option>
+                    <option className="bg-background">Monokrom Elegan</option>
+                  </select>
+                </Field>
+
+                <Field label="Prompt Tambahan Khusus">
+                  <textarea
+                    rows={3}
+                    placeholder="Tambahkan instruksi spesifik untuk variasi ini..."
+                    className="w-full rounded-lg border border-white/10 bg-white/5 p-3 text-sm outline-none"
+                  />
+                </Field>
+
+                <div className="pt-2">
+                  <button
+                    onClick={() => {
+                      toast.success("Regenerate variasi spesifik sedang diproses!");
+                      setEditImageIndex(null);
+                    }}
+                    className="w-full rounded-lg gradient-gold text-black font-bold py-3"
+                  >
+                    Regenerate Variasi Ini
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -595,39 +647,70 @@ function Workspace() {
               <h3 className="font-display text-xl font-bold flex items-center gap-2">
                 <HelpCircle className="h-5 w-5 text-primary" /> Panduan Penggunaan Workspace
               </h3>
-              <button onClick={() => setPanduanOpen(false)} className="rounded-md p-1.5 hover:bg-white/10">
+              <button
+                onClick={() => setPanduanOpen(false)}
+                className="rounded-md p-1.5 hover:bg-white/10"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="space-y-4 max-h-[60vh] overflow-y-auto text-sm text-white/80 pr-2">
-               <p>Selamat datang di <strong>Workspace CetakIde</strong>! Berikut cara memaksimalkan fitur sidebar Anda:</p>
-               
-               <div className="rounded-lg bg-white/5 p-4 border border-white/10">
-                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2"><LayoutTemplate className="h-4 w-4" /> Koleksi Template</h4>
-                  <p className="text-xs">Pilih template tata letak (layout) yang sudah Anda simpan atau beli dari menu Templates di sidebar. Template menentukan struktur posisi gambar dan teks.</p>
-               </div>
-               
-               <div className="rounded-lg bg-white/5 p-4 border border-white/10">
-                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2"><Type className="h-4 w-4" /> Manajemen Font</h4>
-                  <p className="text-xs">Integrasikan Font khusus Anda dari menu Fonts di sidebar. Anda dapat mengunggah custom font atau memilih Google Fonts agar AI menuliskannya di hasil desain Anda.</p>
-               </div>
-               
-               <div className="rounded-lg bg-white/5 p-4 border border-white/10">
-                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2"><Palette className="h-4 w-4" /> Brand Kit</h4>
-                  <p className="text-xs">Konsistensi adalah kunci. Set palet warna utama dan logo bisnis Anda di menu Brand Kit. Workspace akan otomatis menerapkan warna brand Anda saat melakukan render (kecuali ditimpa manual di form edit).</p>
-               </div>
-               
-               <div className="rounded-lg bg-white/5 p-4 border border-white/10">
-                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2"><Wand2 className="h-4 w-4" /> Jumlah Generate</h4>
-                  <p className="text-xs">Hemat waktu Anda dengan mencetak hingga 4 variasi visual (konsep berbeda namun mempertahankan identitas) dalam sekali klik. Saldo akan dipotong sesuai jumlah gambar yang dicetak.</p>
-               </div>
+              <p>
+                Selamat datang di <strong>Workspace CetakIde</strong>! Berikut cara memaksimalkan
+                fitur sidebar Anda:
+              </p>
+
+              <div className="rounded-lg bg-white/5 p-4 border border-white/10">
+                <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                  <LayoutTemplate className="h-4 w-4" /> Koleksi Template
+                </h4>
+                <p className="text-xs">
+                  Pilih template tata letak (layout) yang sudah Anda simpan atau beli dari menu
+                  Templates di sidebar. Template menentukan struktur posisi gambar dan teks.
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-white/5 p-4 border border-white/10">
+                <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                  <Type className="h-4 w-4" /> Manajemen Font
+                </h4>
+                <p className="text-xs">
+                  Integrasikan Font khusus Anda dari menu Fonts di sidebar. Anda dapat mengunggah
+                  custom font atau memilih Google Fonts agar AI menuliskannya di hasil desain Anda.
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-white/5 p-4 border border-white/10">
+                <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                  <Palette className="h-4 w-4" /> Brand Kit
+                </h4>
+                <p className="text-xs">
+                  Konsistensi adalah kunci. Set palet warna utama dan logo bisnis Anda di menu Brand
+                  Kit. Workspace akan otomatis menerapkan warna brand Anda saat melakukan render
+                  (kecuali ditimpa manual di form edit).
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-white/5 p-4 border border-white/10">
+                <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                  <Wand2 className="h-4 w-4" /> Jumlah Generate
+                </h4>
+                <p className="text-xs">
+                  Hemat waktu Anda dengan mencetak hingga 4 variasi visual (konsep berbeda namun
+                  mempertahankan identitas) dalam sekali klik. Saldo akan dipotong sesuai jumlah
+                  gambar yang dicetak.
+                </p>
+              </div>
             </div>
-            
+
             <div className="mt-6 flex justify-end">
-               <button onClick={() => setPanduanOpen(false)} className="rounded-lg bg-white/10 hover:bg-white/20 px-5 py-2 font-medium">
-                  Mengerti
-               </button>
+              <button
+                onClick={() => setPanduanOpen(false)}
+                className="rounded-lg bg-white/10 hover:bg-white/20 px-5 py-2 font-medium"
+              >
+                Mengerti
+              </button>
             </div>
           </div>
         </div>
@@ -641,11 +724,14 @@ function Workspace() {
               <h3 className="font-display text-xl font-bold flex items-center gap-2">
                 <LayoutTemplate className="h-5 w-5 text-primary" /> Galeri Preset Theme
               </h3>
-              <button onClick={() => setPresetModalOpen(false)} className="rounded-md p-1.5 hover:bg-white/10">
+              <button
+                onClick={() => setPresetModalOpen(false)}
+                className="rounded-md p-1.5 hover:bg-white/10"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="overflow-y-auto flex-1 pr-2">
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {PRESET_THEMES.map((theme) => {
@@ -658,20 +744,20 @@ function Workspace() {
                         setPresetModalOpen(false);
                         toast.success(`Preset ${theme} dipilih.`);
                       }}
-                      className={`group relative flex flex-col overflow-hidden text-left transition-transform hover:scale-[1.02] active:scale-95 ${styles.wrapper} ${selectedPreset === theme ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                      className={`group relative flex flex-col overflow-hidden text-left transition-transform hover:scale-[1.02] active:scale-95 ${styles.wrapper} ${selectedPreset === theme ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
                     >
-                      <img 
-                        src={DEFAULT_IMG} 
-                        alt={theme} 
-                        className={`h-24 w-full object-cover ${styles.image}`} 
+                      <img
+                        src={DEFAULT_IMG}
+                        alt={theme}
+                        className={`h-24 w-full object-cover ${styles.image}`}
                       />
                       <div className="flex flex-col p-3 flex-1">
-                        <h2 className={`text-sm font-bold flex-1 ${styles.title}`}>
-                          {theme}
-                        </h2>
+                        <h2 className={`text-sm font-bold flex-1 ${styles.title}`}>{theme}</h2>
                         <div className="mt-3 flex items-center justify-between">
-                          <span className={`px-2 py-1 text-[10px] font-semibold inline-block ${styles.button}`}>
-                            {selectedPreset === theme ? 'Terpilih' : 'Pilih Preset'}
+                          <span
+                            className={`px-2 py-1 text-[10px] font-semibold inline-block ${styles.button}`}
+                          >
+                            {selectedPreset === theme ? "Terpilih" : "Pilih Preset"}
                           </span>
                         </div>
                       </div>
@@ -693,31 +779,49 @@ function Workspace() {
                 <LayoutTemplate className="h-5 w-5 text-primary" /> Koleksi Template Saya
               </h3>
               <div className="flex items-center gap-3">
-                 <button onClick={() => navigate({ to: "/templates" })} className="text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded hover:bg-primary/20 transition font-semibold">
-                    + Tambah Template Baru
-                 </button>
-                 <button onClick={() => setTemplateModalOpen(false)} className="rounded-md p-1.5 hover:bg-white/10">
-                   <X className="h-5 w-5" />
-                 </button>
+                <button
+                  onClick={() => navigate({ to: "/templates" })}
+                  className="text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded hover:bg-primary/20 transition font-semibold"
+                >
+                  + Tambah Template Baru
+                </button>
+                <button
+                  onClick={() => setTemplateModalOpen(false)}
+                  className="rounded-md p-1.5 hover:bg-white/10"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
-               {Array.from({length: 8}).map((_, i) => {
-                  const isSelected = selectedTemplateIndex === i;
-                  return (
-                  <button key={i} onClick={() => {
-                     setSelectedTemplateIndex(i);
-                     toast.success("Template dipilih!");
-                     setTemplateModalOpen(false);
-                  }} className={`group relative overflow-hidden rounded-lg border transition ${isSelected ? 'border-primary ring-2 ring-primary' : 'border-white/10 hover:border-primary/60'}`}>
-                     <img src={`/assets/feed-ig/ig-${i+1}.png`} alt={`Template ${i+1}`} className="aspect-square w-full object-cover transition group-hover:scale-105" />
-                     {isSelected && <div className="absolute top-2 right-2 bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm z-10">Terpilih</div>}
-                     <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 text-xs text-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        Gunakan Template
-                     </div>
+              {Array.from({ length: 8 }).map((_, i) => {
+                const isSelected = selectedTemplateIndex === i;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setSelectedTemplateIndex(i);
+                      toast.success("Template dipilih!");
+                      setTemplateModalOpen(false);
+                    }}
+                    className={`group relative overflow-hidden rounded-lg border transition ${isSelected ? "border-primary ring-2 ring-primary" : "border-white/10 hover:border-primary/60"}`}
+                  >
+                    <img
+                      src={`/assets/feed-ig/ig-${i + 1}.png`}
+                      alt={`Template ${i + 1}`}
+                      className="aspect-square w-full object-cover transition group-hover:scale-105"
+                    />
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm z-10">
+                        Terpilih
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 text-xs text-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      Gunakan Template
+                    </div>
                   </button>
-                  );
-               })}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -730,7 +834,10 @@ function Workspace() {
               <h3 className="font-display text-xl font-bold flex items-center gap-2">
                 <Type className="h-5 w-5 text-primary" /> Pilih Font Kustom
               </h3>
-              <button onClick={() => setFontModalOpen(false)} className="rounded-md p-1.5 hover:bg-white/10">
+              <button
+                onClick={() => setFontModalOpen(false)}
+                className="rounded-md p-1.5 hover:bg-white/10"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -738,39 +845,56 @@ function Workspace() {
               @import url('https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Anton&family=Bebas+Neue&family=Dancing+Script&family=Inter:wght@400;500;600&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Lora:ital,wght@0,400;0,500;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;500;600;700&family=Nunito:wght@400;600;700&family=Outfit:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Pacifico&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Ubuntu:wght@400;500;700&display=swap');
             `}</style>
             <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
-               {[
-                 { name: "Inter (Default)", family: "Inter" },
-                 { name: "Roboto", family: "Roboto" },
-                 { name: "Playfair Display", family: "'Playfair Display', serif" },
-                 { name: "Montserrat", family: "Montserrat" },
-                 { name: "Poppins", family: "Poppins" },
-                 { name: "Outfit", family: "Outfit" },
-                 { name: "Bebas Neue", family: "'Bebas Neue', cursive" },
-                 { name: "Lora", family: "'Lora', serif" },
-                 { name: "Merriweather", family: "'Merriweather', serif" },
-                 { name: "Oswald", family: "Oswald, sans-serif" },
-                 { name: "Raleway", family: "Raleway, sans-serif" },
-                 { name: "Nunito", family: "Nunito, sans-serif" },
-                 { name: "Ubuntu", family: "Ubuntu, sans-serif" },
-                 { name: "Pacifico", family: "Pacifico, cursive" },
-                 { name: "Dancing Script", family: "'Dancing Script', cursive" },
-                 { name: "Anton", family: "Anton, sans-serif" },
-                 { name: "Josefin Sans", family: "'Josefin Sans', sans-serif" },
-                 { name: "Abril Fatface", family: "'Abril Fatface', serif" },
-               ].map((font) => {
-                  const isSelected = selectedFont === font.name;
-                  return (
-                  <button key={font.name} onClick={() => {
-                     setSelectedFont(font.name);
-                     toast.success(`Font ${font.name} dipilih!`);
-                     setFontModalOpen(false);
-                  }} className={`rounded-xl border bg-white/5 p-4 flex flex-col items-center justify-center transition group min-h-[100px] relative ${isSelected ? 'border-primary ring-2 ring-primary bg-primary/10' : 'border-white/10 hover:border-primary/60'}`}>
-                     {isSelected && <div className="absolute top-2 right-2 bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">Terpilih</div>}
-                     <p className={`text-3xl mb-2 ${isSelected ? 'text-primary' : 'text-white/90 group-hover:text-primary'}`} style={{ fontFamily: font.family }}>Aa</p>
-                     <p className={`text-xs font-medium text-center ${isSelected ? 'text-white' : 'text-white/80'}`}>{font.name}</p>
+              {[
+                { name: "Inter (Default)", family: "Inter" },
+                { name: "Roboto", family: "Roboto" },
+                { name: "Playfair Display", family: "'Playfair Display', serif" },
+                { name: "Montserrat", family: "Montserrat" },
+                { name: "Poppins", family: "Poppins" },
+                { name: "Outfit", family: "Outfit" },
+                { name: "Bebas Neue", family: "'Bebas Neue', cursive" },
+                { name: "Lora", family: "'Lora', serif" },
+                { name: "Merriweather", family: "'Merriweather', serif" },
+                { name: "Oswald", family: "Oswald, sans-serif" },
+                { name: "Raleway", family: "Raleway, sans-serif" },
+                { name: "Nunito", family: "Nunito, sans-serif" },
+                { name: "Ubuntu", family: "Ubuntu, sans-serif" },
+                { name: "Pacifico", family: "Pacifico, cursive" },
+                { name: "Dancing Script", family: "'Dancing Script', cursive" },
+                { name: "Anton", family: "Anton, sans-serif" },
+                { name: "Josefin Sans", family: "'Josefin Sans', sans-serif" },
+                { name: "Abril Fatface", family: "'Abril Fatface', serif" },
+              ].map((font) => {
+                const isSelected = selectedFont === font.name;
+                return (
+                  <button
+                    key={font.name}
+                    onClick={() => {
+                      setSelectedFont(font.name);
+                      toast.success(`Font ${font.name} dipilih!`);
+                      setFontModalOpen(false);
+                    }}
+                    className={`rounded-xl border bg-white/5 p-4 flex flex-col items-center justify-center transition group min-h-[100px] relative ${isSelected ? "border-primary ring-2 ring-primary bg-primary/10" : "border-white/10 hover:border-primary/60"}`}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                        Terpilih
+                      </div>
+                    )}
+                    <p
+                      className={`text-3xl mb-2 ${isSelected ? "text-primary" : "text-white/90 group-hover:text-primary"}`}
+                      style={{ fontFamily: font.family }}
+                    >
+                      Aa
+                    </p>
+                    <p
+                      className={`text-xs font-medium text-center ${isSelected ? "text-white" : "text-white/80"}`}
+                    >
+                      {font.name}
+                    </p>
                   </button>
-                  );
-               })}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -784,38 +908,60 @@ function Workspace() {
                 <Palette className="h-5 w-5 text-primary" /> Pilih Brand Kit
               </h3>
               <div className="flex items-center gap-3">
-                 <button onClick={() => navigate({ to: "/brand-kits" })} className="text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded hover:bg-primary/20 transition font-semibold">
-                    + Tambah Brand Kit Baru
-                 </button>
-                 <button onClick={() => setBrandModalOpen(false)} className="rounded-md p-1.5 hover:bg-white/10">
-                   <X className="h-5 w-5" />
-                 </button>
+                <button
+                  onClick={() => navigate({ to: "/brand-kits" })}
+                  className="text-xs bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded hover:bg-primary/20 transition font-semibold"
+                >
+                  + Tambah Brand Kit Baru
+                </button>
+                <button
+                  onClick={() => setBrandModalOpen(false)}
+                  className="rounded-md p-1.5 hover:bg-white/10"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
-               {[
-                  { name: "CetakIDe Official", colors: ["#EAB308", "#0A0F1E", "#FFFFFF"] },
-                  { name: "Tech Startup", colors: ["#3B82F6", "#1E293B", "#F8FAFC"] },
-                  { name: "Eco Friendly", colors: ["#22C55E", "#14532D", "#F0FDF4"] },
-                  { name: "Luxury Brand", colors: ["#D4AF37", "#000000", "#1A1A1A"] },
-               ].map((brand) => {
-                  const isSelected = selectedBrand === brand.name;
-                  return (
-                  <button key={brand.name} onClick={() => {
-                     setSelectedBrand(brand.name);
-                     toast.success(`Brand Kit ${brand.name} dipilih!`);
-                     setBrandModalOpen(false);
-                  }} className={`rounded-xl border bg-white/5 p-4 text-left transition group flex flex-col justify-between min-h-[100px] relative ${isSelected ? 'border-primary ring-2 ring-primary bg-primary/10' : 'border-white/10 hover:border-primary/60'}`}>
-                     {isSelected && <div className="absolute top-3 right-3 bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">Terpilih</div>}
-                     <p className={`text-sm font-semibold mb-3 pr-12 ${isSelected ? 'text-primary' : 'text-white/90 group-hover:text-primary'}`}>{brand.name}</p>
-                     <div className="flex gap-2">
-                        {brand.colors.map(color => (
-                           <div key={color} className="h-6 w-6 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: color }}></div>
-                        ))}
-                     </div>
+              {[
+                { name: "CetakIDe Official", colors: ["#EAB308", "#0A0F1E", "#FFFFFF"] },
+                { name: "Tech Startup", colors: ["#3B82F6", "#1E293B", "#F8FAFC"] },
+                { name: "Eco Friendly", colors: ["#22C55E", "#14532D", "#F0FDF4"] },
+                { name: "Luxury Brand", colors: ["#D4AF37", "#000000", "#1A1A1A"] },
+              ].map((brand) => {
+                const isSelected = selectedBrand === brand.name;
+                return (
+                  <button
+                    key={brand.name}
+                    onClick={() => {
+                      setSelectedBrand(brand.name);
+                      toast.success(`Brand Kit ${brand.name} dipilih!`);
+                      setBrandModalOpen(false);
+                    }}
+                    className={`rounded-xl border bg-white/5 p-4 text-left transition group flex flex-col justify-between min-h-[100px] relative ${isSelected ? "border-primary ring-2 ring-primary bg-primary/10" : "border-white/10 hover:border-primary/60"}`}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-3 right-3 bg-primary text-black text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                        Terpilih
+                      </div>
+                    )}
+                    <p
+                      className={`text-sm font-semibold mb-3 pr-12 ${isSelected ? "text-primary" : "text-white/90 group-hover:text-primary"}`}
+                    >
+                      {brand.name}
+                    </p>
+                    <div className="flex gap-2">
+                      {brand.colors.map((color) => (
+                        <div
+                          key={color}
+                          className="h-6 w-6 rounded-full border border-white/20 shadow-sm"
+                          style={{ backgroundColor: color }}
+                        ></div>
+                      ))}
+                    </div>
                   </button>
-                  );
-               })}
+                );
+              })}
             </div>
           </div>
         </div>

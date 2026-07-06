@@ -114,7 +114,10 @@ function HeroMockup() {
   ];
 
   return (
-    <div id="ai-visual-builder" className="relative mx-auto mt-14 w-full max-w-5xl [perspective:1600px] scroll-mt-24">
+    <div
+      id="ai-visual-builder"
+      className="relative mx-auto mt-14 w-full max-w-5xl [perspective:1600px] scroll-mt-24"
+    >
       <div className="rounded-2xl border border-white/10 bg-[#0a0a0a]/90 shadow-[0_30px_80px_-30px_rgba(234,179,8,0.35)] backdrop-blur">
         {/* browser bar */}
         <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
@@ -250,7 +253,15 @@ function HeroMockup() {
 /*  Auto-play infinite embla row                                              */
 /* -------------------------------------------------------------------------- */
 
-function AutoCarousel({ images, size = 220, aspectClass = "aspect-square" }: { images: string[]; size?: number; aspectClass?: string }) {
+function AutoCarousel({
+  images,
+  size = 220,
+  aspectClass = "aspect-square",
+}: {
+  images: string[];
+  size?: number;
+  aspectClass?: string;
+}) {
   const [ref] = useEmblaCarousel({ loop: true, align: "start", dragFree: true }, [
     AutoScroll({ playOnInit: true, speed: 0.5, stopOnInteraction: false }),
   ]);
@@ -464,7 +475,11 @@ function Index() {
           {/* Mini Instagram Feed Carousel — seamless infinite */}
           <div className="mt-8 flex w-full overflow-hidden py-4 gap-3">
             {[0, 1].map((set) => (
-              <div key={set} className="flex shrink-0 animate-marquee gap-3 will-change-transform" aria-hidden={set === 1}>
+              <div
+                key={set}
+                className="flex shrink-0 animate-marquee gap-3 will-change-transform"
+                aria-hidden={set === 1}
+              >
                 {Array.from({ length: 32 }).map((_, i) => (
                   <div
                     key={i}
@@ -645,7 +660,8 @@ function Index() {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {whyUs.map((w, i) => {
-              const Icon = [Sparkles, Palette, LayoutTemplate, Type, ImagePlus, Wallet][i] ?? Rocket;
+              const Icon =
+                [Sparkles, Palette, LayoutTemplate, Type, ImagePlus, Wallet][i] ?? Rocket;
               return (
                 <div
                   key={w.title}
@@ -671,7 +687,10 @@ function Index() {
       </section>
 
       {/* DASHBOARD PREVIEW SECTION */}
-      <section id="fitur-preview" className="relative py-16 sm:py-20 border-y border-white/5 bg-[#0a0a0a]/50">
+      <section
+        id="fitur-preview"
+        className="relative py-16 sm:py-20 border-y border-white/5 bg-[#0a0a0a]/50"
+      >
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto mb-16 max-w-2xl text-center">
             <span
@@ -681,11 +700,13 @@ function Index() {
               Fitur Lengkap Dashboard
             </span>
             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Semua yang Anda Butuhkan</h2>
-            <p className="mt-4 text-white/60">Tidak sekadar meng-generate gambar, kami memberikan kontrol penuh atas identitas brand Anda di dalam satu Workspace.</p>
+            <p className="mt-4 text-white/60">
+              Tidak sekadar meng-generate gambar, kami memberikan kontrol penuh atas identitas brand
+              Anda di dalam satu Workspace.
+            </p>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-3">
-            
             {/* BRAND KIT MOCKUP */}
             <div className="rounded-2xl border border-white/10 bg-[#0d0d0d] p-6 shadow-2xl relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -693,30 +714,42 @@ function Index() {
                 <Palette className="h-5 w-5 text-yellow-500" />
                 <h3 className="font-semibold">Manajemen Brand Kit</h3>
               </div>
-              <p className="text-sm text-white/50 mb-6">Terapkan warna perusahaan Anda secara otomatis ke setiap desain.</p>
-              
+              <p className="text-sm text-white/50 mb-6">
+                Terapkan warna perusahaan Anda secara otomatis ke setiap desain.
+              </p>
+
               <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
                 <div className="flex items-center justify-between">
-                   <span className="text-xs font-medium">Tech Startup</span>
-                   <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded">Aktif</span>
+                  <span className="text-xs font-medium">Tech Startup</span>
+                  <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded">
+                    Aktif
+                  </span>
                 </div>
                 <div className="flex gap-2">
-                  {["#3B82F6", "#1E293B", "#F8FAFC"].map(color => (
-                    <div key={color} className="group/color relative h-8 w-8 rounded-md shadow-sm border border-white/20" style={{ backgroundColor: color }}>
-                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/color:opacity-100 transition-opacity bg-black text-[10px] px-2 py-1 rounded">
-                          {color}
-                       </div>
+                  {["#3B82F6", "#1E293B", "#F8FAFC"].map((color) => (
+                    <div
+                      key={color}
+                      className="group/color relative h-8 w-8 rounded-md shadow-sm border border-white/20"
+                      style={{ backgroundColor: color }}
+                    >
+                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/color:opacity-100 transition-opacity bg-black text-[10px] px-2 py-1 rounded">
+                        {color}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
               <div className="mt-3 space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm opacity-50">
                 <div className="flex items-center justify-between">
-                   <span className="text-xs font-medium">Eco Friendly</span>
+                  <span className="text-xs font-medium">Eco Friendly</span>
                 </div>
                 <div className="flex gap-2">
-                  {["#22C55E", "#14532D", "#F0FDF4"].map(color => (
-                    <div key={color} className="h-8 w-8 rounded-md border border-white/20" style={{ backgroundColor: color }} />
+                  {["#22C55E", "#14532D", "#F0FDF4"].map((color) => (
+                    <div
+                      key={color}
+                      className="h-8 w-8 rounded-md border border-white/20"
+                      style={{ backgroundColor: color }}
+                    />
                   ))}
                 </div>
               </div>
@@ -729,20 +762,30 @@ function Index() {
                 <Type className="h-5 w-5 text-blue-400" />
                 <h3 className="font-semibold">Font Kustom</h3>
               </div>
-              <p className="text-sm text-white/50 mb-6">Ubah tipografi sesuka hati dari pilihan font premium populer.</p>
-              
+              <p className="text-sm text-white/50 mb-6">
+                Ubah tipografi sesuka hati dari pilihan font premium populer.
+              </p>
+
               <div className="grid grid-cols-2 gap-3">
-                 {[
-                   {name: "Inter", fam: "sans-serif"},
-                   {name: "Playfair", fam: "serif"},
-                   {name: "Montserrat", fam: "sans-serif"},
-                   {name: "Pacifico", fam: "cursive"}
-                 ].map((f, i) => (
-                    <div key={f.name} className={`rounded-xl border ${i===0 ? 'border-blue-400/50 bg-blue-400/10' : 'border-white/10 bg-white/5'} p-3 flex flex-col items-center justify-center min-h-[80px]`}>
-                       <p className={`text-2xl mb-1 ${i===0 ? 'text-blue-400' : 'text-white'}`} style={{ fontFamily: f.fam }}>Aa</p>
-                       <p className="text-[10px] text-white/60">{f.name}</p>
-                    </div>
-                 ))}
+                {[
+                  { name: "Inter", fam: "sans-serif" },
+                  { name: "Playfair", fam: "serif" },
+                  { name: "Montserrat", fam: "sans-serif" },
+                  { name: "Pacifico", fam: "cursive" },
+                ].map((f, i) => (
+                  <div
+                    key={f.name}
+                    className={`rounded-xl border ${i === 0 ? "border-blue-400/50 bg-blue-400/10" : "border-white/10 bg-white/5"} p-3 flex flex-col items-center justify-center min-h-[80px]`}
+                  >
+                    <p
+                      className={`text-2xl mb-1 ${i === 0 ? "text-blue-400" : "text-white"}`}
+                      style={{ fontFamily: f.fam }}
+                    >
+                      Aa
+                    </p>
+                    <p className="text-[10px] text-white/60">{f.name}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -753,29 +796,37 @@ function Index() {
                 <ImagePlus className="h-5 w-5 text-green-400" />
                 <h3 className="font-semibold">Auto Uploader Media</h3>
               </div>
-              <p className="text-sm text-white/50 mb-6">Unggah produk atau logo, AI akan menghapus background otomatis.</p>
-              
+              <p className="text-sm text-white/50 mb-6">
+                Unggah produk atau logo, AI akan menghapus background otomatis.
+              </p>
+
               <div className="rounded-xl border border-dashed border-white/20 bg-white/[0.02] p-4 text-center mb-4">
-                 <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-green-500/20 mb-2">
-                    <ArrowRight className="h-4 w-4 text-green-400 -rotate-90" />
-                 </div>
-                 <p className="text-[11px] text-white/60">Klik untuk upload gambar</p>
+                <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-green-500/20 mb-2">
+                  <ArrowRight className="h-4 w-4 text-green-400 -rotate-90" />
+                </div>
+                <p className="text-[11px] text-white/60">Klik untuk upload gambar</p>
               </div>
-              
+
               <div className="grid grid-cols-3 gap-2">
-                 {[1,2,3].map(n => (
-                    <div key={n} className="aspect-square rounded-lg bg-white/10 overflow-hidden border border-white/5 relative">
-                       <img src={`/assets/feed-ig/ig-${n}.png`} alt="" className="w-full h-full object-cover opacity-70" />
-                       {n === 1 && (
-                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                            <Check className="h-4 w-4 text-green-400" />
-                         </div>
-                       )}
-                    </div>
-                 ))}
+                {[1, 2, 3].map((n) => (
+                  <div
+                    key={n}
+                    className="aspect-square rounded-lg bg-white/10 overflow-hidden border border-white/5 relative"
+                  >
+                    <img
+                      src={`/assets/feed-ig/ig-${n}.png`}
+                      alt=""
+                      className="w-full h-full object-cover opacity-70"
+                    />
+                    {n === 1 && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                        <Check className="h-4 w-4 text-green-400" />
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
-
           </div>
         </div>
       </section>

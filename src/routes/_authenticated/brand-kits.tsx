@@ -51,9 +51,21 @@ function BrandKitsPage() {
       toast.error("Masukkan nama brand!");
       return;
     }
-    
+
     if (editingId) {
-      setBrands((prev) => prev.map(b => b.id === editingId ? { ...b, name: form.name, font: form.font, colors, logo: form.name.charAt(0).toUpperCase() } : b));
+      setBrands((prev) =>
+        prev.map((b) =>
+          b.id === editingId
+            ? {
+                ...b,
+                name: form.name,
+                font: form.font,
+                colors,
+                logo: form.name.charAt(0).toUpperCase(),
+              }
+            : b,
+        ),
+      );
       toast.success("Brand Kit diperbarui!");
     } else {
       setBrands((prev) => [
@@ -71,7 +83,7 @@ function BrandKitsPage() {
     }
     closeForm();
   }
-  
+
   function closeForm() {
     setShowForm(false);
     setForm({ name: "", font: "Inter" });
@@ -79,14 +91,14 @@ function BrandKitsPage() {
     setEditingId(null);
   }
 
-  function openEdit(brand: typeof INIT_BRANDS[0]) {
+  function openEdit(brand: (typeof INIT_BRANDS)[0]) {
     setForm({ name: brand.name, font: brand.font });
     setColors(brand.colors);
     setEditingId(brand.id);
     setShowForm(true);
   }
 
-  function duplicateBrand(brand: typeof INIT_BRANDS[0]) {
+  function duplicateBrand(brand: (typeof INIT_BRANDS)[0]) {
     setBrands((prev) => [
       ...prev,
       {
@@ -125,10 +137,10 @@ function BrandKitsPage() {
           </div>
           <button
             onClick={() => {
-               setForm({ name: "", font: "Inter" });
-               setColors(["#EAB308", "#FFFFFF", "#0A0F1E", "#CA8A04", "#F5F5F5"]);
-               setEditingId(null);
-               setShowForm(true);
+              setForm({ name: "", font: "Inter" });
+              setColors(["#EAB308", "#FFFFFF", "#0A0F1E", "#CA8A04", "#F5F5F5"]);
+              setEditingId(null);
+              setShowForm(true);
             }}
             className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black transition hover:brightness-110"
             style={{ background: "linear-gradient(135deg, #EAB308, #CA8A04)" }}
@@ -203,10 +215,16 @@ function BrandKitsPage() {
                     <CheckCircle2 className="h-3.5 w-3.5" /> Aktifkan
                   </button>
                 )}
-                <button onClick={() => openEdit(brand)} className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-xs text-white/60 hover:bg-white/10 hover:text-white">
+                <button
+                  onClick={() => openEdit(brand)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-xs text-white/60 hover:bg-white/10 hover:text-white"
+                >
                   <Edit2 className="h-3.5 w-3.5" />
                 </button>
-                <button onClick={() => duplicateBrand(brand)} className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-xs text-white/60 hover:bg-white/10 hover:text-white">
+                <button
+                  onClick={() => duplicateBrand(brand)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-xs text-white/60 hover:bg-white/10 hover:text-white"
+                >
                   <Copy className="h-3.5 w-3.5" />
                 </button>
                 <button
@@ -222,10 +240,10 @@ function BrandKitsPage() {
           {/* Add New Card */}
           <button
             onClick={() => {
-               setForm({ name: "", font: "Inter" });
-               setColors(["#EAB308", "#FFFFFF", "#0A0F1E", "#CA8A04", "#F5F5F5"]);
-               setEditingId(null);
-               setShowForm(true);
+              setForm({ name: "", font: "Inter" });
+              setColors(["#EAB308", "#FFFFFF", "#0A0F1E", "#CA8A04", "#F5F5F5"]);
+              setEditingId(null);
+              setShowForm(true);
             }}
             className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] text-muted-foreground transition hover:border-primary/30 hover:text-white"
           >
@@ -238,7 +256,9 @@ function BrandKitsPage() {
         {showForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="w-full max-w-md rounded-2xl border border-white/15 bg-[#111] p-6">
-              <h3 className="mb-5 font-display text-lg font-bold">{editingId ? "Edit Brand Kit" : "Tambah Brand Kit Baru"}</h3>
+              <h3 className="mb-5 font-display text-lg font-bold">
+                {editingId ? "Edit Brand Kit" : "Tambah Brand Kit Baru"}
+              </h3>
               <div className="space-y-4">
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-muted-foreground">

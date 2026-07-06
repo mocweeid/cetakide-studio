@@ -72,7 +72,7 @@ export function Navbar() {
 
           {/* Desktop Menu */}
           <div className="hidden items-center gap-6 md:flex">
-            {navLinks.map((link) => (
+            {navLinks.map((link) =>
               link.children ? (
                 <div key={link.label} className="group relative">
                   <button className="flex items-center gap-1 text-sm text-white/70 transition-all duration-300 hover:text-white">
@@ -80,13 +80,18 @@ export function Navbar() {
                     <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
                   </button>
                   <div className="absolute left-0 top-full hidden pt-4 group-hover:block">
-                     <div className="rounded-xl border border-white/10 bg-[#0a0a0a]/95 backdrop-blur-md shadow-xl p-2 w-56 flex flex-col gap-1">
-                        {link.children.map(child => (
-                           <a key={child.label} href={child.to} className="rounded-lg px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition" onClick={closeMenu}>
-                              {child.label}
-                           </a>
-                        ))}
-                     </div>
+                    <div className="rounded-xl border border-white/10 bg-[#0a0a0a]/95 backdrop-blur-md shadow-xl p-2 w-56 flex flex-col gap-1">
+                      {link.children.map((child) => (
+                        <a
+                          key={child.label}
+                          href={child.to}
+                          className="rounded-lg px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition"
+                          onClick={closeMenu}
+                        >
+                          {child.label}
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -99,8 +104,8 @@ export function Navbar() {
                   {link.label}
                   <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transition-all duration-300 group-hover:w-full" />
                 </a>
-              )
-            ))}
+              ),
+            )}
             {session ? (
               <Link
                 to="/dashboard"
@@ -146,16 +151,21 @@ export function Navbar() {
         {isOpen && (
           <div className="border-t border-white/10 py-4 md:hidden">
             <div className="flex flex-col gap-4">
-              {navLinks.map((link) => (
+              {navLinks.map((link) =>
                 link.children ? (
                   <div key={link.label} className="flex flex-col gap-2">
                     <span className="text-sm font-semibold text-white/90">{link.label}</span>
                     <div className="ml-4 flex flex-col gap-2 border-l border-white/10 pl-4">
-                       {link.children.map(child => (
-                         <a key={child.label} href={child.to} onClick={closeMenu} className="text-sm text-white/60 hover:text-white transition">
-                           {child.label}
-                         </a>
-                       ))}
+                      {link.children.map((child) => (
+                        <a
+                          key={child.label}
+                          href={child.to}
+                          onClick={closeMenu}
+                          className="text-sm text-white/60 hover:text-white transition"
+                        >
+                          {child.label}
+                        </a>
+                      ))}
                     </div>
                   </div>
                 ) : (
@@ -168,8 +178,8 @@ export function Navbar() {
                     {link.label}
                     <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-gradient-to-r from-transparent via-yellow-400 to-transparent transition-all duration-300 group-hover:w-full" />
                   </a>
-                )
-              ))}
+                ),
+              )}
               {session ? (
                 <Link
                   to="/dashboard"
