@@ -160,14 +160,35 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile Hamburger Button */}
-          <button
-            onClick={toggleMenu}
-            className="rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white md:hidden"
-            aria-label="Toggle menu"
-          >
-            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+          {/* Mobile actions: Login/Dashboard + Hamburger */}
+          <div className="flex items-center gap-2 md:hidden">
+            {session ? (
+              <Link
+                to="/dashboard"
+                className="rounded-full px-3 py-1.5 text-xs font-semibold text-black"
+                style={{ background: BRAND.gold }}
+                onClick={closeMenu}
+              >
+                {t("nav.toDashboard")}
+              </Link>
+            ) : (
+              <Link
+                to="/auth"
+                search={{ mode: "login" }}
+                className="rounded-full border border-white/25 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/90 transition hover:bg-white/10"
+                onClick={closeMenu}
+              >
+                {t("nav.login")}
+              </Link>
+            )}
+            <button
+              onClick={toggleMenu}
+              className="rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+              aria-label="Toggle menu"
+            >
+              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
