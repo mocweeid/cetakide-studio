@@ -735,63 +735,84 @@ function Workspace() {
               </div>
             </Field>
             <Field label="Judul">
-              <input
-                value={form.title}
-                onChange={updateField("title")}
-                className={inputCls}
-                placeholder="Diskon 50%"
-              />
+              <div className="relative">
+                <input
+                  value={form.title}
+                  onChange={updateField("title")}
+                  className={inputCls + " pr-9"}
+                  placeholder="Diskon 50%"
+                />
+                <AiFillBtn onClick={() => runAutofill("title")} loading={autofillingKey === "title"} />
+              </div>
             </Field>
             <Field label="Sub Judul">
-              <input
-                value={form.subtitle}
-                onChange={updateField("subtitle")}
-                className={inputCls}
-                placeholder="Berlaku sampai 31 Des"
-              />
+              <div className="relative">
+                <input
+                  value={form.subtitle}
+                  onChange={updateField("subtitle")}
+                  className={inputCls + " pr-9"}
+                  placeholder="Berlaku sampai 31 Des"
+                />
+                <AiFillBtn onClick={() => runAutofill("subtitle")} loading={autofillingKey === "subtitle"} />
+              </div>
             </Field>
             <Field label="Nomor WA">
-              <input
-                value={form.whatsapp}
-                onChange={updateField("whatsapp")}
-                className={inputCls}
-                placeholder="0812..."
-              />
+              <div className="relative">
+                <input
+                  value={form.whatsapp}
+                  onChange={updateField("whatsapp")}
+                  className={inputCls + " pr-9"}
+                  placeholder="0812..."
+                />
+                <AiFillBtn onClick={() => runAutofill("whatsapp")} loading={autofillingKey === "whatsapp"} />
+              </div>
             </Field>
             <div className="grid grid-cols-3 gap-2">
               <Field label="Facebook">
-                <input
-                  value={form.facebook_url}
-                  onChange={updateField("facebook_url")}
-                  className={inputCls}
-                  placeholder="fb.com/brand"
-                />
+                <div className="relative">
+                  <input
+                    value={form.facebook_url}
+                    onChange={updateField("facebook_url")}
+                    className={inputCls + " pr-9"}
+                    placeholder="fb.com/brand"
+                  />
+                  <AiFillBtn onClick={() => runAutofill("facebook_url")} loading={autofillingKey === "facebook_url"} />
+                </div>
               </Field>
               <Field label="Instagram">
-                <input
-                  value={form.instagram_url}
-                  onChange={updateField("instagram_url")}
-                  className={inputCls}
-                  placeholder="@brand"
-                />
+                <div className="relative">
+                  <input
+                    value={form.instagram_url}
+                    onChange={updateField("instagram_url")}
+                    className={inputCls + " pr-9"}
+                    placeholder="@brand"
+                  />
+                  <AiFillBtn onClick={() => runAutofill("instagram_url")} loading={autofillingKey === "instagram_url"} />
+                </div>
               </Field>
               <Field label="Twitter">
-                <input
-                  value={form.twitter_url}
-                  onChange={updateField("twitter_url")}
-                  className={inputCls}
-                  placeholder="@brand"
-                />
+                <div className="relative">
+                  <input
+                    value={form.twitter_url}
+                    onChange={updateField("twitter_url")}
+                    className={inputCls + " pr-9"}
+                    placeholder="@brand"
+                  />
+                  <AiFillBtn onClick={() => runAutofill("twitter_url")} loading={autofillingKey === "twitter_url"} />
+                </div>
               </Field>
             </div>
             <Field label="Isi Konten">
-              <textarea
-                value={form.body_content}
-                onChange={updateField("body_content")}
-                rows={2}
-                className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 text-sm outline-none focus:border-primary/60"
-                placeholder="Detail penawaran..."
-              />
+              <div className="relative">
+                <textarea
+                  value={form.body_content}
+                  onChange={updateField("body_content")}
+                  rows={2}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-9 text-sm outline-none focus:border-primary/60"
+                  placeholder="Detail penawaran..."
+                />
+                <AiFillBtn onClick={() => runAutofill("body_content")} loading={autofillingKey === "body_content"} />
+              </div>
             </Field>
 
             <div>
