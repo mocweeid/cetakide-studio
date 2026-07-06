@@ -52,6 +52,45 @@ export type Database = {
           },
         ]
       }
+      ai_provider_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          api_key_masked: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          label: string | null
+          model: string | null
+          provider: string | null
+          provider_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          api_key_masked?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          label?: string | null
+          model?: string | null
+          provider?: string | null
+          provider_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          api_key_masked?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          label?: string | null
+          model?: string | null
+          provider?: string | null
+          provider_id?: string | null
+        }
+        Relationships: []
+      }
       ai_providers: {
         Row: {
           api_key: string

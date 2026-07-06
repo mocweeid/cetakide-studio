@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.log_ai_provider_change() FROM PUBLIC, anon, authenticated;

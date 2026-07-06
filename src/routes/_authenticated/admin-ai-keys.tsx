@@ -2,8 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell, useAppUser } from "@/components/app-shell";
 import { supabase } from "@/integrations/supabase/client";
-import { Key, Plus, Trash2, AlertTriangle, Loader2, Eye, EyeOff, Power } from "lucide-react";
+import { Key, Plus, Trash2, AlertTriangle, Loader2, Eye, EyeOff, Power, Zap, ScrollText } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { testAiKeyServer } from "@/lib/testAiKey.functions";
 
 export const Route = createFileRoute("/_authenticated/admin-ai-keys")({
   head: () => ({
@@ -40,6 +42,12 @@ function AdminAiKeysPage() {
   const [rows, setRows] = useState<ProviderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showId, setShowId] = useState<string | null>(null);
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [logs, setLogs] = useState<Array<{
+    id: string; action: string; provider: string | null; model: string | null;
+    label: string | null; api_key_masked: string | null; created_at: string; actor_id: string | null;
+  }>>([]);
+  const testKey = useServerFn(testAiKeyServer);
   const [form, setForm] = useState({
     provider: "gemini",
     model: "gemini-2.0-flash",
@@ -50,7 +58,10 @@ function AdminAiKeysPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (user?.isDeveloper) void load();
+    if (user?.isDeveloper) {
+      void load();
+      void loadLogs();
+    }
   }, [user?.isDeveloper]);
 
   async function load() {
@@ -63,6 +74,31 @@ function AdminAiKeysPage() {
     if (error) toast.error(error.message);
     setRows((data ?? []) as ProviderRow[]);
     setLoading(false);
+  }
+
+  async function loadLogs() {
+    const { data, error } = await supabase
+      .from("ai_provider_audit_log")
+      .select("id, action, provider, model, label, api_key_masked, created_at, actor_id")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) return;
+    setLogs((data ?? []) as typeof logs);
+  }
+
+  async function runTest(row: ProviderRow) {
+    setTestingId(row.id);
+    try {
+      const res = await testKey({
+        data: { provider: row.provider, model: row.model ?? undefined, api_key: row.api_key },
+      });
+      if (res.ok) toast.success(`✓ ${res.message}`);
+      else toast.error(`✗ ${res.status}: ${res.message}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal test");
+    } finally {
+      setTestingId(null);
+    }
   }
 
   async function addKey() {
@@ -85,6 +121,7 @@ function AdminAiKeysPage() {
     toast.success("API key ditambahkan");
     setForm({ ...form, api_key: "", label: "" });
     void load();
+    void loadLogs();
   }
 
   async function toggleActive(row: ProviderRow) {
@@ -94,6 +131,7 @@ function AdminAiKeysPage() {
       .eq("id", row.id);
     if (error) return toast.error(error.message);
     void load();
+    void loadLogs();
   }
 
   async function removeKey(row: ProviderRow) {
@@ -102,6 +140,7 @@ function AdminAiKeysPage() {
     if (error) return toast.error(error.message);
     toast.success("Terhapus");
     void load();
+    void loadLogs();
   }
 
   if (!user?.isDeveloper) {
@@ -252,6 +291,18 @@ function AdminAiKeysPage() {
                       <td className="px-3 py-2 text-right">
                         <div className="flex justify-end gap-2">
                           <button
+                            onClick={() => runTest(r)}
+                            disabled={testingId === r.id}
+                            title="Uji API"
+                            className="text-muted-foreground hover:text-yellow-300 disabled:opacity-50"
+                          >
+                            {testingId === r.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Zap className="h-4 w-4" />
+                            )}
+                          </button>
+                          <button
                             onClick={() => toggleActive(r)}
                             title={r.is_active ? "Nonaktifkan" : "Aktifkan"}
                             className="text-muted-foreground hover:text-primary"
@@ -265,6 +316,61 @@ function AdminAiKeysPage() {
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 backdrop-blur-md">
+          <div className="mb-4 flex items-center gap-2">
+            <ScrollText className="h-5 w-5 text-primary" />
+            <h2 className="font-display text-lg font-bold">Audit Log</h2>
+          </div>
+          {logs.length === 0 ? (
+            <p className="py-6 text-sm text-muted-foreground">Belum ada aktivitas.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b border-white/10 text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Waktu</th>
+                    <th className="px-3 py-2 text-left">Aksi</th>
+                    <th className="px-3 py-2 text-left">Provider</th>
+                    <th className="px-3 py-2 text-left">Model</th>
+                    <th className="px-3 py-2 text-left">Label</th>
+                    <th className="px-3 py-2 text-left">Key</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((l) => (
+                    <tr key={l.id} className="border-b border-white/5">
+                      <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                        {new Date(l.created_at).toLocaleString("id-ID")}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-mono ${
+                            l.action === "insert"
+                              ? "bg-emerald-500/20 text-emerald-300"
+                              : l.action === "delete"
+                                ? "bg-red-500/20 text-red-300"
+                                : "bg-amber-500/20 text-amber-300"
+                          }`}
+                        >
+                          {l.action}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 font-mono">{l.provider ?? "-"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.model ?? "-"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.label ?? "-"}</td>
+                      <td className="px-3 py-2">
+                        <code className="rounded bg-black/40 px-2 py-1 text-xs">
+                          {l.api_key_masked ?? "-"}
+                        </code>
                       </td>
                     </tr>
                   ))}
