@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/inpainting")({
   head: () => ({
-    meta: [{ title: "AI Inpainting — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "AI Inpainting — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: InpaintingPage,
 });

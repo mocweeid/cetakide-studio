@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/stock-library")({
   head: () => ({
-    meta: [{ title: "Stock Library — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Stock Library — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: StockLibraryPage,
 });
@@ -45,19 +45,19 @@ const STOCK_IMAGES = [
     id: "3",
     title: "Fashion street style",
     category: "Fashion",
-    author: "Unsplash",
+    author: "User",
     w: 300,
     h: 400,
-    url: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=300&h=400&fit=crop",
+    url: "/assets/kategori/fashion/fashion-6.png",
   },
   {
     id: "4",
     title: "Makanan premium plating",
     category: "Kuliner",
-    author: "Unsplash",
+    author: "User",
     w: 400,
     h: 400,
-    url: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=400&fit=crop",
+    url: "/assets/kategori/kuliner/kuliner-2.png",
   },
   {
     id: "5",
@@ -99,10 +99,10 @@ const STOCK_IMAGES = [
     id: "9",
     title: "Sepatu sneaker hitam",
     category: "Fashion",
-    author: "Unsplash",
+    author: "User",
     w: 400,
     h: 400,
-    url: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop",
+    url: "/assets/kategori/fashion/fashion-7.png",
   },
   {
     id: "10",
@@ -117,10 +117,10 @@ const STOCK_IMAGES = [
     id: "11",
     title: "Burger artisanal",
     category: "Kuliner",
-    author: "Unsplash",
+    author: "User",
     w: 400,
     h: 400,
-    url: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=400&fit=crop",
+    url: "/assets/kategori/kuliner/kuliner-3.png",
   },
   {
     id: "12",

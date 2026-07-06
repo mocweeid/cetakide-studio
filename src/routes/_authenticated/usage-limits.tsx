@@ -4,7 +4,7 @@ import { Gauge, Zap, Image, Users, AlertTriangle, TrendingUp } from "lucide-reac
 
 export const Route = createFileRoute("/_authenticated/usage-limits")({
   head: () => ({
-    meta: [{ title: "Batas Penggunaan — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Batas Penggunaan — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: UsageLimitsPage,
 });

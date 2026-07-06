@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { Sparkles, Menu, X, ChevronDown } from "lucide-react";
+import { Sparkles, Menu, X, ChevronDown, Globe } from "lucide-react";
 import { BRAND } from "@/config/site-assets";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type NavItem = {
   label: string;
@@ -11,30 +12,32 @@ type NavItem = {
   children?: { label: string; to: string }[];
 };
 
-const navLinks: NavItem[] = [
-  { label: "Beranda", to: "#" },
-  {
-    label: "Fitur Dashboard",
-    children: [
-      { label: "AI Visual Builder", to: "#ai-visual-builder" },
-      { label: "Manajemen Brand Kit", to: "#fitur-preview" },
-      { label: "Font Kustom", to: "#fitur-preview" },
-      { label: "Auto Uploader Media", to: "#fitur-preview" },
-    ],
-  },
-  {
-    label: "Sumber Daya",
-    children: [
-      { label: "Galeri Contoh", to: "#bento" },
-      { label: "Logo AI", to: "#logo" },
-      { label: "Cara Kerja", to: "#cara-kerja" },
-    ],
-  },
-  { label: "FAQ", to: "#faq" },
-  { label: "Harga", to: "#harga" },
-];
-
 export function Navbar() {
+  const { lang, toggleLang, t } = useLanguage();
+
+  const navLinks: NavItem[] = [
+    { label: t("nav.home"), to: "#" },
+    {
+      label: t("nav.dashboardFeatures"),
+      children: [
+        { label: "AI Visual Builder", to: "#ai-visual-builder" },
+        { label: "Manajemen Brand Kit", to: "#fitur-preview" },
+        { label: "Font Kustom", to: "#fitur-preview" },
+        { label: "Auto Uploader Media", to: "#fitur-preview" },
+      ],
+    },
+    {
+      label: t("nav.resources"),
+      children: [
+        { label: "Galeri Contoh", to: "#bento" },
+        { label: "Logo AI", to: "#logo" },
+        { label: "Cara Kerja", to: "#cara-kerja" },
+      ],
+    },
+    { label: t("nav.faq"), to: "#faq" },
+    { label: t("nav.pricing"), to: "#harga" },
+  ];
+
   const [isOpen, setIsOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
 
@@ -107,22 +110,38 @@ export function Navbar() {
               ),
             )}
             {session ? (
-              <Link
-                to="/dashboard"
-                className="group relative overflow-hidden rounded-full px-5 py-2 text-sm font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                style={{ background: BRAND.gold }}
-              >
-                <span className="relative z-10">Ke Dashboard</span>
-                <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
-              </Link>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={toggleLang}
+                  className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  {lang}
+                </button>
+                <Link
+                  to="/dashboard"
+                  className="group relative overflow-hidden rounded-full px-5 py-2 text-sm font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                  style={{ background: BRAND.gold }}
+                >
+                  <span className="relative z-10">{t("nav.toDashboard")}</span>
+                  <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
+                </Link>
+              </div>
             ) : (
               <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleLang}
+                  className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  {lang}
+                </button>
                 <Link
                   to="/auth"
                   search={{ mode: "login" }}
                   className="px-4 py-2 text-sm font-semibold text-white/80 transition-colors hover:text-white"
                 >
-                  Masuk
+                  {t("nav.login")}
                 </Link>
                 <Link
                   to="/auth"
@@ -130,7 +149,7 @@ export function Navbar() {
                   className="group relative overflow-hidden rounded-full px-5 py-2 text-sm font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-lg"
                   style={{ background: BRAND.gold }}
                 >
-                  <span className="relative z-10">Mulai Gratis</span>
+                  <span className="relative z-10">{t("nav.startFree")}</span>
                   <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
                 </Link>
               </div>
@@ -181,24 +200,40 @@ export function Navbar() {
                 ),
               )}
               {session ? (
-                <Link
-                  to="/dashboard"
-                  className="group relative overflow-hidden rounded-full px-5 py-2 text-center text-sm font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                  style={{ background: BRAND.gold }}
-                  onClick={closeMenu}
-                >
-                  <span className="relative z-10">Ke Dashboard</span>
-                  <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
-                </Link>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={toggleLang}
+                    className="flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <Globe className="h-4 w-4" />
+                    Bahasa: {lang}
+                  </button>
+                  <Link
+                    to="/dashboard"
+                    className="group relative overflow-hidden rounded-full px-5 py-2 text-center text-sm font-semibold text-black transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                    style={{ background: BRAND.gold }}
+                    onClick={closeMenu}
+                  >
+                    <span className="relative z-10">{t("nav.toDashboard")}</span>
+                    <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
+                  </Link>
+                </div>
               ) : (
                 <div className="flex flex-col gap-3">
+                  <button
+                    onClick={toggleLang}
+                    className="flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <Globe className="h-4 w-4" />
+                    Bahasa: {lang}
+                  </button>
                   <Link
                     to="/auth"
                     search={{ mode: "login" }}
                     className="rounded-full border border-white/20 px-5 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-white/10"
                     onClick={closeMenu}
                   >
-                    Masuk
+                    {t("nav.login")}
                   </Link>
                   <Link
                     to="/auth"
@@ -207,7 +242,7 @@ export function Navbar() {
                     style={{ background: BRAND.gold }}
                     onClick={closeMenu}
                   >
-                    <span className="relative z-10">Mulai Gratis</span>
+                    <span className="relative z-10">{t("nav.startFree")}</span>
                     <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
                   </Link>
                 </div>

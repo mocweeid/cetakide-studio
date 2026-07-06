@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/reviews")({
   head: () => ({
-    meta: [{ title: "Ulasan & Feedback — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Ulasan & Feedback — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: ReviewsPage,
 });
@@ -17,7 +17,7 @@ const MOCK_REVIEWS = [
     name: "Budi Santoso",
     avatar: "B",
     rating: 5,
-    text: "CetakIde luar biasa! Desain iklan saya jadi 10x lebih cepat dan hasilnya jauh lebih profesional dari sebelumnya.",
+    text: "Cetak Ide luar biasa! Desain iklan saya jadi 10x lebih cepat dan hasilnya jauh lebih profesional dari sebelumnya.",
     date: "2026-07-01",
     platform: "Instagram",
     helpful: 12,
@@ -27,7 +27,7 @@ const MOCK_REVIEWS = [
     name: "Siti Rahayu",
     avatar: "S",
     rating: 5,
-    text: "Hasil generate untuk keperluan Facebook Ads sangat memuaskan. CTR iklan saya naik 35% setelah pakai CetakIde!",
+    text: "Hasil generate untuk keperluan Facebook Ads sangat memuaskan. CTR iklan saya naik 35% setelah pakai Cetak Ide!",
     date: "2026-06-25",
     platform: "Facebook Ads",
     helpful: 8,
@@ -276,7 +276,7 @@ function ReviewsPage() {
                     <textarea
                       value={myReview}
                       onChange={(e) => setMyReview(e.target.value)}
-                      placeholder="Bagikan pengalaman Anda menggunakan CetakIde..."
+                      placeholder="Bagikan pengalaman Anda menggunakan Cetak Ide..."
                       rows={4}
                       className="w-full resize-none rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm placeholder:text-white/30 focus:border-primary/50 focus:outline-none"
                     />
@@ -299,7 +299,7 @@ function ReviewsPage() {
                   Terima kasih!
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Ulasan Anda sangat berarti bagi pengembangan CetakIde.
+                  Ulasan Anda sangat berarti bagi pengembangan Cetak Ide.
                 </p>
               </div>
             )}

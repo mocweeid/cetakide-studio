@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/templates")({
   head: () => ({
-    meta: [{ title: "Koleksi Template — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Koleksi Template — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: TemplatesPage,
 });

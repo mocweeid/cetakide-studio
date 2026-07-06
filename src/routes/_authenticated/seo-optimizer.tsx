@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/seo-optimizer")({
   head: () => ({
-    meta: [{ title: "SEO Optimizer — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "SEO Optimizer — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: SeoOptimizerPage,
 });

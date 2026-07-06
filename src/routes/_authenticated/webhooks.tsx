@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/webhooks")({
   head: () => ({
-    meta: [{ title: "Webhook API — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Webhook API — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: WebhooksPage,
 });

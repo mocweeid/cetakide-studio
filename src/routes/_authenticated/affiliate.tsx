@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/affiliate")({
   head: () => ({
-    meta: [{ title: "Program Afiliasi — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Program Afiliasi — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: AffiliatePage,
 });
@@ -87,7 +87,7 @@ function AffiliatePage() {
   return (
     <AppShell
       title="Program Afiliasi"
-      subtitle="Dapatkan komisi dengan mengajak pengguna baru ke CetakIde"
+      subtitle="Dapatkan komisi dengan mengajak pengguna baru ke Cetak Ide"
       user={user}
     >
       <div className="space-y-4">

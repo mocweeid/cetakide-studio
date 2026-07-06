@@ -26,7 +26,7 @@ export function BannerCarousel({ images }: { images: string[] }) {
           >
             <img
               src={src}
-              alt={`Banner CetakIde ${i + 1}`}
+              alt={`Banner Cetak Ide ${i + 1}`}
               loading="lazy"
               className="h-full w-full object-cover"
             />

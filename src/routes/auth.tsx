@@ -15,10 +15,10 @@ export const Route = createFileRoute("/auth")({
   validateSearch: search,
   head: () => ({
     meta: [
-      { title: "Masuk / Daftar — CetakIde" },
+      { title: "Masuk / Daftar — Cetak Ide" },
       {
         name: "description",
-        content: "Masuk ke dashboard CetakIde atau daftar akun baru dengan saldo gratis Rp50.000.",
+        content: "Masuk ke dashboard Cetak Ide atau daftar akun baru dengan saldo gratis Rp50.000.",
       },
     ],
   }),
@@ -104,7 +104,7 @@ function AuthPage() {
               <Sparkles className="h-6 w-6" />
             </div>
             <h2 className="font-display text-2xl font-semibold tracking-tight text-white">
-              {mode === "login" ? "Sign in to CetakIde" : "Create your account"}
+              {mode === "login" ? "Sign in to Cetak Ide" : "Create your account"}
             </h2>
             <p className="mt-2 text-sm text-white/60">
               {mode === "login"
@@ -235,7 +235,7 @@ function AuthPage() {
           </div>
 
           <div className="mt-8 rounded-xl border border-white/10 bg-transparent p-4 text-center text-sm text-white/60">
-            {mode === "login" ? "New to CetakIde?" : "Already have an account?"}{" "}
+            {mode === "login" ? "New to Cetak Ide?" : "Already have an account?"}{" "}
             <button
               onClick={() => setMode(mode === "login" ? "register" : "login")}
               className="text-blue-400 hover:underline"

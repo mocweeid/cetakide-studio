@@ -18,7 +18,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/integrations")({
   head: () => ({
-    meta: [{ title: "Integrasi API — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Integrasi API — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: IntegrationsPage,
 });

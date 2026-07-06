@@ -19,7 +19,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/auto-uploader")({
   head: () => ({
-    meta: [{ title: "Auto Uploader — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Auto Uploader — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: AutoUploaderPage,
 });

@@ -14,7 +14,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/support")({
   head: () => ({
-    meta: [{ title: "Pusat Bantuan — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Pusat Bantuan — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: SupportPage,
 });
@@ -24,7 +24,7 @@ const FAQS = [
     category: "Saldo & Top Up",
     items: [
       {
-        q: "Bagaimana cara top up saldo CetakIde?",
+        q: "Bagaimana cara top up saldo Cetak Ide?",
         a: "Kunjungi menu 'Top Up' di dashboard Anda. Kami menerima pembayaran via transfer bank (BCA, Mandiri, BNI), QRIS, GoPay, dan OVO.",
       },
       {
@@ -50,7 +50,7 @@ const FAQS = [
       },
       {
         q: "Apakah visual yang dihasilkan bebas royalti?",
-        a: "Ya, semua visual yang dibuat dengan CetakIde adalah milik Anda dan dapat digunakan untuk keperluan komersial.",
+        a: "Ya, semua visual yang dibuat dengan Cetak Ide adalah milik Anda dan dapat digunakan untuk keperluan komersial.",
       },
     ],
   },
@@ -63,7 +63,7 @@ const FAQS = [
       },
       {
         q: "Apakah ada uji coba gratis?",
-        a: "Ya! Akun baru mendapatkan 10 generate gratis untuk mencoba layanan CetakIde.",
+        a: "Ya! Akun baru mendapatkan 10 generate gratis untuk mencoba layanan Cetak Ide.",
       },
       {
         q: "Bisakah saya membatalkan langganan kapan saja?",
@@ -122,7 +122,7 @@ function SupportPage() {
                 label: "Chat WhatsApp",
                 icon: MessageCircle,
                 color: "#25D366",
-                href: "https://wa.me/6281234567890?text=Halo+CetakIde+Support",
+                href: "https://wa.me/6281234567890?text=Halo+Cetak Ide+Support",
               },
               { label: "Panduan Lengkap", icon: HelpCircle, color: "#3b82f6", href: "#" },
               { label: "Status Sistem", icon: CheckCircle2, color: "#10b981", href: "#" },

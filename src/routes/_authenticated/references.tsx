@@ -7,7 +7,7 @@ import { Image as ImageIcon, Plus, Trash2, X, Loader2, Pencil } from "lucide-rea
 
 export const Route = createFileRoute("/_authenticated/references")({
   head: () => ({
-    meta: [{ title: "Manajemen Referensi — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Manajemen Referensi — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: ReferencesPage,
 });

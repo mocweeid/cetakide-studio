@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/style-tuner")({
   head: () => ({
-    meta: [{ title: "Visual Style Tuner — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Visual Style Tuner — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: StyleTunerPage,
 });

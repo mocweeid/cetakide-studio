@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
-    meta: [{ title: "Settings — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Settings — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: SettingsPage,
 });

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { FileCode, Copy, KeyRound, Terminal } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/api-doc")({
-  head: () => ({ meta: [{ title: "API Doc — CetakIde" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "API Doc — Cetak Ide" }, { name: "robots", content: "noindex" }] }),
   component: ApiDocPage,
 });
 
@@ -84,7 +84,7 @@ function ApiDocPage() {
   -H 'Content-Type: application/json'${ep.body ? ` \\\n  -d '${ep.body.replace(/\n\s*/g, " ")}'` : ""}`;
 
   return (
-    <AppShell title="API Doc" subtitle="Dokumentasi REST API CetakIde" user={user}>
+    <AppShell title="API Doc" subtitle="Dokumentasi REST API Cetak Ide" user={user}>
       <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-white/15 bg-white/[0.04] p-4 backdrop-blur-md">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Terminal className="h-4 w-4 text-primary" /> Base URL

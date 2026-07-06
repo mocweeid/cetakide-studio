@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/team")({
   head: () => ({
-    meta: [{ title: "Kolaborasi Tim — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Kolaborasi Tim — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: TeamPage,
 });

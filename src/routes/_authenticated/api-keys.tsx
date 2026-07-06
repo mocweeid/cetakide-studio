@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/api-keys")({
   head: () => ({
-    meta: [{ title: "API Keys — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "API Keys — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: ApiKeysPage,
 });

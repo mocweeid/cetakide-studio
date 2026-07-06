@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/workspace")({
     preset: z.string().optional(),
   }),
   head: () => ({
-    meta: [{ title: "Workspace — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Workspace — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: Workspace,
 });
@@ -657,7 +657,7 @@ function Workspace() {
 
             <div className="space-y-4 max-h-[60vh] overflow-y-auto text-sm text-white/80 pr-2">
               <p>
-                Selamat datang di <strong>Workspace CetakIde</strong>! Berikut cara memaksimalkan
+                Selamat datang di <strong>Workspace Cetak Ide</strong>! Berikut cara memaksimalkan
                 fitur sidebar Anda:
               </p>
 
@@ -924,7 +924,7 @@ function Workspace() {
             </div>
             <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
               {[
-                { name: "CetakIDe Official", colors: ["#EAB308", "#0A0F1E", "#FFFFFF"] },
+                { name: "Cetak Ide Official", colors: ["#EAB308", "#0A0F1E", "#FFFFFF"] },
                 { name: "Tech Startup", colors: ["#3B82F6", "#1E293B", "#F8FAFC"] },
                 { name: "Eco Friendly", colors: ["#22C55E", "#14532D", "#F0FDF4"] },
                 { name: "Luxury Brand", colors: ["#D4AF37", "#000000", "#1A1A1A"] },

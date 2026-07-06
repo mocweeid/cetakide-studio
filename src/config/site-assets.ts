@@ -1,11 +1,11 @@
 // ============================================================================
-// CENTRALIZED ASSET CONFIG — CetakIDe Landing Page
+// CENTRALIZED ASSET CONFIG — Cetak Ide Landing Page
 // Replace these placeholder URLs with local paths (e.g. "/assets/hero/1.webp")
 // once real files are added to /public or imported from src/assets.
 // ============================================================================
 
 export const BRAND = {
-  name: "CetakIDe",
+  name: "Cetak Ide",
   footerBrand: "Garata",
   whatsapp: "https://wa.me/6288975958005",
   gold: "#EAB308",
@@ -18,14 +18,13 @@ export const BRAND = {
 // Swap these paths to /assets/mockup-cards/1.webp ... 5.webp when ready.
 export const heroMockupCards: string[] = [
   "/assets/feed-ig/ig-1.png",
-  "/assets/feed-ig/ig-2.png",
+  "/assets/story-ig/story-2.png",
   "/assets/feed-ig/ig-3.png",
-  "/assets/feed-ig/ig-4.png",
-  "/assets/feed-ig/ig-5.png",
+  "/assets/story-ig/story-4.png",
 ];
 
 export const heroPrompt =
-  "Sepatu sneakers premium hitam untuk iklan instagram, efek cahaya dramatis...";
+  "Buatkan poster iklan desain kekinian untuk bisnis saya...";
 
 // ---------- ADS CATEGORY CAROUSELS (5 sequential) ----------
 // Each category becomes its own auto-playing infinite carousel.
@@ -77,12 +76,14 @@ export const carouselData: {
     aspectClass: "aspect-square",
     width: 220,
     images: [
-      "https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=800&h=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1557821552-17105176677c?q=80&w=800&h=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=800&h=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800&h=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=800&h=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?q=80&w=800&h=800&auto=format&fit=crop",
+      "/assets/fb-ads-standart/fb-1.png",
+      "/assets/fb-ads-standart/fb-2.png",
+      "/assets/fb-ads-standart/fb-3.png",
+      "/assets/fb-ads-standart/fb-4.png",
+      "/assets/fb-ads-standart/fb-5.png",
+      "/assets/fb-ads-standart/fb-6.png",
+      "/assets/fb-ads-standart/fb-7.png",
+      "/assets/fb-ads-standart/fb-8.png",
     ],
   },
 ];
@@ -95,21 +96,21 @@ export const nicheTabs: Niche[] = ["Semua", "Kuliner", "Fashion", "Otomotif", "P
 
 export const bentoByNiche: Record<Exclude<Niche, "Semua">, { main: string; small: string[] }> = {
   Kuliner: {
-    main: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800&h=1000&auto=format&fit=crop",
+    main: "/assets/kategori/kuliner/kuliner-1.png",
     small: [
-      "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=400&h=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=400&h=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=400&h=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1484723091791-00d312214432?q=80&w=400&h=400&auto=format&fit=crop",
+      "/assets/kategori/kuliner/kuliner-2.png",
+      "/assets/kategori/kuliner/kuliner-3.png",
+      "/assets/kategori/kuliner/kuliner-4.png",
+      "/assets/kategori/kuliner/kuliner-5.png",
     ],
   },
   Fashion: {
-    main: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&h=1000&auto=format&fit=crop",
+    main: "/assets/kategori/fashion/fashion-1.png",
     small: [
-      "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=400&h=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=400&h=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=400&h=400&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1434389678232-04ce6ac5b905?q=80&w=400&h=400&auto=format&fit=crop",
+      "/assets/kategori/fashion/fashion-2.png",
+      "/assets/kategori/fashion/fashion-3.png",
+      "/assets/kategori/fashion/fashion-4.png",
+      "/assets/kategori/fashion/fashion-5.png",
     ],
   },
   Otomotif: {
@@ -134,13 +135,16 @@ export const bentoByNiche: Record<Exclude<Niche, "Semua">, { main: string; small
 
 // ---------- LOGO SHOWCASE (7-10 items) ----------
 export const logoShowcase: string[] = [
-  "https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?q=80&w=400&h=400&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1622676067757-0a4ff499ea8b?q=80&w=400&h=400&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1558000143-a6042db63212?q=80&w=400&h=400&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1616186835106-9be62dafb1ec?q=80&w=400&h=400&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1614680376593-902f74cf0d41?q=80&w=400&h=400&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1563694983011-6f4bb44ab124?q=80&w=400&h=400&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?q=80&w=400&h=400&auto=format&fit=crop",
+  "/assets/logo-preset/logo-1.png",
+  "/assets/logo-preset/logo-2.png",
+  "/assets/logo-preset/logo-3.png",
+  "/assets/logo-preset/logo-4.png",
+  "/assets/logo-preset/logo-5.png",
+  "/assets/logo-preset/logo-6.png",
+  "/assets/logo-preset/logo-7.png",
+  "/assets/logo-preset/logo-8.png",
+  "/assets/logo-preset/logo-9.png",
+  "/assets/logo-preset/logo-10.png",
 ];
 
 // ---------- STATS ----------

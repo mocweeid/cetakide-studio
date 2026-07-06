@@ -15,7 +15,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/system-logs")({
   head: () => ({
-    meta: [{ title: "System Logs — CetakIde Admin" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "System Logs — Cetak Ide Admin" }, { name: "robots", content: "noindex" }],
   }),
   component: SystemLogsPage,
 });

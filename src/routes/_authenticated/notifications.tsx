@@ -14,7 +14,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
   head: () => ({
-    meta: [{ title: "Notifikasi — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Notifikasi — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: NotificationsPage,
 });

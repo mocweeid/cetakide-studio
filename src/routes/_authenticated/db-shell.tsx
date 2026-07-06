@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/db-shell")({
   head: () => ({
-    meta: [{ title: "DB Shell — CetakIde Admin" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "DB Shell — Cetak Ide Admin" }, { name: "robots", content: "noindex" }],
   }),
   component: DbShellPage,
 });

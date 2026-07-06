@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import { motion, AnimatePresence } from "framer-motion";
 import useEmblaCarousel from "embla-carousel-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import AutoScroll from "embla-carousel-auto-scroll";
 import {
   Sparkles,
@@ -33,7 +34,6 @@ import {
 import { Navbar } from "@/components/navbar";
 import {
   BRAND,
-  heroMockupCards,
   heroPrompt,
   carouselData,
   nicheTabs,
@@ -78,8 +78,65 @@ function useTypewriter(text: string, speed = 35, startDelay = 500, resetKey = 0)
 }
 
 function HeroMockup() {
+  const { t } = useLanguage();
+  const FORMAT_CONFIG = {
+    feed: {
+      label: "Feed IG (1:1)",
+      icon: Instagram,
+      aspect: "1/1",
+      width: 170,
+      images: [
+        "/assets/feed-ig/ig-1.png",
+        "/assets/feed-ig/ig-2.png",
+        "/assets/feed-ig/ig-3.png",
+        "/assets/feed-ig/ig-4.png",
+        "/assets/feed-ig/ig-5.png",
+      ]
+    },
+    story: {
+      label: "Story IG (9:16)",
+      icon: Instagram,
+      aspect: "9/16",
+      width: 140,
+      images: [
+        "/assets/story-ig/story-2.png",
+        "/assets/story-ig/story-3.png",
+        "/assets/story-ig/story-4.png",
+        "/assets/story-ig/story-5.png",
+        "/assets/story-ig/story-6.png",
+      ]
+    },
+    fb: {
+      label: "FB Ads (1:1)",
+      icon: Facebook,
+      aspect: "1/1",
+      width: 170,
+      images: [
+        "/assets/fb-ads-standart/fb-1.png",
+        "/assets/fb-ads-standart/fb-2.png",
+        "/assets/fb-ads-standart/fb-3.png",
+        "/assets/fb-ads-standart/fb-4.png",
+        "/assets/fb-ads-standart/fb-5.png",
+      ]
+    },
+    youtube: {
+      label: "YouTube Banner",
+      icon: Youtube,
+      aspect: "16/9",
+      width: 240,
+      images: [
+        "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?q=80&w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1517816743773-6e0fd5ce2624?q=80&w=600&auto=format&fit=crop",
+      ]
+    }
+  };
+
+  const [activeFormat, setActiveFormat] = useState<keyof typeof FORMAT_CONFIG>("feed");
   const [runKey, setRunKey] = useState(0);
-  const { out: typed, done: typedDone } = useTypewriter(heroPrompt, 32, 700, runKey);
+  const { out: typed, done: typedDone } = useTypewriter(t(heroPrompt), 32, 700, runKey);
   const [phase, setPhase] = useState<"typing" | "generating" | "done">("typing");
 
   useEffect(() => {
@@ -105,13 +162,20 @@ function HeroMockup() {
     setRunKey((k) => k + 1);
   };
 
+  const handleFormatClick = (fmt: keyof typeof FORMAT_CONFIG) => {
+    if (fmt === activeFormat) return;
+    setActiveFormat(fmt);
+    handleRegenerate();
+  };
+
   const scatterPositions = [
-    { x: -180, y: -20, r: -14, z: 1 },
-    { x: -90, y: 30, r: -6, z: 2 },
-    { x: 0, y: -30, r: 0, z: 5 },
-    { x: 90, y: 30, r: 6, z: 2 },
-    { x: 180, y: -20, r: 14, z: 1 },
+    { x: -200, y: -20, r: -15, z: 1 },
+    { x: -100, y: 30, r: -5, z: 2 },
+    { x: 0, y: -10, r: 0, z: 4 },
+    { x: 100, y: -30, r: 5, z: 3 },
+    { x: 200, y: 20, r: 15, z: 2 },
   ];
+
 
   return (
     <div
@@ -133,6 +197,29 @@ function HeroMockup() {
 
         {/* prompt row */}
         <div className="border-b border-white/10 p-4 sm:p-5">
+          <div className="mb-3 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            <span className="text-xs font-medium text-white/50 shrink-0">Auto-Generate:</span>
+            <div className="flex gap-2 shrink-0">
+              {Object.entries(FORMAT_CONFIG).map(([key, config]) => {
+                const isActive = activeFormat === key;
+                const Icon = config.icon;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handleFormatClick(key as keyof typeof FORMAT_CONFIG)}
+                    className={`rounded-md border px-2 py-1 text-[10px] font-semibold flex items-center gap-1.5 transition-colors ${
+                      isActive 
+                        ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/30" 
+                        : "bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white/80"
+                    }`}
+                  >
+                    <Icon className="h-3 w-3" />
+                    {config.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
           <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-4 py-3">
             <Sparkles
               className="h-4 w-4 shrink-0 text-[color:var(--gold)]"
@@ -202,7 +289,7 @@ function HeroMockup() {
               >
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="h-8 w-8 animate-spin" style={{ color: BRAND.gold }} />
-                  <p className="text-sm text-white/70">Menyusun 5 visual...</p>
+                  <p className="text-sm text-white/70">{t("Menyusun 5 visual...")}</p>
                 </div>
               </motion.div>
             )}
@@ -212,27 +299,28 @@ function HeroMockup() {
           <div className="absolute inset-0 flex items-center justify-center [transform-style:preserve-3d]">
             <AnimatePresence>
               {phase === "done" &&
-                heroMockupCards.slice(0, 5).map((src, i) => {
+                FORMAT_CONFIG[activeFormat].images.map((src, i) => {
                   const p = scatterPositions[i];
+                  const f = FORMAT_CONFIG[activeFormat];
                   return (
                     <motion.div
-                      key={`${runKey}-${i}`}
+                      key={`${activeFormat}-${runKey}-${i}`}
                       initial={{ opacity: 0, scale: 0.4, y: 60, rotate: 0 }}
                       animate={{ opacity: 1, scale: 1, x: p.x, y: p.y, rotate: p.r }}
                       exit={{ opacity: 0, scale: 0.6 }}
                       transition={{ delay: i * 0.12, type: "spring", stiffness: 140, damping: 16 }}
-                      style={{ zIndex: p.z }}
-                      className="absolute h-[200px] w-[160px] overflow-hidden rounded-xl border border-white/15 bg-black shadow-2xl sm:h-[240px] sm:w-[190px]"
+                      style={{ zIndex: p.z, aspectRatio: f.aspect, width: `clamp(120px, 25vw, ${f.width}px)` }}
+                      className="absolute overflow-hidden rounded-xl border border-white/15 bg-black shadow-2xl"
                     >
                       <img
                         src={src}
                         alt={`Hasil ${i + 1}`}
                         className="h-full w-full object-cover"
                       />
-                      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/80 to-transparent px-2 py-1.5 text-[10px] text-white/80">
-                        <span>#{String(i + 1).padStart(2, "0")}</span>
+                      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/80 to-transparent px-2.5 py-2 text-[10px] text-white/90">
+                        <span className="font-medium drop-shadow-md">{f.label}</span>
                         <span
-                          className="rounded px-1.5 py-0.5"
+                          className="rounded px-1.5 py-0.5 font-bold"
                           style={{ background: BRAND.gold, color: "#000" }}
                         >
                           HD
@@ -360,7 +448,7 @@ function Bento() {
       <div className="grid gap-4 lg:grid-cols-2">
         {/* main 4:5 */}
         <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-          <div className="aspect-[4/5] w-full">
+          <div className="aspect-square w-full">
             <img src={data.main} alt="" className="h-full w-full object-cover" />
           </div>
           <div
@@ -392,6 +480,7 @@ function Bento() {
 /* -------------------------------------------------------------------------- */
 
 function Index() {
+  const { t } = useLanguage();
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
@@ -464,12 +553,12 @@ function Index() {
               background: `${BRAND.gold}0d`,
             }}
           >
-            <Sparkles className="h-3.5 w-3.5" /> {BRAND.name} · AI Visual Builder Instan
+            <Sparkles className="h-3.5 w-3.5" /> {t("hero.badge")}
           </span>
 
           <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.05] sm:text-5xl md:text-6xl lg:text-7xl">
-            Visual iklan siap tayang, <br className="hidden sm:block" />
-            <span style={{ color: BRAND.gold }}>dalam satu klik.</span>
+            {t("hero.title1")} <br className="hidden sm:block" />
+            <span style={{ color: BRAND.gold }}>{t("hero.title2")}</span>
           </h1>
 
           {/* Mini Instagram Feed Carousel — seamless infinite */}
@@ -507,7 +596,7 @@ function Index() {
                   boxShadow: `0 12px 40px -10px ${BRAND.gold}`,
                 }}
               >
-                <span className="relative z-10">Ke Dashboard Saya</span>
+                <span className="relative z-10">{t("hero.button.dashboard")}</span>
                 <ArrowRight className="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full transition-transform duration-700 group-hover:translate-x-full" />
@@ -522,7 +611,7 @@ function Index() {
                   boxShadow: `0 12px 40px -10px ${BRAND.gold}`,
                 }}
               >
-                <span className="relative z-10">Coba Gratis Sekarang</span>
+                <span className="relative z-10">{t("hero.button.free")}</span>
                 <ArrowRight className="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 <div className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-500 group-hover:translate-x-0" />
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full transition-transform duration-700 group-hover:translate-x-full" />
@@ -535,14 +624,13 @@ function Index() {
                 background: "linear-gradient(135deg, rgba(234,179,8,0.1), rgba(234,179,8,0.05))",
               }}
             >
-              <span className="relative z-10">Lihat Contoh Hasil</span>
+              <span className="relative z-10">{t("hero.button.showcase")}</span>
               <div className="absolute inset-0 -translate-x-full bg-white/10 transition-transform duration-500 group-hover:translate-x-0" />
             </a>
           </div>
 
           <p className="mx-auto mt-5 max-w-2xl text-base text-white/70 sm:text-lg">
-            Ketik prompt, pilih format, cetak visual — Instagram, Facebook Ads, YouTube, dan
-            marketplace, semua keluar dalam hitungan detik.
+            {t("hero.subtitle")}
           </p>
 
           <HeroMockup />
@@ -557,10 +645,10 @@ function Index() {
               className="text-xs font-semibold uppercase tracking-[0.2em]"
               style={{ color: BRAND.gold }}
             >
-              Semua Format Iklan
+              {t("Semua Format Iklan")}
             </span>
             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
-              1 tool untuk semua channel pemasaran
+              {t("1 tool untuk semua channel pemasaran")}
             </h2>
           </div>
 
@@ -570,15 +658,15 @@ function Index() {
                 <div className="mb-4 flex items-end justify-between gap-4">
                   <div>
                     <h3 className="text-lg font-semibold transition-colors group-hover:text-white/90 sm:text-xl">
-                      {c.title}
+                      {t(c.title)}
                     </h3>
-                    <p className="text-xs text-white/50 sm:text-sm">{c.subtitle}</p>
+                    <p className="text-xs text-white/50 sm:text-sm">{t(c.subtitle)}</p>
                   </div>
                   <span
                     className="hidden rounded-full border px-3 py-1 text-[11px] transition-all group-hover:scale-110 sm:inline-flex"
                     style={{ borderColor: `${BRAND.gold}55`, color: BRAND.gold }}
                   >
-                    Auto-generated
+                    {t("Auto-generated")}
                   </span>
                 </div>
                 <AutoCarousel images={c.images} aspectClass={c.aspectClass} size={c.width} />
@@ -596,9 +684,9 @@ function Index() {
               className="text-xs font-semibold uppercase tracking-[0.2em]"
               style={{ color: BRAND.gold }}
             >
-              Contoh Hasil Visual
+              {t("Contoh Hasil Visual")}
             </span>
-            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Cocok untuk semua niche bisnis</h2>
+            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{t("Cocok untuk semua niche bisnis")}</h2>
           </div>
           <Bento />
         </div>
@@ -612,10 +700,10 @@ function Index() {
               className="text-xs font-semibold uppercase tracking-[0.2em]"
               style={{ color: BRAND.gold }}
             >
-              Logo & Brand Identity
+              {t("Logo & Brand Identity")}
             </span>
             <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
-              Cetak logo brand dalam hitungan detik
+              {t("Cetak logo brand dalam hitungan detik")}
             </h2>
           </div>
           <LogoAuto images={logoShowcase} />
@@ -638,7 +726,7 @@ function Index() {
                   {s.value}
                 </div>
                 <div className="mt-1 text-xs text-white/60 transition-colors group-hover:text-white/80 sm:text-sm">
-                  {s.label}
+                  {t(s.label)}
                 </div>
               </div>
             ))}
@@ -654,9 +742,9 @@ function Index() {
               className="text-xs font-semibold uppercase tracking-[0.2em]"
               style={{ color: BRAND.gold }}
             >
-              Kenapa {BRAND.name}
+              {t("Kenapa Cetak Ide").replace("Cetak Ide", BRAND.name)}
             </span>
-            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Dibangun untuk performa iklan</h2>
+            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{t("Dibangun untuk performa iklan")}</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {whyUs.map((w, i) => {
@@ -674,10 +762,10 @@ function Index() {
                     <Icon className="h-5 w-5" />
                   </div>
                   <h3 className="text-base font-semibold transition-colors group-hover:text-white/90">
-                    {w.title}
+                    {t(w.title)}
                   </h3>
                   <p className="mt-2 text-sm text-white/60 transition-colors group-hover:text-white/80">
-                    {w.desc}
+                    {t(w.desc)}
                   </p>
                 </div>
               );
@@ -697,12 +785,11 @@ function Index() {
               className="text-xs font-semibold uppercase tracking-[0.2em]"
               style={{ color: BRAND.gold }}
             >
-              Fitur Lengkap Dashboard
+              {t("Fitur Lengkap Dashboard")}
             </span>
-            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Semua yang Anda Butuhkan</h2>
+            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{t("Semua yang Anda Butuhkan")}</h2>
             <p className="mt-4 text-white/60">
-              Tidak sekadar meng-generate gambar, kami memberikan kontrol penuh atas identitas brand
-              Anda di dalam satu Workspace.
+              {t("Tidak sekadar meng-generate gambar, kami memberikan kontrol penuh atas identitas brand Anda di dalam satu Workspace.")}
             </p>
           </div>
 
@@ -712,17 +799,17 @@ function Index() {
               <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="mb-4 flex items-center gap-2">
                 <Palette className="h-5 w-5 text-yellow-500" />
-                <h3 className="font-semibold">Manajemen Brand Kit</h3>
+                <h3 className="font-semibold">{t("Manajemen Brand Kit")}</h3>
               </div>
               <p className="text-sm text-white/50 mb-6">
-                Terapkan warna perusahaan Anda secara otomatis ke setiap desain.
+                {t("Terapkan warna perusahaan Anda secara otomatis ke setiap desain.")}
               </p>
 
               <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium">Tech Startup</span>
                   <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded">
-                    Aktif
+                    {t("Aktif")}
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -760,10 +847,10 @@ function Index() {
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="mb-4 flex items-center gap-2">
                 <Type className="h-5 w-5 text-blue-400" />
-                <h3 className="font-semibold">Font Kustom</h3>
+                <h3 className="font-semibold">{t("Kustomisasi Tipografi")}</h3>
               </div>
               <p className="text-sm text-white/50 mb-6">
-                Ubah tipografi sesuka hati dari pilihan font premium populer.
+                {t("Ubah tipografi sesuka hati dari pilihan font premium populer.")}
               </p>
 
               <div className="grid grid-cols-2 gap-3">
@@ -794,17 +881,17 @@ function Index() {
               <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="mb-4 flex items-center gap-2">
                 <ImagePlus className="h-5 w-5 text-green-400" />
-                <h3 className="font-semibold">Auto Uploader Media</h3>
+                <h3 className="font-semibold">{t("Auto Uploader Media")}</h3>
               </div>
               <p className="text-sm text-white/50 mb-6">
-                Unggah produk atau logo, AI akan menghapus background otomatis.
+                {t("Unggah produk atau logo, AI akan menghapus background otomatis.")}
               </p>
 
               <div className="rounded-xl border border-dashed border-white/20 bg-white/[0.02] p-4 text-center mb-4">
                 <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-green-500/20 mb-2">
                   <ArrowRight className="h-4 w-4 text-green-400 -rotate-90" />
                 </div>
-                <p className="text-[11px] text-white/60">Klik untuk upload gambar</p>
+                <p className="text-[11px] text-white/60">{t("Klik untuk upload gambar")}</p>
               </div>
 
               <div className="grid grid-cols-3 gap-2">
@@ -839,9 +926,9 @@ function Index() {
               className="text-xs font-semibold uppercase tracking-[0.2em]"
               style={{ color: BRAND.gold }}
             >
-              How It Works
+              {t("How It Works")}
             </span>
-            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">3 langkah, visual jadi</h2>
+            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{t("3 langkah, visual jadi")}</h2>
           </div>
           <div className="relative grid gap-6 md:grid-cols-3">
             <div
@@ -863,10 +950,10 @@ function Index() {
                   {s.step}
                 </div>
                 <h3 className="text-base font-semibold transition-colors group-hover:text-white/90">
-                  {s.title}
+                  {t(s.title)}
                 </h3>
                 <p className="mt-2 text-sm text-white/60 transition-colors group-hover:text-white/80">
-                  {s.desc}
+                  {t(s.desc)}
                 </p>
               </div>
             ))}
@@ -882,9 +969,9 @@ function Index() {
               className="text-xs font-semibold uppercase tracking-[0.2em]"
               style={{ color: BRAND.gold }}
             >
-              FAQ
+              {t("FAQ")}
             </span>
-            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Pertanyaan yang sering ditanya</h2>
+            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{t("Pertanyaan yang sering ditanya")}</h2>
           </div>
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((f, i) => (
@@ -894,9 +981,9 @@ function Index() {
                 className="mb-3 rounded-xl border border-white/10 bg-white/[0.03] px-4"
               >
                 <AccordionTrigger className="text-left text-sm font-semibold sm:text-base">
-                  {f.q}
+                  {t(f.q)}
                 </AccordionTrigger>
-                <AccordionContent className="text-sm text-white/70">{f.a}</AccordionContent>
+                <AccordionContent className="text-sm text-white/70">{t(f.a)}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
@@ -918,13 +1005,13 @@ function Index() {
               className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold"
               style={{ borderColor: `${BRAND.gold}66`, color: BRAND.gold }}
             >
-              <Zap className="h-3.5 w-3.5" /> Promo Starter — Terbatas
+              <Zap className="h-3.5 w-3.5" /> {t("Promo Starter — Terbatas")}
             </span>
             <h2 className="mt-6 font-display text-3xl font-extrabold sm:text-5xl">
-              Mulai <span style={{ color: BRAND.gold }}>{BRAND.name}</span> hari ini
+              {t("Mulai Cetak Ide hari ini").replace("Cetak Ide", BRAND.name)}
             </h2>
             <p className="mt-4 text-white/70">
-              Semua fitur, saldo awal Rp50.000, tanpa langganan bulanan.
+              {t("Semua fitur, saldo awal Rp50.000, tanpa langganan bulanan.")}
             </p>
             <div className="mt-8 flex items-baseline justify-center gap-3">
               <span className="text-lg text-white/40 line-through">Rp 650.000</span>
@@ -941,7 +1028,7 @@ function Index() {
                 className="mt-8 inline-flex items-center gap-2 rounded-full px-8 py-4 font-semibold text-black transition hover:brightness-110"
                 style={{ background: BRAND.gold, boxShadow: `0 12px 40px -10px ${BRAND.gold}` }}
               >
-                Ke Dashboard <ArrowRight className="h-4 w-4" />
+                {t("Ke Dashboard")} <ArrowRight className="h-4 w-4" />
               </Link>
             ) : (
               <Link
@@ -950,7 +1037,7 @@ function Index() {
                 className="mt-8 inline-flex items-center gap-2 rounded-full px-8 py-4 font-semibold text-black transition hover:brightness-110"
                 style={{ background: BRAND.gold, boxShadow: `0 12px 40px -10px ${BRAND.gold}` }}
               >
-                Ambil Promo <ArrowRight className="h-4 w-4" />
+                {t("Ambil Promo")} <ArrowRight className="h-4 w-4" />
               </Link>
             )}
           </div>
@@ -974,8 +1061,7 @@ function Index() {
                 </span>
               </div>
               <p className="mt-4 max-w-sm text-sm text-white/60">
-                Platform AI visual builder untuk brand, marketer, dan kreator. Cetak visual iklan
-                dalam hitungan detik — tanpa desainer, tanpa langganan.
+                {t("Platform AI visual builder untuk brand, marketer, dan kreator. Cetak visual iklan dalam hitungan detik — tanpa desainer, tanpa langganan.")}
               </p>
               <div className="mt-6 flex items-center gap-3">
                 {[Instagram, Facebook, Youtube, Twitter, Send].map((Icon, i) => (
@@ -994,7 +1080,7 @@ function Index() {
             {footerColumns.map((col) => (
               <div key={col.title}>
                 <h4 className="mb-4 text-sm font-semibold" style={{ color: BRAND.gold }}>
-                  {col.title}
+                  {t(col.title)}
                 </h4>
                 <ul className="space-y-2.5">
                   {col.links.map((l) => (
@@ -1003,7 +1089,7 @@ function Index() {
                         href={l.href}
                         className="text-sm text-white/60 transition hover:text-white"
                       >
-                        {l.label}
+                        {t(l.label)}
                       </a>
                     </li>
                   ))}
@@ -1017,7 +1103,7 @@ function Index() {
               © {new Date().getFullYear()} {BRAND.footerBrand}. All rights reserved.
             </p>
             <p className="text-xs text-white/50">
-              Butuh bantuan?{" "}
+              {t("Butuh bantuan?")}{" "}
               <a href={BRAND.whatsapp} className="hover:underline" style={{ color: BRAND.gold }}>
                 WhatsApp +62 889-7595-8005
               </a>

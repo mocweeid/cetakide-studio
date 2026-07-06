@@ -6,7 +6,7 @@ import { BarChart3, Zap, Wallet, TrendingUp, CheckCircle2, XCircle, Clock } from
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   head: () => ({
-    meta: [{ title: "Analitik Hub — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Analitik Hub — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: AnalyticsPage,
 });

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/personas")({
   head: () => ({
-    meta: [{ title: "Persona Pembeli — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Persona Pembeli — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: PersonasPage,
 });

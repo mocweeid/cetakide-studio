@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/ab-testing")({
   head: () => ({
-    meta: [{ title: "A/B Testing — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "A/B Testing — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: AbTestingPage,
 });

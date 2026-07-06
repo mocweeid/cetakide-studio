@@ -7,7 +7,7 @@ import { Wallet, Check, Clock, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/top-up")({
   head: () => ({
-    meta: [{ title: "Top Up Saldo — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Top Up Saldo — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: TopUpPage,
 });

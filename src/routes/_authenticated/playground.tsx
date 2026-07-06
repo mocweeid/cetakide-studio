@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/playground")({
   head: () => ({
-    meta: [{ title: "AI Playground — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "AI Playground — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: PlaygroundPage,
 });

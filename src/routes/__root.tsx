@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 function NotFoundComponent() {
   return (
@@ -78,14 +79,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "CetakIde — AI Visual Builder Instan untuk Iklan & Sosial Media" },
+      { title: "Cetak Ide — AI Visual Builder Instan untuk Iklan & Sosial Media" },
       {
         name: "description",
         content:
           "Generate banner iklan, YouTube thumbnail, dan logo brand dalam 1 klik dengan AI. Cocok untuk UMKM, dropshipper & digital marketer.",
       },
-      { name: "author", content: "CetakIde" },
-      { property: "og:title", content: "CetakIde — AI Visual Builder Instan" },
+      { name: "author", content: "Cetak Ide" },
+      { property: "og:title", content: "Cetak Ide — AI Visual Builder Instan" },
       {
         property: "og:description",
         content: "Banner, Thumbnail, Logo — jadi dalam hitungan detik. Promo starter Rp65.000.",
@@ -132,8 +133,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster theme="dark" position="top-center" richColors />
+      <LanguageProvider>
+        <Outlet />
+        <Toaster theme="dark" position="top-center" richColors />
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

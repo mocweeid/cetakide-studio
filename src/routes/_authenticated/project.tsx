@@ -18,7 +18,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/project")({
   head: () => ({
-    meta: [{ title: "Project — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Project — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: ProjectPage,
 });
@@ -46,7 +46,7 @@ const MOCK_PROJECTS: Project[] = [
   {
     id: "m2",
     kebutuhan: "Story flash sale fashion wanita summer collection",
-    image_url: "https://placehold.co/300x530/111111/EAB308?text=Story+01",
+    image_url: "/assets/kategori/fashion/fashion-8.png",
     platform: "Instagram",
     aspect_ratio: "9:16",
     status: "sukses",
@@ -82,7 +82,7 @@ const MOCK_PROJECTS: Project[] = [
   {
     id: "m6",
     kebutuhan: "Konten feed kuliner artisanal coffee shop",
-    image_url: "https://placehold.co/400x500/0a0a0a/EAB308?text=Kuliner",
+    image_url: "/assets/kategori/kuliner/kuliner-1.png",
     platform: "Instagram",
     aspect_ratio: "4:5",
     status: "sukses",

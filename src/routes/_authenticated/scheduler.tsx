@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/scheduler")({
   head: () => ({
-    meta: [{ title: "Kalender Konten — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Kalender Konten — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: SchedulerPage,
 });

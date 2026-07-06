@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/brand-kits")({
   head: () => ({
-    meta: [{ title: "Brand Kit — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Brand Kit — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: BrandKitsPage,
 });
@@ -18,7 +18,7 @@ const INIT_BRANDS = [
     colors: ["#EAB308", "#0A0F1E", "#FFFFFF", "#CA8A04", "#F5F5F5"],
     font: "Plus Jakarta Sans",
     active: true,
-    logo: "S",
+    logo: "/assets/logo-preset/logo-11.png",
   },
   {
     id: "2",
@@ -26,7 +26,7 @@ const INIT_BRANDS = [
     colors: ["#DC2626", "#F97316", "#FBBF24", "#78350F", "#FEF3C7"],
     font: "Inter",
     active: false,
-    logo: "K",
+    logo: "/assets/logo-preset/logo-12.png",
   },
   {
     id: "3",
@@ -34,7 +34,7 @@ const INIT_BRANDS = [
     colors: ["#1E40AF", "#3B82F6", "#BFDBFE", "#0F172A", "#F8FAFC"],
     font: "Outfit",
     active: false,
-    logo: "P",
+    logo: "/assets/logo-preset/logo-13.png",
   },
 ];
 
@@ -160,10 +160,14 @@ function BrandKitsPage() {
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className="flex h-12 w-12 items-center justify-center rounded-xl text-xl font-bold text-black"
+                    className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl text-xl font-bold text-black"
                     style={{ background: brand.colors[0] }}
                   >
-                    {brand.logo}
+                    {brand.logo.startsWith("/") ? (
+                      <img src={brand.logo} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      brand.logo
+                    )}
                   </div>
                   <div>
                     <p className="font-display font-semibold text-white">{brand.name}</p>

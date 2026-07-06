@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/editor-studio")({
   head: () => ({
-    meta: [{ title: "AI Editor Studio — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "AI Editor Studio — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: EditorStudioPage,
 });

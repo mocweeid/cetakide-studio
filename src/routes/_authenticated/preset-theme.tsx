@@ -85,7 +85,7 @@ export const getThemeStyles = (theme: string) => {
 
 export const Route = createFileRoute("/_authenticated/preset-theme")({
   head: () => ({
-    meta: [{ title: "Preset Theme — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Preset Theme — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: PresetTheme,
 });

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/developer-playground")({
   head: () => ({
     meta: [
-      { title: "API Playground — CetakIde Developer" },
+      { title: "API Playground — Cetak Ide Developer" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -142,7 +142,7 @@ function DeveloperPlaygroundPage() {
   return (
     <AppShell
       title="API Playground"
-      subtitle="Uji coba semua endpoint API CetakIde secara interaktif (Developer Only)"
+      subtitle="Uji coba semua endpoint API Cetak Ide secara interaktif (Developer Only)"
       user={user}
     >
       <div className="grid gap-4 lg:grid-cols-3">

@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/billing")({
   head: () => ({
-    meta: [{ title: "Riwayat Tagihan — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Riwayat Tagihan — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: BillingPage,
 });

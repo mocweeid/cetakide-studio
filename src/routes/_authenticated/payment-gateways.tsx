@@ -15,7 +15,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/payment-gateways")({
   head: () => ({
-    meta: [{ title: "Payment Gateways — CetakIde Admin" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Payment Gateways — Cetak Ide Admin" }, { name: "robots", content: "noindex" }],
   }),
   component: PaymentGatewaysPage,
 });

@@ -24,8 +24,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — CetakIde" },
-      { name: "description", content: "Ringkasan akun & aktivitas CetakIde." },
+      { title: "Dashboard — Cetak Ide" },
+      { name: "description", content: "Ringkasan akun & aktivitas Cetak Ide." },
       { name: "robots", content: "noindex" },
     ],
   }),

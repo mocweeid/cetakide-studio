@@ -13,6 +13,7 @@ import {
   Globe,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export type AppUser = {
   userId: string;
@@ -72,6 +73,7 @@ export function AppShell({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const { lang, toggleLang, t } = useLanguage();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -119,7 +121,9 @@ export function AppShell({
                 <Menu className="h-4 w-4" />
               </button>
               <div className="min-w-0">
-                <h1 className="truncate font-display text-lg font-semibold sm:text-xl">{title}</h1>
+                <h1 className="truncate font-display text-lg font-semibold sm:text-xl">
+                  {title === "Dashboard" ? t("dashboard.title") : title}
+                </h1>
                 {subtitle && <p className="truncate text-xs text-muted-foreground">{subtitle}</p>}
               </div>
             </div>
@@ -136,6 +140,14 @@ export function AppShell({
                   <span className="rounded-full bg-primary/30 px-1.5 py-0.5 text-[9px]">∞</span>
                 )}
               </Link>
+
+              <button
+                onClick={toggleLang}
+                className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90 transition-colors hover:bg-white/20"
+              >
+                <Globe className="h-4 w-4" />
+                {lang}
+              </button>
 
               <div className="relative">
                 <button

@@ -5,7 +5,7 @@ import { Shield, ShieldCheck, ShieldAlert, Smartphone, Monitor, Globe, Filter } 
 
 export const Route = createFileRoute("/_authenticated/security-logs")({
   head: () => ({
-    meta: [{ title: "Log Keamanan — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Log Keamanan — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: SecurityLogsPage,
 });

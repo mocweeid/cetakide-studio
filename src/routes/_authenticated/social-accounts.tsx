@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/social-accounts")({
   head: () => ({
-    meta: [{ title: "Akun Sosial Media — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Akun Sosial Media — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: SocialAccountsPage,
 });

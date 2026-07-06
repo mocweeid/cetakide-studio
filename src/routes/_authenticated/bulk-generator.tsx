@@ -18,7 +18,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/bulk-generator")({
   head: () => ({
-    meta: [{ title: "Generate Massal — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Generate Massal — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: BulkGeneratorPage,
 });

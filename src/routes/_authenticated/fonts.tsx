@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/fonts")({
   head: () => ({
-    meta: [{ title: "Font Manager — CetakIde" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Font Manager — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: FontsPage,
 });
