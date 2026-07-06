@@ -25,8 +25,10 @@ import {
 import { PRESET_THEMES, getThemeStyles, DEFAULT_IMG } from "./preset-theme";
 import { generateImageServer } from "@/lib/generateImage.functions";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
+import { autofillFieldServer } from "@/lib/autofillField.functions";
 import { streamImage } from "@/lib/streamImage";
 import { useServerFn } from "@tanstack/react-start";
+import JSZip from "jszip";
 
 export const Route = createFileRoute("/_authenticated/workspace")({
   validateSearch: z.object({
@@ -173,7 +175,74 @@ function Workspace() {
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
   const generateImage = useServerFn(generateImageServer);
   const enhancePrompt = useServerFn(enhancePromptServer);
+  const autofillField = useServerFn(autofillFieldServer);
   const [enhancing, setEnhancing] = useState(false);
+  const [autofillingKey, setAutofillingKey] = useState<string | null>(null);
+  const [exportingZip, setExportingZip] = useState(false);
+
+  async function runAutofill(field:
+    | "prompt"
+    | "title"
+    | "subtitle"
+    | "whatsapp"
+    | "facebook_url"
+    | "instagram_url"
+    | "twitter_url"
+    | "social_url"
+    | "body_content") {
+    setAutofillingKey(field);
+    try {
+      const context = [
+        form.prompt && `Prompt: ${form.prompt}`,
+        form.title && `Judul: ${form.title}`,
+        form.subtitle && `Subjudul: ${form.subtitle}`,
+        selectedBrand && `Brand: ${selectedBrand.name}`,
+        selectedBrand?.brand_voice && `Voice: ${selectedBrand.brand_voice}`,
+      ]
+        .filter(Boolean)
+        .join(" | ");
+      const { value } = await autofillField({
+        data: { field, context, currentValue: form[field] || undefined },
+      });
+      setForm((f) => ({ ...f, [field]: value }));
+      toast.success("Terisi otomatis oleh AI ✨");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Autofill gagal");
+    } finally {
+      setAutofillingKey(null);
+    }
+  }
+
+  async function handleExportAll() {
+    const successes = variants.flatMap((v, i) =>
+      v.status === "sukses" ? [{ i, url: v.imageUrl }] : [],
+    );
+    if (successes.length === 0) {
+      toast.error("Belum ada varian sukses untuk diekspor.");
+      return;
+    }
+    setExportingZip(true);
+    try {
+      const zip = new JSZip();
+      for (const s of successes) {
+        // dataURL → binary
+        const res = await fetch(s.url);
+        const blob = await res.blob();
+        zip.file(`cetakide-varian-${s.i + 1}.png`, blob);
+      }
+      const content = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(content);
+      link.download = `cetakide-${Date.now()}.zip`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      toast.success(`${successes.length} varian diekspor sebagai ZIP.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Ekspor gagal");
+    } finally {
+      setExportingZip(false);
+    }
+  }
 
   // Load brand kits from DB
   useEffect(() => {
@@ -466,6 +535,23 @@ function Workspace() {
             </div>
           )}
 
+          {variants.some((v) => v.status === "sukses") && (
+            <div className="mb-3 flex justify-end">
+              <button
+                onClick={handleExportAll}
+                disabled={exportingZip}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 disabled:opacity-50"
+              >
+                {exportingZip ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
+                Ekspor Semua Varian (ZIP)
+              </button>
+            </div>
+          )}
+
           {/* Results Grid */}
           <div className="flex-1 flex items-center justify-center min-h-[400px]">
             {variants.length > 0 ? (
@@ -648,8 +734,9 @@ function Workspace() {
                   onChange={updateField("prompt")}
                   rows={4}
                   placeholder="Contoh: Banner promo kopi susu, warna coklat gold"
-                  className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-2 text-sm outline-none focus:border-primary/60"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-9 text-sm outline-none focus:border-primary/60"
                 />
+                <AiFillBtn onClick={() => runAutofill("prompt")} loading={autofillingKey === "prompt"} />
                 <button
                   type="button"
                   onClick={handleEnhance}
@@ -666,63 +753,84 @@ function Workspace() {
               </div>
             </Field>
             <Field label="Judul">
-              <input
-                value={form.title}
-                onChange={updateField("title")}
-                className={inputCls}
-                placeholder="Diskon 50%"
-              />
+              <div className="relative">
+                <input
+                  value={form.title}
+                  onChange={updateField("title")}
+                  className={inputCls + " pr-9"}
+                  placeholder="Diskon 50%"
+                />
+                <AiFillBtn onClick={() => runAutofill("title")} loading={autofillingKey === "title"} />
+              </div>
             </Field>
             <Field label="Sub Judul">
-              <input
-                value={form.subtitle}
-                onChange={updateField("subtitle")}
-                className={inputCls}
-                placeholder="Berlaku sampai 31 Des"
-              />
+              <div className="relative">
+                <input
+                  value={form.subtitle}
+                  onChange={updateField("subtitle")}
+                  className={inputCls + " pr-9"}
+                  placeholder="Berlaku sampai 31 Des"
+                />
+                <AiFillBtn onClick={() => runAutofill("subtitle")} loading={autofillingKey === "subtitle"} />
+              </div>
             </Field>
             <Field label="Nomor WA">
-              <input
-                value={form.whatsapp}
-                onChange={updateField("whatsapp")}
-                className={inputCls}
-                placeholder="0812..."
-              />
+              <div className="relative">
+                <input
+                  value={form.whatsapp}
+                  onChange={updateField("whatsapp")}
+                  className={inputCls + " pr-9"}
+                  placeholder="0812..."
+                />
+                <AiFillBtn onClick={() => runAutofill("whatsapp")} loading={autofillingKey === "whatsapp"} />
+              </div>
             </Field>
             <div className="grid grid-cols-3 gap-2">
               <Field label="Facebook">
-                <input
-                  value={form.facebook_url}
-                  onChange={updateField("facebook_url")}
-                  className={inputCls}
-                  placeholder="fb.com/brand"
-                />
+                <div className="relative">
+                  <input
+                    value={form.facebook_url}
+                    onChange={updateField("facebook_url")}
+                    className={inputCls + " pr-9"}
+                    placeholder="fb.com/brand"
+                  />
+                  <AiFillBtn onClick={() => runAutofill("facebook_url")} loading={autofillingKey === "facebook_url"} />
+                </div>
               </Field>
               <Field label="Instagram">
-                <input
-                  value={form.instagram_url}
-                  onChange={updateField("instagram_url")}
-                  className={inputCls}
-                  placeholder="@brand"
-                />
+                <div className="relative">
+                  <input
+                    value={form.instagram_url}
+                    onChange={updateField("instagram_url")}
+                    className={inputCls + " pr-9"}
+                    placeholder="@brand"
+                  />
+                  <AiFillBtn onClick={() => runAutofill("instagram_url")} loading={autofillingKey === "instagram_url"} />
+                </div>
               </Field>
               <Field label="Twitter">
-                <input
-                  value={form.twitter_url}
-                  onChange={updateField("twitter_url")}
-                  className={inputCls}
-                  placeholder="@brand"
-                />
+                <div className="relative">
+                  <input
+                    value={form.twitter_url}
+                    onChange={updateField("twitter_url")}
+                    className={inputCls + " pr-9"}
+                    placeholder="@brand"
+                  />
+                  <AiFillBtn onClick={() => runAutofill("twitter_url")} loading={autofillingKey === "twitter_url"} />
+                </div>
               </Field>
             </div>
             <Field label="Isi Konten">
-              <textarea
-                value={form.body_content}
-                onChange={updateField("body_content")}
-                rows={2}
-                className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 text-sm outline-none focus:border-primary/60"
-                placeholder="Detail penawaran..."
-              />
+              <div className="relative">
+                <textarea
+                  value={form.body_content}
+                  onChange={updateField("body_content")}
+                  rows={2}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-9 text-sm outline-none focus:border-primary/60"
+                  placeholder="Detail penawaran..."
+                />
+                <AiFillBtn onClick={() => runAutofill("body_content")} loading={autofillingKey === "body_content"} />
+              </div>
             </Field>
 
             <div>
@@ -1261,5 +1369,29 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       </label>
       {children}
     </div>
+  );
+}
+
+function AiFillBtn({
+  onClick,
+  loading,
+}: {
+  onClick: () => void;
+  loading: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      title="Isi otomatis dengan AI (Gemini)"
+      className="absolute right-1.5 top-1.5 z-10 inline-flex items-center justify-center rounded-md border border-primary/40 bg-primary/10 p-1.5 text-primary hover:bg-primary/20 disabled:opacity-50"
+    >
+      {loading ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : (
+        <Sparkles className="h-3 w-3" />
+      )}
+    </button>
   );
 }
