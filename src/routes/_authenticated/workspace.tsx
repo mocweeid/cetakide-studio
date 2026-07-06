@@ -422,6 +422,7 @@ function Workspace() {
               <select
                 value={generateCount}
                 onChange={(e) => setGenerateCount(Number(e.target.value))}
+                disabled={allRatios}
                 className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-sm outline-none"
               >
                 {[1, 2, 3, 4].map((n) => (
@@ -430,8 +431,40 @@ function Workspace() {
                   </option>
                 ))}
               </select>
+              <label className="flex items-center gap-1.5 pl-3 text-xs font-medium text-white/70 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allRatios}
+                  onChange={(e) => setAllRatios(e.target.checked)}
+                  className="accent-primary"
+                />
+                <Layers className="h-3.5 w-3.5 text-primary" />
+                Semua Rasio ({PLATFORMS[platform].ratios.length})
+              </label>
             </div>
           </div>
+          {selectedBrand && (
+            <div className="mb-3 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5">
+              <Palette className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs text-white/80">
+                Brand aktif: <b className="text-primary">{selectedBrand.name}</b>
+              </span>
+              <div className="flex gap-1 ml-auto">
+                {[selectedBrand.primary_color, selectedBrand.secondary_color, selectedBrand.accent_color]
+                  .filter(Boolean)
+                  .map((c) => (
+                    <span key={c!} className="h-3 w-3 rounded-full border border-white/20" style={{ background: c! }} />
+                  ))}
+              </div>
+              <button
+                onClick={() => setSelectedBrandId(null)}
+                className="text-white/50 hover:text-white"
+                title="Nonaktifkan brand"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
 
           {/* Results Grid */}
           <div className="flex-1 flex items-center justify-center min-h-[400px]">
@@ -444,12 +477,24 @@ function Workspace() {
                     v.status === "sukses"
                       ? variants.slice(0, i + 1).filter((x) => x.status === "sukses").length - 1
                       : -1;
+                  const jobRatioKey = allRatios
+                    ? PLATFORMS[platform].ratios[i % PLATFORMS[platform].ratios.length].key
+                    : ratio;
+                  const jobActive =
+                    PLATFORMS[platform].ratios.find((r) => r.key === jobRatioKey) ??
+                    PLATFORMS[platform].ratios[0];
+                  const jobCanvasStyle = { aspectRatio: `${jobActive.w} / ${jobActive.h}` };
                   return (
                     <div key={i} className="flex flex-col gap-3">
                       <div
                         className="relative w-full overflow-hidden rounded-xl border border-white/10 bg-black/40 group"
-                        style={canvasStyle}
+                        style={jobCanvasStyle}
                       >
+                        {allRatios && (
+                          <span className="absolute top-2 right-2 z-20 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-primary border border-primary/30">
+                            {jobRatioKey}
+                          </span>
+                        )}
                         {v.status === "proses" && (
                           <>
                             {/* Skeleton shimmer */}
