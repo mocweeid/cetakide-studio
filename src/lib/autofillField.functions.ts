@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type FieldKey =
   | "prompt"
@@ -26,14 +27,33 @@ const INSTRUCTIONS: Record<FieldKey, string> = {
 };
 
 export const autofillFieldServer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(
     (data: { field: FieldKey; context: string; currentValue?: string }) => data,
   )
   .handler(async ({ data }) => {
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Ambil API key Gemini yang dikelola developer dari tabel ai_providers.
+    // Fallback ke env GEMINI_API_KEY bila belum ada row aktif.
+    let apiKey: string | undefined;
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: row } = await supabaseAdmin
+        .from("ai_providers")
+        .select("api_key")
+        .eq("provider", "gemini")
+        .eq("is_active", true)
+        .order("priority", { ascending: true })
+        .order("last_used_at", { ascending: true, nullsFirst: true })
+        .limit(1)
+        .maybeSingle();
+      apiKey = row?.api_key ?? undefined;
+    } catch {
+      // ignore, fallback ke env
+    }
+    if (!apiKey) apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error(
-        "GEMINI_API_KEY belum diset. Buka Backend → Secrets dan tambahkan GEMINI_API_KEY dari https://aistudio.google.com/apikey",
+        "API key Gemini belum diatur. Minta Developer menambahkannya di halaman Admin AI Keys.",
       );
     }
 
@@ -69,5 +89,16 @@ export const autofillFieldServer = createServerFn({ method: "POST" })
     if (!text) throw new Error("Gemini tidak mengembalikan teks.");
     // Strip surrounding quotes if model added them
     const cleaned = text.replace(/^["'“”]+|["'“”]+$/g, "").trim();
+    // Update last_used_at best-effort
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin
+        .from("ai_providers")
+        .update({ last_used_at: new Date().toISOString(), last_status: "ok" })
+        .eq("provider", "gemini")
+        .eq("api_key", apiKey);
+    } catch {
+      /* noop */
+    }
     return { value: cleaned };
   });
