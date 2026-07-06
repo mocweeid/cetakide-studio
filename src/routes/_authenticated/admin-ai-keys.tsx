@@ -291,6 +291,18 @@ function AdminAiKeysPage() {
                       <td className="px-3 py-2 text-right">
                         <div className="flex justify-end gap-2">
                           <button
+                            onClick={() => runTest(r)}
+                            disabled={testingId === r.id}
+                            title="Uji API"
+                            className="text-muted-foreground hover:text-yellow-300 disabled:opacity-50"
+                          >
+                            {testingId === r.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Zap className="h-4 w-4" />
+                            )}
+                          </button>
+                          <button
                             onClick={() => toggleActive(r)}
                             title={r.is_active ? "Nonaktifkan" : "Aktifkan"}
                             className="text-muted-foreground hover:text-primary"
@@ -304,6 +316,61 @@ function AdminAiKeysPage() {
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 backdrop-blur-md">
+          <div className="mb-4 flex items-center gap-2">
+            <ScrollText className="h-5 w-5 text-primary" />
+            <h2 className="font-display text-lg font-bold">Audit Log</h2>
+          </div>
+          {logs.length === 0 ? (
+            <p className="py-6 text-sm text-muted-foreground">Belum ada aktivitas.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b border-white/10 text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Waktu</th>
+                    <th className="px-3 py-2 text-left">Aksi</th>
+                    <th className="px-3 py-2 text-left">Provider</th>
+                    <th className="px-3 py-2 text-left">Model</th>
+                    <th className="px-3 py-2 text-left">Label</th>
+                    <th className="px-3 py-2 text-left">Key</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((l) => (
+                    <tr key={l.id} className="border-b border-white/5">
+                      <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                        {new Date(l.created_at).toLocaleString("id-ID")}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-mono ${
+                            l.action === "insert"
+                              ? "bg-emerald-500/20 text-emerald-300"
+                              : l.action === "delete"
+                                ? "bg-red-500/20 text-red-300"
+                                : "bg-amber-500/20 text-amber-300"
+                          }`}
+                        >
+                          {l.action}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 font-mono">{l.provider ?? "-"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.model ?? "-"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{l.label ?? "-"}</td>
+                      <td className="px-3 py-2">
+                        <code className="rounded bg-black/40 px-2 py-1 text-xs">
+                          {l.api_key_masked ?? "-"}
+                        </code>
                       </td>
                     </tr>
                   ))}
