@@ -114,21 +114,21 @@ export const bentoByNiche: Record<Exclude<Niche, "Semua">, { main: string; small
     ],
   },
   Otomotif: {
-    main: "https://images.unsplash.com/photo-1503376710777-62b1a13fa09f?q=45&w=500&auto=format&fit=crop",
+    main: "/assets/kategori/otomotif/otomotif-1.png",
     small: [
-      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=45&w=250&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1583121274602-3e2820c69888?q=45&w=250&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=45&w=250&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1553440569-bcc63803a83d?q=45&w=250&auto=format&fit=crop",
+      "/assets/kategori/otomotif/otomotif-2.png",
+      "/assets/kategori/otomotif/otomotif-3.png",
+      "/assets/kategori/otomotif/otomotif-4.png",
+      "/assets/kategori/otomotif/otomotif-5.png",
     ],
   },
   Properti: {
-    main: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=45&w=500&auto=format&fit=crop",
+    main: "/assets/kategori/properti/properti-1.png",
     small: [
-      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=45&w=250&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?q=45&w=250&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=45&w=250&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=45&w=250&auto=format&fit=crop",
+      "/assets/kategori/properti/properti-2.png",
+      "/assets/kategori/properti/properti-3.png",
+      "/assets/kategori/properti/properti-4.png",
+      "/assets/kategori/properti/properti-5.png",
     ],
   },
 };
