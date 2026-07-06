@@ -53,6 +53,7 @@ import { Route as AuthenticatedApiKeysRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedApiDocRouteImport } from './routes/_authenticated/api-doc'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedAffiliateRouteImport } from './routes/_authenticated/affiliate'
+import { Route as AuthenticatedAdminAiKeysRouteImport } from './routes/_authenticated/admin-ai-keys'
 import { Route as AuthenticatedAbTestingRouteImport } from './routes/_authenticated/ab-testing'
 
 const AuthRoute = AuthRouteImport.update({
@@ -288,6 +289,12 @@ const AuthenticatedAffiliateRoute = AuthenticatedAffiliateRouteImport.update({
   path: '/affiliate',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminAiKeysRoute =
+  AuthenticatedAdminAiKeysRouteImport.update({
+    id: '/admin-ai-keys',
+    path: '/admin-ai-keys',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAbTestingRoute = AuthenticatedAbTestingRouteImport.update({
   id: '/ab-testing',
   path: '/ab-testing',
@@ -298,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/ab-testing': typeof AuthenticatedAbTestingRoute
+  '/admin-ai-keys': typeof AuthenticatedAdminAiKeysRoute
   '/affiliate': typeof AuthenticatedAffiliateRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/api-doc': typeof AuthenticatedApiDocRoute
@@ -344,6 +352,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/ab-testing': typeof AuthenticatedAbTestingRoute
+  '/admin-ai-keys': typeof AuthenticatedAdminAiKeysRoute
   '/affiliate': typeof AuthenticatedAffiliateRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/api-doc': typeof AuthenticatedApiDocRoute
@@ -392,6 +401,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/ab-testing': typeof AuthenticatedAbTestingRoute
+  '/_authenticated/admin-ai-keys': typeof AuthenticatedAdminAiKeysRoute
   '/_authenticated/affiliate': typeof AuthenticatedAffiliateRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/api-doc': typeof AuthenticatedApiDocRoute
@@ -440,6 +450,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/ab-testing'
+    | '/admin-ai-keys'
     | '/affiliate'
     | '/analytics'
     | '/api-doc'
@@ -486,6 +497,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/ab-testing'
+    | '/admin-ai-keys'
     | '/affiliate'
     | '/analytics'
     | '/api-doc'
@@ -533,6 +545,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/ab-testing'
+    | '/_authenticated/admin-ai-keys'
     | '/_authenticated/affiliate'
     | '/_authenticated/analytics'
     | '/_authenticated/api-doc'
@@ -893,6 +906,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAffiliateRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin-ai-keys': {
+      id: '/_authenticated/admin-ai-keys'
+      path: '/admin-ai-keys'
+      fullPath: '/admin-ai-keys'
+      preLoaderRoute: typeof AuthenticatedAdminAiKeysRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ab-testing': {
       id: '/_authenticated/ab-testing'
       path: '/ab-testing'
@@ -905,6 +925,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAbTestingRoute: typeof AuthenticatedAbTestingRoute
+  AuthenticatedAdminAiKeysRoute: typeof AuthenticatedAdminAiKeysRoute
   AuthenticatedAffiliateRoute: typeof AuthenticatedAffiliateRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedApiDocRoute: typeof AuthenticatedApiDocRoute
@@ -949,6 +970,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAbTestingRoute: AuthenticatedAbTestingRoute,
+  AuthenticatedAdminAiKeysRoute: AuthenticatedAdminAiKeysRoute,
   AuthenticatedAffiliateRoute: AuthenticatedAffiliateRoute,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedApiDocRoute: AuthenticatedApiDocRoute,
