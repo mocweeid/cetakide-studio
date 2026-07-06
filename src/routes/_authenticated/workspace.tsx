@@ -22,7 +22,8 @@ import {
   CloudUpload,
 } from "lucide-react";
 import { PRESET_THEMES, getThemeStyles, DEFAULT_IMG } from "./preset-theme";
-import { generateWithFailover } from "@/lib/keyRotation";
+import { generateImageServer } from "@/lib/generateImage.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/_authenticated/workspace")({
   validateSearch: z.object({
