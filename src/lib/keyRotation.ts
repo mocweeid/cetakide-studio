@@ -42,7 +42,13 @@ export async function markKeyResult(
   key: ProviderKey,
   result: KeyResult,
 ): Promise<void> {
-  const patch: Record<string, unknown> = { last_used_at: new Date().toISOString() };
+  const patch: {
+    last_used_at?: string;
+    last_status?: string | null;
+    failure_count?: number;
+    disabled_until?: string | null;
+    is_active?: boolean;
+  } = { last_used_at: new Date().toISOString() };
   let event = "used";
   let statusCode: number | null = null;
   let detail: string | null = null;
