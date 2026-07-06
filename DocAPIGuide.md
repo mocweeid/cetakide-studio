@@ -84,6 +84,31 @@ Panggil developer / kirim link Bagian B di bawah **hanya jika**:
 
 Untuk pemakaian standar (prompt → gambar jadi), Bagian A sudah cukup.
 
+### Multi-API Key & Auto-Fallback (baru)
+
+Anda **boleh tambah banyak key sekaligus** di menu Integrations — dari akun
+OpenAI yang berbeda, atau campur beberapa provider. Sistem otomatis:
+
+1. **Coba key dengan angka prioritas paling kecil** (kolom `#`). Naikkan/turunkan
+   prioritas dengan panah ↑↓ di sebelah angka.
+2. **Kalau key gagal** karena saldo habis (402) atau rate-limit (429), sistem
+   otomatis pindah ke key berikutnya — user tidak melihat error, gambar tetap
+   jadi.
+3. **Key yang saldonya habis** ditandai `❌ Saldo habis` dan **di-recheck otomatis
+   24 jam kemudian** (siapa tahu Anda sudah top up).
+4. **Key yang kena rate-limit** ditandai `⚠️ Rate-limit · retry Nm` dan dicoba
+   lagi setelah cooldown 10 menit.
+5. **Key dengan format invalid** langsung dinonaktifkan; klik ikon 🔄 untuk
+   mengaktifkan ulang setelah Anda perbaiki di modal edit.
+
+Panel di atas tabel menampilkan `X / Y Key Aktif`, `Request Berhasil Hari Ini`,
+dan `Failover Hari Ini` — pantau supaya tahu key mana perlu di-top-up.
+
+Contoh kasus: Anda punya 3 akun OpenAI (A, B, C) masing-masing $5. User generate
+50 gambar sekaligus. Kalau A habis di gambar ke-17, sistem otomatis lanjut ke B;
+kalau B habis di ke-34, lanjut ke C. User tetap dapat 50 gambar, tidak ada error
+di layar mereka. Semua tercatat di kolom "Failover Hari Ini".
+
 ---
 
 ## BAGIAN B — Panduan Teknis (untuk developer)
