@@ -535,6 +535,23 @@ function Workspace() {
             </div>
           )}
 
+          {variants.some((v) => v.status === "sukses") && (
+            <div className="mb-3 flex justify-end">
+              <button
+                onClick={handleExportAll}
+                disabled={exportingZip}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 disabled:opacity-50"
+              >
+                {exportingZip ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
+                Ekspor Semua Varian (ZIP)
+              </button>
+            </div>
+          )}
+
           {/* Results Grid */}
           <div className="flex-1 flex items-center justify-center min-h-[400px]">
             {variants.length > 0 ? (
