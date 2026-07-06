@@ -2,8 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell, useAppUser } from "@/components/app-shell";
 import { supabase } from "@/integrations/supabase/client";
-import { Key, Plus, Trash2, AlertTriangle, Loader2, Eye, EyeOff, Power } from "lucide-react";
+import { Key, Plus, Trash2, AlertTriangle, Loader2, Eye, EyeOff, Power, Zap, ScrollText } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { testAiKeyServer } from "@/lib/testAiKey.functions";
 
 export const Route = createFileRoute("/_authenticated/admin-ai-keys")({
   head: () => ({
@@ -40,6 +42,12 @@ function AdminAiKeysPage() {
   const [rows, setRows] = useState<ProviderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showId, setShowId] = useState<string | null>(null);
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [logs, setLogs] = useState<Array<{
+    id: string; action: string; provider: string | null; model: string | null;
+    label: string | null; api_key_masked: string | null; created_at: string; actor_id: string | null;
+  }>>([]);
+  const testKey = useServerFn(testAiKeyServer);
   const [form, setForm] = useState({
     provider: "gemini",
     model: "gemini-2.0-flash",
@@ -50,7 +58,10 @@ function AdminAiKeysPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (user?.isDeveloper) void load();
+    if (user?.isDeveloper) {
+      void load();
+      void loadLogs();
+    }
   }, [user?.isDeveloper]);
 
   async function load() {
@@ -63,6 +74,31 @@ function AdminAiKeysPage() {
     if (error) toast.error(error.message);
     setRows((data ?? []) as ProviderRow[]);
     setLoading(false);
+  }
+
+  async function loadLogs() {
+    const { data, error } = await supabase
+      .from("ai_provider_audit_log")
+      .select("id, action, provider, model, label, api_key_masked, created_at, actor_id")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) return;
+    setLogs((data ?? []) as typeof logs);
+  }
+
+  async function runTest(row: ProviderRow) {
+    setTestingId(row.id);
+    try {
+      const res = await testKey({
+        data: { provider: row.provider, model: row.model ?? undefined, api_key: row.api_key },
+      });
+      if (res.ok) toast.success(`✓ ${res.message}`);
+      else toast.error(`✗ ${res.status}: ${res.message}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal test");
+    } finally {
+      setTestingId(null);
+    }
   }
 
   async function addKey() {
@@ -85,6 +121,7 @@ function AdminAiKeysPage() {
     toast.success("API key ditambahkan");
     setForm({ ...form, api_key: "", label: "" });
     void load();
+    void loadLogs();
   }
 
   async function toggleActive(row: ProviderRow) {
@@ -94,6 +131,7 @@ function AdminAiKeysPage() {
       .eq("id", row.id);
     if (error) return toast.error(error.message);
     void load();
+    void loadLogs();
   }
 
   async function removeKey(row: ProviderRow) {
@@ -102,6 +140,7 @@ function AdminAiKeysPage() {
     if (error) return toast.error(error.message);
     toast.success("Terhapus");
     void load();
+    void loadLogs();
   }
 
   if (!user?.isDeveloper) {
