@@ -472,7 +472,13 @@ function Bento() {
         {/* main 4:5 */}
         <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
           <div className="aspect-square w-full">
-            <img src={data.main} alt="" className="h-full w-full object-cover" />
+            <img
+              src={data.main}
+              alt={`Contoh visual ${active}`}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover"
+            />
           </div>
           <div
             className="absolute left-4 top-4 rounded-full px-3 py-1 text-[11px] font-semibold"
@@ -489,7 +495,13 @@ function Bento() {
               key={i}
               className="relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
             >
-              <img src={src} alt="" className="h-full w-full object-cover" />
+              <img
+                src={src}
+                alt={`Contoh visual ${active} ${i + 1}`}
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover"
+              />
             </div>
           ))}
         </div>
