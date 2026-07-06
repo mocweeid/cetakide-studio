@@ -517,7 +517,7 @@ function Workspace() {
               ) : (
                 <Wand2 className="h-4 w-4" />
               )}
-              Cetak {generateCount} Ide Sekarang
+              Cetak Ide Sekarang
             </button>
             <p className="text-center text-[11px] text-muted-foreground">
               {user?.isDeveloper
