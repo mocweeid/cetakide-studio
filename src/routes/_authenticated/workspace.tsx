@@ -610,7 +610,10 @@ function Workspace() {
                 onClick={() => setBrandModalOpen(true)}
                 className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/20 transition text-xs text-white/70"
               >
-                <Palette className="h-4 w-4 text-primary" /> Brand Kit
+                <Palette className="h-4 w-4 text-primary" />
+                <span className="truncate max-w-full">
+                  {selectedBrand ? selectedBrand.name : "Brand Kit"}
+                </span>
               </button>
             </div>
 
