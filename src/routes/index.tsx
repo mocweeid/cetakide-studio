@@ -429,6 +429,8 @@ function LogoAuto({ images }: { images: string[] }) {
 
 function Bento() {
   const [active, setActive] = useState<Niche>("Semua");
+  const [mainLoaded, setMainLoaded] = useState(false);
+  const [smallLoaded, setSmallLoaded] = useState<Record<number, boolean>>({});
 
   const data = useMemo(() => {
     if (active === "Semua") {
@@ -445,6 +447,28 @@ function Bento() {
     }
     return bentoByNiche[active];
   }, [active]);
+
+  // Reset loaded flags when active niche changes
+  useEffect(() => {
+    setMainLoaded(false);
+    setSmallLoaded({});
+  }, [active]);
+
+  // Prefetch thumbnails for all niches (idle callback, no blocking)
+  useEffect(() => {
+    const idle = (cb: () => void) =>
+      (window as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback?.(cb) ??
+      setTimeout(cb, 400);
+    idle(() => {
+      Object.values(bentoByNiche).forEach((g) => {
+        [g.main, ...g.small].forEach((src) => {
+          const img = new Image();
+          img.decoding = "async";
+          img.src = src;
+        });
+      });
+    });
+  }, []);
 
   return (
     <div>
@@ -472,12 +496,21 @@ function Bento() {
         {/* main 4:5 */}
         <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
           <div className="aspect-square w-full">
+            {!mainLoaded && (
+              <div className="skeleton-shimmer absolute inset-0" aria-hidden="true">
+                <div className="absolute left-1/2 top-1/2 h-1 w-24 -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full bg-white/10">
+                  <div className="skeleton-progress h-full rounded-full" style={{ background: BRAND.gold }} />
+                </div>
+              </div>
+            )}
             <img
+              key={data.main}
               src={data.main}
               alt={`Contoh visual ${active}`}
               loading="lazy"
               decoding="async"
-              className="h-full w-full object-cover"
+              onLoad={() => setMainLoaded(true)}
+              className={`h-full w-full object-cover transition-opacity duration-300 ${mainLoaded ? "opacity-100" : "opacity-0"}`}
             />
           </div>
           <div
@@ -495,12 +528,17 @@ function Bento() {
               key={i}
               className="relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
             >
+              {!smallLoaded[i] && (
+                <div className="skeleton-shimmer absolute inset-0" aria-hidden="true" />
+              )}
               <img
+                key={src}
                 src={src}
                 alt={`Contoh visual ${active} ${i + 1}`}
                 loading="lazy"
                 decoding="async"
-                className="h-full w-full object-cover"
+                onLoad={() => setSmallLoaded((p) => ({ ...p, [i]: true }))}
+                className={`h-full w-full object-cover transition-opacity duration-300 ${smallLoaded[i] ? "opacity-100" : "opacity-0"}`}
               />
             </div>
           ))}
