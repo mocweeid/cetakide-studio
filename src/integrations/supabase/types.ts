@@ -14,14 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_key_events: {
+        Row: {
+          created_at: string
+          detail: string | null
+          event: string
+          id: string
+          provider_id: string | null
+          status_code: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          event: string
+          id?: string
+          provider_id?: string | null
+          status_code?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          event?: string
+          id?: string
+          provider_id?: string | null
+          status_code?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_key_events_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_providers: {
         Row: {
           api_key: string
           created_at: string
+          disabled_until: string | null
+          failure_count: number
           id: string
           is_active: boolean
           label: string | null
+          last_status: string | null
+          last_used_at: string | null
           model: string
+          priority: number
           provider: string
           updated_at: string
           user_id: string
@@ -29,10 +72,15 @@ export type Database = {
         Insert: {
           api_key: string
           created_at?: string
+          disabled_until?: string | null
+          failure_count?: number
           id?: string
           is_active?: boolean
           label?: string | null
+          last_status?: string | null
+          last_used_at?: string | null
           model: string
+          priority?: number
           provider: string
           updated_at?: string
           user_id: string
@@ -40,10 +88,15 @@ export type Database = {
         Update: {
           api_key?: string
           created_at?: string
+          disabled_until?: string | null
+          failure_count?: number
           id?: string
           is_active?: boolean
           label?: string | null
+          last_status?: string | null
+          last_used_at?: string | null
           model?: string
+          priority?: number
           provider?: string
           updated_at?: string
           user_id?: string

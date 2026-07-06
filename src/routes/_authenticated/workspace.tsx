@@ -22,6 +22,7 @@ import {
   CloudUpload,
 } from "lucide-react";
 import { PRESET_THEMES, getThemeStyles, DEFAULT_IMG } from "./preset-theme";
+import { generateWithFailover } from "@/lib/keyRotation";
 
 export const Route = createFileRoute("/_authenticated/workspace")({
   validateSearch: z.object({
@@ -176,8 +177,15 @@ function Workspace() {
       }
 
       const newResults = [];
+      let totalFailovers = 0;
+      const usedKeys = new Set<string>();
       for (let i = 0; i < generateCount; i++) {
-        const image_url = stockPool[Math.floor(Math.random() * stockPool.length)];
+        const { imageUrl: image_url, usedKey, failovers } = await generateWithFailover(
+          user.userId,
+          stockPool,
+        );
+        totalFailovers += failovers;
+        if (usedKey) usedKeys.add(usedKey.label || usedKey.provider);
         newResults.push(image_url);
 
         await supabase.from("projects").insert({
@@ -199,7 +207,12 @@ function Workspace() {
 
       setResults(newResults);
       await refresh();
-      toast.success(`${newResults.length} Variasi visual berhasil di-cetak!`);
+      const keyInfo =
+        usedKeys.size > 0 ? ` · via ${Array.from(usedKeys).join(", ")}` : "";
+      const failInfo = totalFailovers > 0 ? ` (${totalFailovers}× failover)` : "";
+      toast.success(
+        `${newResults.length} Variasi visual berhasil di-cetak!${keyInfo}${failInfo}`,
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Generate gagal");
     } finally {
