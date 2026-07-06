@@ -175,29 +175,54 @@ function Workspace() {
       const newResults = [];
       let totalFailovers = 0;
       const usedKeys = new Set<string>();
+      let failedCount = 0;
       for (let i = 0; i < generateCount; i++) {
-        const { imageUrl: image_url, usedKeyLabel, failovers } = await generateImage({
-          data: { prompt: form.prompt, size },
-        });
-        totalFailovers += failovers;
-        if (usedKeyLabel) usedKeys.add(usedKeyLabel);
-        newResults.push(image_url);
+        // 1) Catat proyek dengan status "proses" dulu
+        const { data: inserted, error: insertErr } = await supabase
+          .from("projects")
+          .insert({
+            user_id: user.userId,
+            kebutuhan: form.title || form.prompt.slice(0, 80),
+            prompt: form.prompt,
+            title: form.title || null,
+            subtitle: form.subtitle || null,
+            whatsapp: form.whatsapp || null,
+            social_url: form.social_url || null,
+            body_content: form.body_content || null,
+            reference_url: reference,
+            image_url: null,
+            aspect_ratio: ratio,
+            platform,
+            status: "proses",
+          })
+          .select("id")
+          .single();
+        if (insertErr) throw insertErr;
+        const projectId = inserted!.id;
+        await refresh();
 
-        await supabase.from("projects").insert({
-          user_id: user.userId,
-          kebutuhan: form.title || form.prompt.slice(0, 80),
-          prompt: form.prompt,
-          title: form.title || null,
-          subtitle: form.subtitle || null,
-          whatsapp: form.whatsapp || null,
-          social_url: form.social_url || null,
-          body_content: form.body_content || null,
-          reference_url: reference,
-          image_url,
-          aspect_ratio: ratio,
-          platform,
-          status: "sukses",
-        });
+        // 2) Jalankan generate; update ke sukses / gagal sesuai hasil
+        try {
+          const { imageUrl: image_url, usedKeyLabel, failovers } = await generateImage({
+            data: { prompt: form.prompt, size },
+          });
+          totalFailovers += failovers;
+          if (usedKeyLabel) usedKeys.add(usedKeyLabel);
+          newResults.push(image_url);
+          await supabase
+            .from("projects")
+            .update({ image_url, status: "sukses" })
+            .eq("id", projectId);
+        } catch (genErr) {
+          failedCount++;
+          await supabase
+            .from("projects")
+            .update({ status: "gagal" })
+            .eq("id", projectId);
+          const msg = genErr instanceof Error ? genErr.message : "Generate gagal";
+          toast.error(`Variasi ${i + 1} gagal`, { description: msg });
+        }
+        await refresh();
       }
 
       setResults(newResults);
@@ -205,9 +230,13 @@ function Workspace() {
       const keyInfo =
         usedKeys.size > 0 ? ` · via ${Array.from(usedKeys).join(", ")}` : "";
       const failInfo = totalFailovers > 0 ? ` (${totalFailovers}× failover)` : "";
-      toast.success(
-        `${newResults.length} Variasi visual berhasil di-cetak!${keyInfo}${failInfo}`,
-      );
+      if (newResults.length > 0) {
+        toast.success(
+          `${newResults.length} variasi sukses${failedCount > 0 ? `, ${failedCount} gagal` : ""}!${keyInfo}${failInfo}`,
+        );
+      } else if (failedCount > 0) {
+        toast.error(`Semua ${failedCount} variasi gagal di-generate.`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Generate gagal");
     } finally {
