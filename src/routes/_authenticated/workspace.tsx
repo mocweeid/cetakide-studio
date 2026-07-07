@@ -1121,11 +1121,7 @@ function Workspace() {
                       }}
                       className={`group relative flex flex-col overflow-hidden text-left transition-transform hover:scale-[1.02] active:scale-95 ${styles.wrapper} ${selectedPreset === theme ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
                     >
-                      <img
-                        src={DEFAULT_IMG}
-                        alt={theme}
-                        className={`h-24 w-full object-cover ${styles.image}`}
-                      />
+                      <ThemeSkeletonPreview theme={theme} />
                       <div className="flex flex-col p-3 flex-1">
                         <h2 className={`text-sm font-bold flex-1 ${styles.title}`}>{theme}</h2>
                         <div className="mt-3 flex items-center justify-between">
