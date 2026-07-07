@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiGenerateImageStreamRouteImport } from './routes/api/generate-image-stream'
 import { Route as AuthenticatedWorkspaceRouteImport } from './routes/_authenticated/workspace'
 import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
 import { Route as AuthenticatedUsageLimitsRouteImport } from './routes/_authenticated/usage-limits'
@@ -68,6 +69,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGenerateImageStreamRoute = ApiGenerateImageStreamRouteImport.update({
+  id: '/api/generate-image-stream',
+  path: '/api/generate-image-stream',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedWorkspaceRoute = AuthenticatedWorkspaceRouteImport.update({
@@ -348,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/usage-limits': typeof AuthenticatedUsageLimitsRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
+  '/api/generate-image-stream': typeof ApiGenerateImageStreamRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -395,6 +402,7 @@ export interface FileRoutesByTo {
   '/usage-limits': typeof AuthenticatedUsageLimitsRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
+  '/api/generate-image-stream': typeof ApiGenerateImageStreamRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -444,6 +452,7 @@ export interface FileRoutesById {
   '/_authenticated/usage-limits': typeof AuthenticatedUsageLimitsRoute
   '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
   '/_authenticated/workspace': typeof AuthenticatedWorkspaceRoute
+  '/api/generate-image-stream': typeof ApiGenerateImageStreamRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -493,6 +502,7 @@ export interface FileRouteTypes {
     | '/usage-limits'
     | '/webhooks'
     | '/workspace'
+    | '/api/generate-image-stream'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -540,6 +550,7 @@ export interface FileRouteTypes {
     | '/usage-limits'
     | '/webhooks'
     | '/workspace'
+    | '/api/generate-image-stream'
   id:
     | '__root__'
     | '/'
@@ -588,12 +599,14 @@ export interface FileRouteTypes {
     | '/_authenticated/usage-limits'
     | '/_authenticated/webhooks'
     | '/_authenticated/workspace'
+    | '/api/generate-image-stream'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiGenerateImageStreamRoute: typeof ApiGenerateImageStreamRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -617,6 +630,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/generate-image-stream': {
+      id: '/api/generate-image-stream'
+      path: '/api/generate-image-stream'
+      fullPath: '/api/generate-image-stream'
+      preLoaderRoute: typeof ApiGenerateImageStreamRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/workspace': {
@@ -1022,6 +1042,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiGenerateImageStreamRoute: ApiGenerateImageStreamRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
