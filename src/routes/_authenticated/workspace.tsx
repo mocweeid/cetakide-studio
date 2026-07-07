@@ -8,8 +8,6 @@ import {
   Wand2,
   Loader2,
   Download,
-  Share2,
-  Wallet,
   Upload,
   Image as ImageIcon,
   X,
@@ -21,8 +19,12 @@ import {
   LayoutTemplate,
   CloudUpload,
   Layers,
+  ListOrdered,
+  Save,
+  FolderOpen,
+  Trash2,
 } from "lucide-react";
-import { PRESET_THEMES, getThemeStyles, DEFAULT_IMG } from "./preset-theme";
+import { PRESET_THEMES, getThemeStyles, ThemeSkeletonPreview } from "./preset-theme";
 import { generateImageServer } from "@/lib/generateImage.functions";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { autofillFieldServer } from "@/lib/autofillField.functions";
