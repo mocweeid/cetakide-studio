@@ -2,7 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell, useAppUser } from "@/components/app-shell";
 import { toast } from "sonner";
 
-export const PRESET_THEMES = ["Glassmorphism", "Neumorphism (Soft UI)", "Brutalism", "Minimalism"];
+export const PRESET_THEMES = [
+  "Default",
+  "Glassmorphism",
+  "Neumorphism (Soft UI)",
+  "Brutalism",
+  "Minimalism",
+];
 
 export const DEFAULT_IMG = "/assets/preset-default.jpg";
 
@@ -14,6 +20,20 @@ export const DEFAULT_IMG = "/assets/preset-default.jpg";
 export function ThemeSkeletonPreview({ theme }: { theme: string }) {
   const t = theme.toLowerCase();
 
+  if (t.includes("default")) {
+    return (
+      <div className="relative h-40 w-full overflow-hidden rounded-t-xl bg-gradient-to-br from-[#0D1117] via-[#161B22] to-[#0D1117] p-4">
+        <div className="h-full w-full rounded-lg border border-white/10 bg-white/[0.03] p-3 flex flex-col gap-2 backdrop-blur-sm">
+          <div className="skeleton-shimmer h-2 w-1/2 rounded-full" />
+          <div className="skeleton-shimmer h-2 w-3/4 rounded-full" />
+          <div className="mt-auto flex gap-2">
+            <div className="h-6 w-16 rounded-md bg-primary/80" />
+            <div className="h-6 w-6 rounded-md border border-white/20" />
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (t.includes("glass")) {
     return (
       <div className="relative h-40 w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-fuchsia-500/40 via-indigo-500/30 to-cyan-400/30">
