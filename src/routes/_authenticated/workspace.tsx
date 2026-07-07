@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { PRESET_THEMES, getThemeStyles, DEFAULT_IMG } from "./preset-theme";
 import { generateImageServer } from "@/lib/generateImage.functions";
-import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { autofillFieldServer } from "@/lib/autofillField.functions";
 import { streamImage } from "@/lib/streamImage";
 import { useServerFn } from "@tanstack/react-start";
@@ -174,21 +173,97 @@ function Workspace() {
   const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
   const generateImage = useServerFn(generateImageServer);
-  const enhancePrompt = useServerFn(enhancePromptServer);
   const autofillField = useServerFn(autofillFieldServer);
-  const [enhancing, setEnhancing] = useState(false);
   const [autofillingKey, setAutofillingKey] = useState<string | null>(null);
   const [exportingZip, setExportingZip] = useState(false);
+  const [rundownOpen, setRundownOpen] = useState(false);
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
+  const [draftList, setDraftList] = useState<string[]>([]);
+
+  // Draft persistence (localStorage per-user)
+  const draftStorageKey = user ? `cetakide:workspace-drafts:${user.userId}` : null;
+  useEffect(() => {
+    if (!draftStorageKey) return;
+    try {
+      const raw = localStorage.getItem(draftStorageKey);
+      const obj = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      setDraftList(Object.keys(obj));
+    } catch {
+      setDraftList([]);
+    }
+  }, [draftStorageKey]);
+
+  function readDrafts(): Record<string, any> {
+    if (!draftStorageKey) return {};
+    try {
+      return JSON.parse(localStorage.getItem(draftStorageKey) || "{}");
+    } catch {
+      return {};
+    }
+  }
+  function writeDrafts(obj: Record<string, any>) {
+    if (!draftStorageKey) return;
+    localStorage.setItem(draftStorageKey, JSON.stringify(obj));
+    setDraftList(Object.keys(obj));
+  }
+  function saveDraft() {
+    const name = draftName.trim() || `Draf ${new Date().toLocaleString("id-ID")}`;
+    const drafts = readDrafts();
+    drafts[name] = {
+      form,
+      platform,
+      ratio,
+      selectedPreset,
+      selectedBrandId,
+      brandLogo,
+      reference,
+      generateCount,
+      allRatios,
+      savedAt: Date.now(),
+    };
+    writeDrafts(drafts);
+    setDraftName(name);
+    toast.success(`Draf tersimpan: ${name}`);
+  }
+  function loadDraft(name: string) {
+    const d = readDrafts()[name];
+    if (!d) return;
+    setForm(d.form ?? form);
+    setPlatform(d.platform ?? platform);
+    setRatio(d.ratio ?? ratio);
+    setSelectedPreset(d.selectedPreset ?? "");
+    setSelectedBrandId(d.selectedBrandId ?? null);
+    setBrandLogo(d.brandLogo ?? null);
+    setReference(d.reference ?? null);
+    setGenerateCount(d.generateCount ?? 1);
+    setAllRatios(!!d.allRatios);
+    setDraftName(name);
+    toast.success(`Draf dimuat: ${name}`);
+  }
+  function deleteDraft(name: string) {
+    const drafts = readDrafts();
+    delete drafts[name];
+    writeDrafts(drafts);
+    toast.success(`Draf dihapus: ${name}`);
+  }
+
+  function handleBrandLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setBrandLogo(reader.result as string);
+      toast.success("Logo brand ditambahkan.");
+    };
+    reader.readAsDataURL(file);
+  }
 
   async function runAutofill(field:
     | "prompt"
     | "title"
     | "subtitle"
     | "whatsapp"
-    | "facebook_url"
-    | "instagram_url"
-    | "twitter_url"
-    | "social_url"
     | "body_content") {
     setAutofillingKey(field);
     try {
