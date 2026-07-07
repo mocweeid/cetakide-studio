@@ -79,7 +79,7 @@ export const autofillFieldServer = createServerFn({ method: "POST" })
     let text = "";
     
     // Deteksi provider berdasarkan tipe key atau metadata provider
-    const isGemini = keyRow?.provider === "gemini" || !apiKey.startsWith("sk-") && !apiKey.startsWith("gsk_");
+    const isGemini = keyRow?.provider === "gemini" || (!keyRow && !apiKey.startsWith("sk-") && !apiKey.startsWith("gsk_"));
     
     if (isGemini) {
       // --- Google Gemini Call ---
@@ -116,11 +116,11 @@ export const autofillFieldServer = createServerFn({ method: "POST" })
       let baseUrl = "https://api.openai.com/v1/chat/completions";
       let model = keyRow?.model || "gpt-4o-mini";
 
-      if (apiKey.startsWith("gsk_")) {
+      if (keyRow?.provider === "groq" || apiKey.startsWith("gsk_")) {
         // Groq Key
         baseUrl = "https://api.groq.com/openai/v1/chat/completions";
-        model = keyRow?.model && keyRow.model !== "default" ? keyRow.model : "llama-3.3-70b-versatile";
-      } else if (apiKey.startsWith("sk-or-")) {
+        model = keyRow?.model && keyRow.model !== "default" && keyRow.model !== "gpt-4o-mini" ? keyRow.model : "llama-3.3-70b-versatile";
+      } else if (keyRow?.provider === "openrouter" || apiKey.startsWith("sk-or-")) {
         // OpenRouter Key
         baseUrl = "https://openrouter.ai/api/v1/chat/completions";
         model = keyRow?.model && keyRow.model !== "default" ? keyRow.model : "meta-llama/llama-3.1-8b-instruct:free";

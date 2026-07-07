@@ -177,6 +177,7 @@ function AdminAiKeysPage() {
             >
               <option value="gemini">gemini</option>
               <option value="openai">openai</option>
+              <option value="groq">groq</option>
               <option value="anthropic">anthropic</option>
               <option value="lovable">lovable</option>
             </select>

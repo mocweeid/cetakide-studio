@@ -51,6 +51,27 @@ export const testAiKeyServer = createServerFn({ method: "POST" })
       return { ok: true, status: 200, message: "Key OpenAI valid" };
     }
 
+    if (provider === "groq") {
+      const model = data.model?.trim() || "llama-3.3-70b-versatile";
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${data.api_key}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: "ping" }],
+          max_tokens: 1,
+        }),
+      });
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        return { ok: false, status: res.status, message: t.slice(0, 300) };
+      }
+      return { ok: true, status: 200, message: "Key Groq valid" };
+    }
+
     if (provider === "anthropic") {
       const model = data.model?.trim() || "claude-3-5-haiku-20241022";
       const res = await fetch("https://api.anthropic.com/v1/messages", {
