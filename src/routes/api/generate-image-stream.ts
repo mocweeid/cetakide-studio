@@ -53,6 +53,71 @@ export const Route = createFileRoute("/api/generate-image-stream")({
 
         const userKey = keys?.[0];
 
+        // 0) Try user's own OpenAI API key first (highest priority when provided)
+        if (userKey?.api_key) {
+          try {
+            const oaRes = await fetch("https://api.openai.com/v1/images/generations", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${userKey.api_key}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: userKey.model || "gpt-image-1",
+                prompt,
+                size,
+                n: 1,
+              }),
+            });
+            if (oaRes.ok) {
+              const j = (await oaRes.json()) as {
+                data?: Array<{ b64_json?: string; url?: string }>;
+              };
+              let b64 = j.data?.[0]?.b64_json;
+              const url = j.data?.[0]?.url;
+              if (!b64 && url) {
+                const imgRes = await fetch(url);
+                const buf = new Uint8Array(await imgRes.arrayBuffer());
+                let bin = "";
+                for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+                b64 = btoa(bin);
+              }
+              if (b64) {
+                await supabaseAdminClient
+                  .from("ai_providers")
+                  .update({
+                    last_used_at: nowIso,
+                    last_status: "ok",
+                    failure_count: 0,
+                    disabled_until: null,
+                  })
+                  .eq("id", userKey.id);
+                const sseBody = `event: image_generation.completed\ndata: ${JSON.stringify({ type: "image_generation.completed", b64_json: b64, created_at: Date.now() })}\n\n`;
+                return new Response(sseBody, {
+                  headers: {
+                    "Content-Type": "text/event-stream",
+                    "Cache-Control": "no-cache, no-transform",
+                    "X-Accel-Buffering": "no",
+                  },
+                });
+              }
+            } else {
+              const errText = await oaRes.text().catch(() => "");
+              console.error("[generate-image-stream] OpenAI user key failed", oaRes.status, errText.slice(0, 300));
+              // Mark key status but continue to fallback
+              const status = oaRes.status;
+              const patch: Record<string, unknown> = {
+                failure_count: (userKey.failure_count ?? 0) + 1,
+                last_status: status === 401 ? "invalid" : status === 429 ? "rate_limit" : status === 402 || status === 403 ? "out_of_credit" : "error",
+              };
+              if (status === 401) patch.is_active = false;
+              await supabaseAdminClient.from("ai_providers").update(patch).eq("id", userKey.id);
+            }
+          } catch (e) {
+            console.error("[generate-image-stream] OpenAI user key exception", e);
+          }
+        }
+
         // Try Cloudflare Workers AI FLUX.1-schnell first (free tier, fast, mirip OpenAI)
         const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
         const cfToken = process.env.CLOUDFLARE_API_TOKEN;
