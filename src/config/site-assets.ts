@@ -280,6 +280,59 @@ export const bentoByNiche: Record<Exclude<Niche, "Semua">, { main: string; small
   },
 };
 
+// Extra assets (di luar bento landing utama supaya layout hero tidak berubah).
+// Dipakai oleh Koleksi Template & Perpustakaan Prompt untuk memperkaya galeri.
+export const nicheExtras: Partial<Record<Exclude<Niche, "Semua">, string[]>> = {
+  Kuliner: [
+    "/assets/kategori/kuliner/kuliner-6.jpg",
+    "/assets/kategori/kuliner/kuliner-7.jpg",
+    "/assets/kategori/kuliner/kuliner-8.jpg",
+    "/assets/kategori/kuliner/kuliner-9.jpg",
+    "/assets/kategori/kuliner/kuliner-10.jpg",
+    "/assets/kategori/kuliner/kuliner-11.jpg",
+    "/assets/kategori/kuliner/kuliner-12.jpg",
+    "/assets/kategori/kuliner/kuliner-13.jpg",
+    "/assets/kategori/kuliner/kuliner-14.jpg",
+    "/assets/kategori/kuliner/kuliner-15.jpg",
+  ],
+  Fashion: [
+    "/assets/kategori/fashion/fashion-9.jpg",
+    "/assets/kategori/fashion/fashion-10.jpg",
+    "/assets/kategori/fashion/fashion-11.jpg",
+    "/assets/kategori/fashion/fashion-12.jpg",
+    "/assets/kategori/fashion/fashion-13.jpg",
+    "/assets/kategori/fashion/fashion-14.jpg",
+    "/assets/kategori/fashion/fashion-15.jpg",
+    "/assets/kategori/fashion/fashion-16.jpg",
+    "/assets/kategori/fashion/fashion-17.jpg",
+    "/assets/kategori/fashion/fashion-18.jpg",
+  ],
+  Otomotif: [
+    "/assets/kategori/otomotif/otomotif-6.jpg",
+    "/assets/kategori/otomotif/otomotif-7.jpg",
+    "/assets/kategori/otomotif/otomotif-8.jpg",
+    "/assets/kategori/otomotif/otomotif-9.jpg",
+    "/assets/kategori/otomotif/otomotif-10.jpg",
+    "/assets/kategori/otomotif/otomotif-11.jpg",
+    "/assets/kategori/otomotif/otomotif-12.jpg",
+    "/assets/kategori/otomotif/otomotif-13.jpg",
+    "/assets/kategori/otomotif/otomotif-14.jpg",
+    "/assets/kategori/otomotif/otomotif-15.jpg",
+  ],
+};
+
+// Helper: gabungan main + small + extras untuk sebuah niche.
+export function allNicheAssets(niche: Exclude<Niche, "Semua">): string[] {
+  const g = bentoByNiche[niche];
+  const extras = nicheExtras[niche] ?? [];
+  return g ? [g.main, ...g.small, ...extras] : extras;
+}
+
+// Dummy export terminator agar patch mempertahankan closing bento object aslinya.
+const __presetAssetsEnd__ = null;
+export { __presetAssetsEnd__ };
+};
+
 // ---------- LOGO SHOWCASE (7-10 items) ----------
 export const logoShowcase: string[] = [
   "/assets/logo-preset/logo-1.png",
