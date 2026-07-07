@@ -6,17 +6,14 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { PROMPT_CATEGORIES, PROMPT_TEMPLATES, PromptTemplate } from "@/config/prompt-templates";
-import { bentoByNiche } from "@/config/site-assets";
+import { bentoByNiche, allNicheAssets } from "@/config/site-assets";
 
 // Koleksi Template diterapkan ke Perpustakaan Prompt:
 // setiap kategori memakai aset asli dari bentoByNiche (main + small)
 // dengan fallback ke feed-ig untuk kategori yang belum punya niche.
 function nicheAssets(...niches: (keyof typeof bentoByNiche)[]): string[] {
   const out: string[] = [];
-  for (const n of niches) {
-    const g = bentoByNiche[n];
-    if (g) out.push(g.main, ...g.small);
-  }
+  for (const n of niches) out.push(...allNicheAssets(n));
   return out;
 }
 
