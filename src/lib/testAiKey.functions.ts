@@ -6,10 +6,12 @@ export const testAiKeyServer = createServerFn({ method: "POST" })
   .inputValidator((data: { provider: string; model?: string; api_key: string }) => data)
   .handler(async ({ data, context }) => {
     // Only developers can test keys
-    const { data: isDev } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "developer",
-    });
+    const { data: roleRows } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+
+    const isDev = roleRows?.some((r) => String(r.role).toLowerCase() === "developer");
     if (!isDev) throw new Error("Forbidden");
 
     const provider = data.provider.toLowerCase();
