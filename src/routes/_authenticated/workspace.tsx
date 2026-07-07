@@ -133,7 +133,7 @@ function Workspace() {
   const { user, refresh } = useAppUser();
   const [platform, setPlatform] = useState<keyof typeof PLATFORMS>("instagram");
   const [ratio, setRatio] = useState("1:1");
-  const [generateCount, setGenerateCount] = useState(5);
+  const [generateCount, setGenerateCount] = useState(1);
   const [selectedPreset, setSelectedPreset] = useState<string>(search.preset || "");
   const [selectedFont, setSelectedFont] = useState("Inter (Default)");
   const [brandKits, setBrandKits] = useState<BrandKit[]>([]);
