@@ -106,12 +106,21 @@ export const Route = createFileRoute("/api/generate-image-stream")({
               console.error("[generate-image-stream] OpenAI user key failed", oaRes.status, errText.slice(0, 300));
               // Mark key status but continue to fallback
               const status = oaRes.status;
-              const patch: Record<string, unknown> = {
-                failure_count: (userKey.failure_count ?? 0) + 1,
-                last_status: status === 401 ? "invalid" : status === 429 ? "rate_limit" : status === 402 || status === 403 ? "out_of_credit" : "error",
-              };
-              if (status === 401) patch.is_active = false;
-              await supabaseAdminClient.from("ai_providers").update(patch).eq("id", userKey.id);
+              await supabaseAdminClient
+                .from("ai_providers")
+                .update({
+                  failure_count: (userKey.failure_count ?? 0) + 1,
+                  last_status:
+                    status === 401
+                      ? "invalid"
+                      : status === 429
+                        ? "rate_limit"
+                        : status === 402 || status === 403
+                          ? "out_of_credit"
+                          : "error",
+                  is_active: status === 401 ? false : userKey.is_active,
+                })
+                .eq("id", userKey.id);
             }
           } catch (e) {
             console.error("[generate-image-stream] OpenAI user key exception", e);
