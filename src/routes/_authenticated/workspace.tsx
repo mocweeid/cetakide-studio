@@ -818,6 +818,22 @@ function Workspace() {
                           >
                             <CloudUpload className="h-3.5 w-3.5" /> Auto Upload
                           </button>
+                          <button
+                            onClick={() => handleRegenerate(i)}
+                            className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/20"
+                          >
+                            <Wand2 className="h-3.5 w-3.5" /> Regenerate
+                          </button>
+                        </div>
+                      )}
+                      {v.status === "gagal" && (
+                        <div className="flex justify-center">
+                          <button
+                            onClick={() => handleRegenerate(i)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/20"
+                          >
+                            <Wand2 className="h-3.5 w-3.5" /> Regenerate
+                          </button>
                         </div>
                       )}
                     </div>
