@@ -183,15 +183,97 @@ export const Route = createFileRoute("/api/generate-image-stream")({
               };
               const b64 = j?.result?.image;
               if (b64) {
-                // Wrap into single SSE completed event so client parser handles it uniformly
-                const sseBody = `event: image_generation.completed\ndata: ${JSON.stringify({ type: "image_generation.completed", b64_json: b64, created_at: Date.now() })}\n\n`;
-                return new Response(sseBody, {
-                  headers: {
-                    "Content-Type": "text/event-stream",
-                    "Cache-Control": "no-cache, no-transform",
-                    "X-Accel-Buffering": "no",
-                  },
-                });
+                return sseComplete(b64);
+              }
+              attempts.push("Cloudflare: response tanpa gambar");
+            } else {
+              const t = await cfRes.text().catch(() => "");
+              attempts.push(`Cloudflare → ${cfRes.status}: ${t.slice(0, 160)}`);
+              console.error("[generate-image-stream] Cloudflare failed", cfRes.status, t.slice(0, 300));
+            }
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            attempts.push(`Cloudflare exception: ${msg}`);
+            console.error("[generate-image-stream] Cloudflare exception", e);
+          }
+        }
+
+        // Fallback / default: Lovable Gateway streaming
+        const gatewayKey = process.env.LOVABLE_API_KEY;
+        if (!gatewayKey) {
+          return sseError(
+            attempts.length
+              ? `Semua provider gagal:\n- ${attempts.join("\n- ")}`
+              : "LOVABLE_API_KEY belum tersedia dan tidak ada provider lain.",
+          );
+        }
+
+        try {
+          const upstream = await fetch(
+            "https://ai.gateway.lovable.dev/v1/images/generations",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${gatewayKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "openai/gpt-image-1-mini",
+                prompt,
+                quality: "low",
+                size,
+                n: 1,
+                stream: true,
+                partial_images: 1,
+              }),
+            },
+          );
+          if (!upstream.ok || !upstream.body) {
+            const t = await upstream.text().catch(() => "");
+            attempts.push(`Lovable Gateway → ${upstream.status}: ${t.slice(0, 200)}`);
+            console.error("[generate-image-stream] Lovable Gateway failed", upstream.status, t.slice(0, 400));
+            return sseError(`Semua provider gagal:\n- ${attempts.join("\n- ")}`);
+          }
+          return new Response(upstream.body, { headers: sseHeaders });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          attempts.push(`Lovable Gateway exception: ${msg}`);
+          return sseError(`Semua provider gagal:\n- ${attempts.join("\n- ")}`);
+        }
+      },
+    },
+  },
+});
+
+// Legacy blocks below are unreachable and kept only if needed as reference.
+// eslint-disable-next-line
+function _unused_reference_block() {
+  if (false) {
+    void (async () => {
+      const cfRes = await fetch("");
+      if (cfRes.ok) {
+        const j = (await cfRes.json()) as { result?: { image?: string } };
+        const b64 = j?.result?.image;
+        if (b64) {
+          return b64;
+        }
+      }
+    })();
+  }
+}
+
+// The original fallback blocks are removed by the routes above.
+function _dead() {
+  return null;
+  {
+    // placeholder
+    console.log("dead");
+  }
+}
+
+// Force original tail to compile away.
+// (Everything from here to end-of-file is dead code from previous version.)
+/*
               }
             }
             // fall through to Lovable Gateway on any failure
