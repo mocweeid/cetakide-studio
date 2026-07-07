@@ -430,7 +430,13 @@ function Workspace() {
 
     setGenerating(true);
     setResults([]);
-    setVariants(Array.from({ length: totalJobs }, () => ({ status: "proses" as const })));
+    setVariants(
+      Array.from({ length: totalJobs }, (_, idx) => ({
+        status: "proses" as const,
+        prompt: finalBasePrompt,
+        ratio: targetRatios[idx],
+      })),
+    );
     try {
       // Potong saldo sesuai jumlah generate jika di backend diimplementasi
       for (let i = 0; i < totalJobs; i++) {
@@ -482,8 +488,8 @@ function Workspace() {
             setVariants((prev) => {
               const next = [...prev];
               next[i] = isFinal
-                ? { status: "sukses", imageUrl: dataUrl }
-                : { status: "streaming", imageUrl: dataUrl };
+                ? { status: "sukses", imageUrl: dataUrl, prompt: finalBasePrompt, ratio: jobRatio }
+                : { status: "streaming", imageUrl: dataUrl, prompt: finalBasePrompt, ratio: jobRatio };
               return next;
             });
             if (isFinal) finalUrl = dataUrl;
@@ -500,7 +506,7 @@ function Workspace() {
           const msg = genErr instanceof Error ? genErr.message : "Generate gagal";
           setVariants((prev) => {
             const next = [...prev];
-            next[i] = { status: "gagal", error: msg };
+            next[i] = { status: "gagal", error: msg, prompt: finalBasePrompt, ratio: jobRatio };
             return next;
           });
           await supabase
