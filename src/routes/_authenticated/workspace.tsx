@@ -537,6 +537,52 @@ function Workspace() {
     }
   }
 
+  async function handleRegenerate(i: number) {
+    const v = variants[i];
+    const prompt = v.prompt;
+    const jobRatio = v.ratio;
+    if (!prompt || !jobRatio) {
+      toast.error("Data variasi tidak lengkap, tekan Generate ulang.");
+      return;
+    }
+    const size = ratioToSize(jobRatio);
+    setVariants((prev) => {
+      const next = [...prev];
+      next[i] = { status: "proses", prompt, ratio: jobRatio };
+      return next;
+    });
+    try {
+      const { data: ok } = await supabase.rpc("potong_saldo_generate");
+      if (!ok) {
+        toast.error("Saldo tidak mencukupi.");
+        setVariants((prev) => {
+          const next = [...prev];
+          next[i] = { status: "gagal", error: "Saldo habis", prompt, ratio: jobRatio };
+          return next;
+        });
+        return;
+      }
+      await streamImage(prompt, size, (dataUrl, isFinal) => {
+        setVariants((prev) => {
+          const next = [...prev];
+          next[i] = isFinal
+            ? { status: "sukses", imageUrl: dataUrl, prompt, ratio: jobRatio }
+            : { status: "streaming", imageUrl: dataUrl, prompt, ratio: jobRatio };
+          return next;
+        });
+      });
+      toast.success(`Variasi ${i + 1} berhasil di-regenerate.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Regenerate gagal";
+      setVariants((prev) => {
+        const next = [...prev];
+        next[i] = { status: "gagal", error: msg, prompt, ratio: jobRatio };
+        return next;
+      });
+      toast.error(`Regenerate variasi ${i + 1} gagal`, { description: msg });
+    }
+  }
+
   function handleDownload(url: string) {
     const a = document.createElement("a");
     a.href = url;
