@@ -156,6 +156,106 @@ function Workspace() {
   });
 
   const [reference, setReference] = useState<string | null>(null);
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
+
+  // Draft manager (localStorage per user)
+  const draftStorageKey = user ? `cetakide:workspace-drafts:${user.userId}` : "";
+  const [draftName, setDraftName] = useState("");
+  const [draftList, setDraftList] = useState<Array<{ name: string; savedAt: string }>>([]);
+  const [draftOpen, setDraftOpen] = useState(false);
+
+  useEffect(() => {
+    if (!draftStorageKey) return;
+    try {
+      const raw = localStorage.getItem(draftStorageKey);
+      const map = raw ? (JSON.parse(raw) as Record<string, { savedAt: string }>) : {};
+      setDraftList(
+        Object.entries(map).map(([name, v]) => ({ name, savedAt: v.savedAt })),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [draftStorageKey]);
+
+  function saveDraft() {
+    if (!draftStorageKey) return;
+    const name = draftName.trim();
+    if (!name) {
+      toast.error("Beri nama draft dulu.");
+      return;
+    }
+    const raw = localStorage.getItem(draftStorageKey);
+    const map = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    map[name] = {
+      savedAt: new Date().toISOString(),
+      platform,
+      ratio,
+      generateCount,
+      allRatios,
+      selectedPreset,
+      selectedFont,
+      selectedBrandId,
+      form,
+      reference,
+      brandLogo,
+    };
+    localStorage.setItem(draftStorageKey, JSON.stringify(map));
+    setDraftList(
+      Object.entries(map).map(([n, v]) => ({
+        name: n,
+        savedAt: (v as { savedAt: string }).savedAt,
+      })),
+    );
+    toast.success(`Draft "${name}" disimpan.`);
+  }
+
+  function loadDraft(name: string) {
+    if (!draftStorageKey) return;
+    const raw = localStorage.getItem(draftStorageKey);
+    if (!raw) return;
+    const map = JSON.parse(raw) as Record<string, Record<string, unknown>>;
+    const d = map[name];
+    if (!d) return;
+    setPlatform(d.platform as keyof typeof PLATFORMS);
+    setRatio(d.ratio as string);
+    setGenerateCount(d.generateCount as number);
+    setAllRatios(Boolean(d.allRatios));
+    setSelectedPreset(d.selectedPreset as string);
+    setSelectedFont(d.selectedFont as string);
+    setSelectedBrandId((d.selectedBrandId as string | null) ?? null);
+    setForm(d.form as typeof form);
+    setReference((d.reference as string | null) ?? null);
+    setBrandLogo((d.brandLogo as string | null) ?? null);
+    setDraftOpen(false);
+    toast.success(`Draft "${name}" dimuat.`);
+  }
+
+  function deleteDraft(name: string) {
+    if (!draftStorageKey) return;
+    const raw = localStorage.getItem(draftStorageKey);
+    if (!raw) return;
+    const map = JSON.parse(raw) as Record<string, unknown>;
+    delete map[name];
+    localStorage.setItem(draftStorageKey, JSON.stringify(map));
+    setDraftList(
+      Object.entries(map).map(([n, v]) => ({
+        name: n,
+        savedAt: (v as { savedAt: string }).savedAt,
+      })),
+    );
+    toast.success(`Draft "${name}" dihapus.`);
+  }
+
+  async function handleBrandLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setBrandLogo(reader.result as string);
+      toast.success("Logo brand diupload (dipakai sebagai referensi).");
+    };
+    reader.readAsDataURL(file);
+  }
 
   // Modal states
   const [refModalOpen, setRefModalOpen] = useState(false);
