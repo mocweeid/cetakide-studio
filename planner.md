@@ -1,15 +1,15 @@
 # Planner Menu Dashboard Cetak Ide
 
-Daftar seluruh menu sidebar. Tandai status implementasi tiap halaman. Prioritaskan menu **MAIN & AI Tools** dan **Finance** karena paling sering digunakan.
+Daftar seluruh menu sidebar dan status implementasi. Prioritas: **Main & AI Tools** + **Finance** (paling sering dipakai user).
 
-Legenda status: ✅ selesai fungsional · 🟡 UI ada tapi belum terhubung Supabase / logic tipis · ⚪ masih stub / coming soon
+Legenda: ✅ fungsional · 🟡 UI ada, logic tipis / belum full backend · ⚪ stub / coming soon
 
 ## 1. Main & AI Tools
 | Menu | Route | Status | Catatan |
 |---|---|---|---|
 | Dashboard | `/dashboard` | ✅ | Statistik personal + developer overview |
-| Workspace | `/workspace` | 🟡 | Generator utama, perlu hook ke AI Gateway |
-| Project | `/project` | 🟡 | List project user, perlu filter & pagination |
+| Workspace | `/workspace` | ✅ | Generator + streaming + brand kit + logo + draft simpan/muat |
+| Project | `/project` | 🟡 | List project user; filter & pagination masih dasar |
 | Auto Uploader | `/auto-uploader` | 🟡 | UI scheduler ada, perlu integrasi API sosmed |
 | Analitik Hub | `/analytics` | ⚪ | Perlu chart + query metrik project |
 | AI Playground | `/playground` | ⚪ | Ruang eksperimen prompt |
@@ -62,6 +62,7 @@ Legenda status: ✅ selesai fungsional · 🟡 UI ada tapi belum terhubung Supab
 ## 6. Developer Control (khusus role developer)
 | Menu | Route | Status | Catatan |
 |---|---|---|---|
+| Admin AI Keys | `/admin-ai-keys` | ✅ | Kelola API key AI provider (developer only, RLS) |
 | Manajemen User | `/manage-users` | ⚪ | List semua user + edit role/saldo |
 | Kesehatan Server | `/system-logs` | ⚪ | Uptime, error rate |
 | Admin DB Shell | `/db-shell` | ⚪ | Query builder read-only |
@@ -74,9 +75,31 @@ Legenda status: ✅ selesai fungsional · 🟡 UI ada tapi belum terhubung Supab
 | Landing Page | `/` | ✅ | Halaman marketing publik |
 | Settings | `/settings` | ✅ | Profil, avatar, ganti bahasa |
 
-## Prioritas berikutnya
-1. Selesaikan **Workspace** → hubungkan ke AI Gateway + potong saldo tiap generate.
-2. **Project** → tampilkan grid hasil, filter by platform, hapus / duplikasi.
-3. **Auto Uploader** → integrasi OAuth IG & FB via connector.
-4. **Manajemen User** (developer) → adjust saldo & role via UI.
-5. **Billing** → export invoice PDF dari tabel `transactions`.
+## Checklist Menuju Production
+
+**Wajib sebelum go-live** (blocker):
+1. **Manajemen User (developer)** — adjust role & saldo via UI, wajib untuk operasional.
+2. **Payment Gateway** — Midtrans/Stripe live, webhook verifikasi signature, tabel `transactions` update otomatis (bukan manual admin).
+3. **Billing / Riwayat Tagihan** — user harus bisa lihat & download invoice untuk kebutuhan pajak.
+4. **Batas Penggunaan (Usage Limits)** — rate limit per user (RPC + tabel counter) supaya tidak dijebol.
+5. **Log Keamanan** — audit login, IP, device. Wajib untuk data pengguna Indonesia (UU PDP).
+6. **Legal Pages** — Terms of Service, Privacy Policy, Kebijakan Refund. Landing perlu link ke sini.
+7. **Email transaksional** — verifikasi email, reset password, invoice, notifikasi generate selesai (SendGrid/Resend).
+8. **Backup DB otomatis** — pastikan snapshot harian aktif di Lovable Cloud.
+9. **Monitoring & alerting** — Sentry (frontend + server function), uptime monitor.
+10. **Security review** — jalankan security scanner, verifikasi RLS semua tabel, rate-limit auth endpoint.
+
+**Sangat direkomendasi** (post-launch minggu 1-2):
+- Project page: filter, hapus, duplikasi, pagination beneran
+- Auto Uploader: OAuth IG & FB (Meta Graph API)
+- Kolaborasi Tim + role invite
+- Analytics Hub: pakai data `projects` + `transactions`
+- SEO landing page (title/meta/OG image sudah, tambah blog)
+
+**Bisa ditunda** (roadmap 1-3 bulan):
+- AI Editor Studio, Inpainting, Bulk Generator, A/B Testing
+- Program Afiliasi, Persona, Style Tuner
+- Stock Library, Font Manager upload custom
+- Developer Playground, DB Shell
+
+**Catatan realistis:** menu ⚪ tersisa ±20 halaman. Menandai semua ✅ tanpa implementasi = misleading. Fokus 10 blocker di atas dulu; menu lain bisa ditambahkan bertahap setelah user real masuk dan menentukan prioritas nyata.
