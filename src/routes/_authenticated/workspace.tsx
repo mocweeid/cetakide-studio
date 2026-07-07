@@ -370,9 +370,12 @@ function Workspace() {
     const totalJobs = targetRatios.length;
 
     const brandInstructions = buildBrandInstructions(selectedBrand);
-    const finalBasePrompt = brandInstructions
-      ? `${form.prompt}\n\n${brandInstructions}`
-      : form.prompt;
+    const logoNote = brandLogo
+      ? "A brand logo will be overlaid; leave ~15% clear space in the top-left for the logo."
+      : "";
+    const finalBasePrompt = [form.prompt, brandInstructions, logoNote]
+      .filter(Boolean)
+      .join("\n\n");
 
     setGenerating(true);
     setResults([]);
