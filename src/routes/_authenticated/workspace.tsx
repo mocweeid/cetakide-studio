@@ -1516,6 +1516,59 @@ function Workspace() {
           </div>
         </div>
       )}
+
+      {/* Load Draft Modal */}
+      {draftOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg rounded-2xl border border-white/15 bg-background p-6">
+            <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="font-display text-lg font-bold flex items-center gap-2">
+                <FolderOpen className="h-5 w-5 text-primary" /> Draft Tersimpan
+              </h3>
+              <button
+                onClick={() => setDraftOpen(false)}
+                className="rounded-md p-1.5 hover:bg-white/10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {draftList.length === 0 ? (
+              <p className="py-8 text-center text-sm text-white/60">
+                Belum ada draft. Simpan settingan Anda dulu.
+              </p>
+            ) : (
+              <ul className="max-h-[50vh] space-y-2 overflow-y-auto">
+                {draftList.map((d) => (
+                  <li
+                    key={d.name}
+                    className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-3"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-semibold">{d.name}</p>
+                      <p className="text-[10px] text-white/40">
+                        {new Date(d.savedAt).toLocaleString("id-ID")}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => loadDraft(d.name)}
+                      className="rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20"
+                    >
+                      Muat
+                    </button>
+                    <button
+                      onClick={() => deleteDraft(d.name)}
+                      className="rounded-md border border-red-500/40 bg-red-500/10 p-1.5 text-red-300 hover:bg-red-500/20"
+                      title="Hapus"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
