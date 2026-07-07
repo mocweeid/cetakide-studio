@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { AppShell, useAppUser } from "@/components/app-shell";
 import { Star, Lock, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { bentoByNiche, logoShowcase, carouselData } from "@/config/site-assets";
+import { bentoByNiche, logoShowcase, carouselData, nicheExtras } from "@/config/site-assets";
 
 export const Route = createFileRoute("/_authenticated/templates")({
   head: () => ({
@@ -27,13 +27,14 @@ const TEMPLATES: TemplateItem[] = (() => {
 
   // 1. All niche posters (1:1) -> "Niche Poster" category, split by niche
   Object.entries(bentoByNiche).forEach(([niche, group]) => {
-    [group.main, ...group.small].forEach((img, i) => {
+    const extras = nicheExtras[niche as keyof typeof nicheExtras] ?? [];
+    [group.main, ...group.small, ...extras].forEach((img, i) => {
       list.push({
         id: `niche-${niche}-${i}`,
         name: `Poster ${niche} #${i + 1}`,
         category: niche,
         ratio: "1:1",
-        premium: i >= 4, // last of each niche = premium
+        premium: i >= 8, // 5+ jadi premium untuk memberi ruang free tier lebih banyak
         img,
       });
     });
