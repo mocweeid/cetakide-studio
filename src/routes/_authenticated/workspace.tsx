@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { PRESET_THEMES, getThemeStyles, DEFAULT_IMG } from "./preset-theme";
 import { generateImageServer } from "@/lib/generateImage.functions";
-import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { autofillFieldServer } from "@/lib/autofillField.functions";
 import { streamImage } from "@/lib/streamImage";
 import { useServerFn } from "@tanstack/react-start";
@@ -174,21 +173,97 @@ function Workspace() {
   const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
   const generateImage = useServerFn(generateImageServer);
-  const enhancePrompt = useServerFn(enhancePromptServer);
   const autofillField = useServerFn(autofillFieldServer);
-  const [enhancing, setEnhancing] = useState(false);
   const [autofillingKey, setAutofillingKey] = useState<string | null>(null);
   const [exportingZip, setExportingZip] = useState(false);
+  const [rundownOpen, setRundownOpen] = useState(false);
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
+  const [draftList, setDraftList] = useState<string[]>([]);
+
+  // Draft persistence (localStorage per-user)
+  const draftStorageKey = user ? `cetakide:workspace-drafts:${user.userId}` : null;
+  useEffect(() => {
+    if (!draftStorageKey) return;
+    try {
+      const raw = localStorage.getItem(draftStorageKey);
+      const obj = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      setDraftList(Object.keys(obj));
+    } catch {
+      setDraftList([]);
+    }
+  }, [draftStorageKey]);
+
+  function readDrafts(): Record<string, any> {
+    if (!draftStorageKey) return {};
+    try {
+      return JSON.parse(localStorage.getItem(draftStorageKey) || "{}");
+    } catch {
+      return {};
+    }
+  }
+  function writeDrafts(obj: Record<string, any>) {
+    if (!draftStorageKey) return;
+    localStorage.setItem(draftStorageKey, JSON.stringify(obj));
+    setDraftList(Object.keys(obj));
+  }
+  function saveDraft() {
+    const name = draftName.trim() || `Draf ${new Date().toLocaleString("id-ID")}`;
+    const drafts = readDrafts();
+    drafts[name] = {
+      form,
+      platform,
+      ratio,
+      selectedPreset,
+      selectedBrandId,
+      brandLogo,
+      reference,
+      generateCount,
+      allRatios,
+      savedAt: Date.now(),
+    };
+    writeDrafts(drafts);
+    setDraftName(name);
+    toast.success(`Draf tersimpan: ${name}`);
+  }
+  function loadDraft(name: string) {
+    const d = readDrafts()[name];
+    if (!d) return;
+    setForm(d.form ?? form);
+    setPlatform(d.platform ?? platform);
+    setRatio(d.ratio ?? ratio);
+    setSelectedPreset(d.selectedPreset ?? "");
+    setSelectedBrandId(d.selectedBrandId ?? null);
+    setBrandLogo(d.brandLogo ?? null);
+    setReference(d.reference ?? null);
+    setGenerateCount(d.generateCount ?? 1);
+    setAllRatios(!!d.allRatios);
+    setDraftName(name);
+    toast.success(`Draf dimuat: ${name}`);
+  }
+  function deleteDraft(name: string) {
+    const drafts = readDrafts();
+    delete drafts[name];
+    writeDrafts(drafts);
+    toast.success(`Draf dihapus: ${name}`);
+  }
+
+  function handleBrandLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setBrandLogo(reader.result as string);
+      toast.success("Logo brand ditambahkan.");
+    };
+    reader.readAsDataURL(file);
+  }
 
   async function runAutofill(field:
     | "prompt"
     | "title"
     | "subtitle"
     | "whatsapp"
-    | "facebook_url"
-    | "instagram_url"
-    | "twitter_url"
-    | "social_url"
     | "body_content") {
     setAutofillingKey(field);
     try {
@@ -260,25 +335,6 @@ function Workspace() {
       });
   }, [user]);
 
-  async function handleEnhance() {
-    if (!form.prompt.trim()) {
-      toast.error("Isi prompt dulu untuk disempurnakan.");
-      return;
-    }
-    setEnhancing(true);
-    try {
-      const { enhanced } = await enhancePrompt({
-        data: { prompt: form.prompt, platform, ratio },
-      });
-      setForm((f) => ({ ...f, prompt: enhanced }));
-      toast.success("Prompt disempurnakan oleh AI.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Gagal menyempurnakan prompt");
-    } finally {
-      setEnhancing(false);
-    }
-  }
-
   useEffect(() => {
     setRatio(PLATFORMS[platform].ratios[0].key);
   }, [platform]);
@@ -314,9 +370,12 @@ function Workspace() {
     const totalJobs = targetRatios.length;
 
     const brandInstructions = buildBrandInstructions(selectedBrand);
-    const finalBasePrompt = brandInstructions
-      ? `${form.prompt}\n\n${brandInstructions}`
-      : form.prompt;
+    const logoNote = brandLogo
+      ? "A brand logo will be overlaid; leave ~15% clear space in the top-left for the logo."
+      : "";
+    const finalBasePrompt = [form.prompt, brandInstructions, logoNote]
+      .filter(Boolean)
+      .join("\n\n");
 
     setGenerating(true);
     setResults([]);
@@ -737,43 +796,57 @@ function Workspace() {
                   className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-9 text-sm outline-none focus:border-primary/60"
                 />
                 <AiFillBtn onClick={() => runAutofill("prompt")} loading={autofillingKey === "prompt"} />
-                <button
-                  type="button"
-                  onClick={handleEnhance}
-                  disabled={enhancing || !form.prompt.trim()}
-                  className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                  title="Sempurnakan prompt dengan AI"
-                >
-                  {enhancing ? (
-                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Menyempurnakan…</>
-                  ) : (
-                    <><Sparkles className="h-3.5 w-3.5" /> Sempurnakan Prompt dengan AI</>
-                  )}
-                </button>
               </div>
             </Field>
-            <Field label="Judul">
-              <div className="relative">
-                <input
-                  value={form.title}
-                  onChange={updateField("title")}
-                  className={inputCls + " pr-9"}
-                  placeholder="Diskon 50%"
-                />
-                <AiFillBtn onClick={() => runAutofill("title")} loading={autofillingKey === "title"} />
+
+            {/* Rundown / Optional Settings */}
+            <details
+              open={rundownOpen}
+              onToggle={(e) => setRundownOpen((e.target as HTMLDetailsElement).open)}
+              className="rounded-lg border border-white/10 bg-white/5"
+            >
+              <summary className="cursor-pointer select-none px-3 py-2 text-xs font-semibold uppercase tracking-widest text-white/70 hover:text-white flex items-center gap-2">
+                <Settings2 className="h-3.5 w-3.5 text-primary" />
+                Rundown · Optional Settings
+              </summary>
+              <div className="space-y-3 p-3 pt-1">
+                <Field label="Judul">
+                  <div className="relative">
+                    <input
+                      value={form.title}
+                      onChange={updateField("title")}
+                      className={inputCls + " pr-9"}
+                      placeholder="Diskon 50%"
+                    />
+                    <AiFillBtn onClick={() => runAutofill("title")} loading={autofillingKey === "title"} />
+                  </div>
+                </Field>
+                <Field label="Sub Judul">
+                  <div className="relative">
+                    <input
+                      value={form.subtitle}
+                      onChange={updateField("subtitle")}
+                      className={inputCls + " pr-9"}
+                      placeholder="Berlaku sampai 31 Des"
+                    />
+                    <AiFillBtn onClick={() => runAutofill("subtitle")} loading={autofillingKey === "subtitle"} />
+                  </div>
+                </Field>
+                <Field label="Isi Konten">
+                  <div className="relative">
+                    <textarea
+                      value={form.body_content}
+                      onChange={updateField("body_content")}
+                      rows={2}
+                      className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-9 text-sm outline-none focus:border-primary/60"
+                      placeholder="Detail penawaran..."
+                    />
+                    <AiFillBtn onClick={() => runAutofill("body_content")} loading={autofillingKey === "body_content"} />
+                  </div>
+                </Field>
               </div>
-            </Field>
-            <Field label="Sub Judul">
-              <div className="relative">
-                <input
-                  value={form.subtitle}
-                  onChange={updateField("subtitle")}
-                  className={inputCls + " pr-9"}
-                  placeholder="Berlaku sampai 31 Des"
-                />
-                <AiFillBtn onClick={() => runAutofill("subtitle")} loading={autofillingKey === "subtitle"} />
-              </div>
-            </Field>
+            </details>
+
             <Field label="Nomor WA">
               <div className="relative">
                 <input
@@ -787,51 +860,97 @@ function Workspace() {
             </Field>
             <div className="grid grid-cols-3 gap-2">
               <Field label="Facebook">
-                <div className="relative">
-                  <input
-                    value={form.facebook_url}
-                    onChange={updateField("facebook_url")}
-                    className={inputCls + " pr-9"}
-                    placeholder="fb.com/brand"
-                  />
-                  <AiFillBtn onClick={() => runAutofill("facebook_url")} loading={autofillingKey === "facebook_url"} />
-                </div>
+                <input
+                  value={form.facebook_url}
+                  onChange={updateField("facebook_url")}
+                  className={inputCls}
+                  placeholder="fb.com/brand"
+                />
               </Field>
               <Field label="Instagram">
-                <div className="relative">
-                  <input
-                    value={form.instagram_url}
-                    onChange={updateField("instagram_url")}
-                    className={inputCls + " pr-9"}
-                    placeholder="@brand"
-                  />
-                  <AiFillBtn onClick={() => runAutofill("instagram_url")} loading={autofillingKey === "instagram_url"} />
-                </div>
+                <input
+                  value={form.instagram_url}
+                  onChange={updateField("instagram_url")}
+                  className={inputCls}
+                  placeholder="@brand"
+                />
               </Field>
               <Field label="Twitter">
-                <div className="relative">
-                  <input
-                    value={form.twitter_url}
-                    onChange={updateField("twitter_url")}
-                    className={inputCls + " pr-9"}
-                    placeholder="@brand"
-                  />
-                  <AiFillBtn onClick={() => runAutofill("twitter_url")} loading={autofillingKey === "twitter_url"} />
-                </div>
+                <input
+                  value={form.twitter_url}
+                  onChange={updateField("twitter_url")}
+                  className={inputCls}
+                  placeholder="@brand"
+                />
               </Field>
             </div>
-            <Field label="Isi Konten">
-              <div className="relative">
-                <textarea
-                  value={form.body_content}
-                  onChange={updateField("body_content")}
-                  rows={2}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-9 text-sm outline-none focus:border-primary/60"
-                  placeholder="Detail penawaran..."
+
+            {/* Logo Brand Upload */}
+            <div>
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Logo Brand (opsional)
+              </p>
+              <label className="flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs hover:bg-white/10">
+                <Upload className="h-3.5 w-3.5" /> Upload Logo Brand
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBrandLogoUpload}
+                  className="hidden"
                 />
-                <AiFillBtn onClick={() => runAutofill("body_content")} loading={autofillingKey === "body_content"} />
+              </label>
+              {brandLogo && (
+                <div className="mt-2 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-2">
+                  <img src={brandLogo} alt="Logo" className="h-12 w-12 rounded object-contain bg-white/10" />
+                  <span className="flex-1 truncate text-xs text-muted-foreground">Logo aktif</span>
+                  <button onClick={() => setBrandLogo(null)} className="text-muted-foreground hover:text-foreground">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Draft Manager */}
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Draf Tersimpan
+              </p>
+              <div className="flex gap-2">
+                <input
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  placeholder="Nama draf…"
+                  className={inputCls}
+                />
+                <button
+                  onClick={saveDraft}
+                  className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20 whitespace-nowrap"
+                >
+                  Simpan
+                </button>
               </div>
-            </Field>
+              {draftList.length > 0 && (
+                <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+                  {draftList.map((n) => (
+                    <div key={n} className="flex items-center gap-2 rounded bg-white/5 px-2 py-1 text-xs">
+                      <span className="flex-1 truncate">{n}</span>
+                      <button
+                        onClick={() => loadDraft(n)}
+                        className="text-primary hover:underline"
+                      >
+                        Muat
+                      </button>
+                      <button
+                        onClick={() => deleteDraft(n)}
+                        className="text-red-400 hover:underline"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div>
               <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
