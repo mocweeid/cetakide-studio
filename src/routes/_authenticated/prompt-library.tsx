@@ -6,15 +6,29 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { PROMPT_CATEGORIES, PROMPT_TEMPLATES, PromptTemplate } from "@/config/prompt-templates";
+import { bentoByNiche } from "@/config/site-assets";
 
-// Map category → representative reference posters (dari /public/assets/feed-ig)
+// Koleksi Template diterapkan ke Perpustakaan Prompt:
+// setiap kategori memakai aset asli dari bentoByNiche (main + small)
+// dengan fallback ke feed-ig untuk kategori yang belum punya niche.
+function nicheAssets(...niches: (keyof typeof bentoByNiche)[]): string[] {
+  const out: string[] = [];
+  for (const n of niches) {
+    const g = bentoByNiche[n];
+    if (g) out.push(g.main, ...g.small);
+  }
+  return out;
+}
+
 const CATEGORY_PREVIEWS: Record<string, string[]> = {
-  laundry: ["/assets/feed-ig/ig-1.png", "/assets/feed-ig/ig-4.png"],
-  kuliner: ["/assets/feed-ig/ig-2.png", "/assets/feed-ig/ig-5.png", "/assets/feed-ig/ig-8.png"],
-  fashion: ["/assets/feed-ig/ig-3.png", "/assets/feed-ig/ig-6.png", "/assets/feed-ig/ig-7.png"],
-  jasa: ["/assets/feed-ig/ig-1.png", "/assets/feed-ig/ig-3.png"],
-  ecommerce: ["/assets/feed-ig/ig-2.png", "/assets/feed-ig/ig-6.png"],
-  edukasi: ["/assets/feed-ig/ig-5.png", "/assets/feed-ig/ig-8.png"],
+  laundry: ["/assets/feed-ig/ig-1.png", "/assets/feed-ig/ig-4.png", "/assets/fb-ads-standart/fb-1.png"],
+  kuliner: nicheAssets("Kuliner"),
+  fashion: nicheAssets("Fashion"),
+  jasa: nicheAssets("Properti", "Kesehatan"),
+  ecommerce: nicheAssets("Gadget", "Kecantikan"),
+  edukasi: nicheAssets("Kreatif" as keyof typeof bentoByNiche).length
+    ? nicheAssets("Kreatif" as keyof typeof bentoByNiche)
+    : ["/assets/feed-ig/ig-5.png", "/assets/feed-ig/ig-8.png"],
 };
 
 function previewFor(t: PromptTemplate): string {
