@@ -270,10 +270,10 @@ function Workspace() {
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<string[]>([]);
   type Variant =
-    | { status: "proses" }
-    | { status: "streaming"; imageUrl: string }
-    | { status: "sukses"; imageUrl: string }
-    | { status: "gagal"; error: string };
+    | { status: "proses"; prompt?: string; ratio?: string }
+    | { status: "streaming"; imageUrl: string; prompt?: string; ratio?: string }
+    | { status: "sukses"; imageUrl: string; prompt?: string; ratio?: string }
+    | { status: "gagal"; error: string; prompt?: string; ratio?: string };
   const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
   const generateImage = useServerFn(generateImageServer);
@@ -430,7 +430,13 @@ function Workspace() {
 
     setGenerating(true);
     setResults([]);
-    setVariants(Array.from({ length: totalJobs }, () => ({ status: "proses" as const })));
+    setVariants(
+      Array.from({ length: totalJobs }, (_, idx) => ({
+        status: "proses" as const,
+        prompt: finalBasePrompt,
+        ratio: targetRatios[idx],
+      })),
+    );
     try {
       // Potong saldo sesuai jumlah generate jika di backend diimplementasi
       for (let i = 0; i < totalJobs; i++) {
@@ -482,8 +488,8 @@ function Workspace() {
             setVariants((prev) => {
               const next = [...prev];
               next[i] = isFinal
-                ? { status: "sukses", imageUrl: dataUrl }
-                : { status: "streaming", imageUrl: dataUrl };
+                ? { status: "sukses", imageUrl: dataUrl, prompt: finalBasePrompt, ratio: jobRatio }
+                : { status: "streaming", imageUrl: dataUrl, prompt: finalBasePrompt, ratio: jobRatio };
               return next;
             });
             if (isFinal) finalUrl = dataUrl;
@@ -500,7 +506,7 @@ function Workspace() {
           const msg = genErr instanceof Error ? genErr.message : "Generate gagal";
           setVariants((prev) => {
             const next = [...prev];
-            next[i] = { status: "gagal", error: msg };
+            next[i] = { status: "gagal", error: msg, prompt: finalBasePrompt, ratio: jobRatio };
             return next;
           });
           await supabase
@@ -528,6 +534,52 @@ function Workspace() {
       toast.error(err instanceof Error ? err.message : "Generate gagal");
     } finally {
       setGenerating(false);
+    }
+  }
+
+  async function handleRegenerate(i: number) {
+    const v = variants[i];
+    const prompt = v.prompt;
+    const jobRatio = v.ratio;
+    if (!prompt || !jobRatio) {
+      toast.error("Data variasi tidak lengkap, tekan Generate ulang.");
+      return;
+    }
+    const size = ratioToSize(jobRatio);
+    setVariants((prev) => {
+      const next = [...prev];
+      next[i] = { status: "proses", prompt, ratio: jobRatio };
+      return next;
+    });
+    try {
+      const { data: ok } = await supabase.rpc("potong_saldo_generate");
+      if (!ok) {
+        toast.error("Saldo tidak mencukupi.");
+        setVariants((prev) => {
+          const next = [...prev];
+          next[i] = { status: "gagal", error: "Saldo habis", prompt, ratio: jobRatio };
+          return next;
+        });
+        return;
+      }
+      await streamImage(prompt, size, (dataUrl, isFinal) => {
+        setVariants((prev) => {
+          const next = [...prev];
+          next[i] = isFinal
+            ? { status: "sukses", imageUrl: dataUrl, prompt, ratio: jobRatio }
+            : { status: "streaming", imageUrl: dataUrl, prompt, ratio: jobRatio };
+          return next;
+        });
+      });
+      toast.success(`Variasi ${i + 1} berhasil di-regenerate.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Regenerate gagal";
+      setVariants((prev) => {
+        const next = [...prev];
+        next[i] = { status: "gagal", error: msg, prompt, ratio: jobRatio };
+        return next;
+      });
+      toast.error(`Regenerate variasi ${i + 1} gagal`, { description: msg });
     }
   }
 
@@ -765,6 +817,22 @@ function Workspace() {
                             className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold hover:bg-white/10"
                           >
                             <CloudUpload className="h-3.5 w-3.5" /> Auto Upload
+                          </button>
+                          <button
+                            onClick={() => handleRegenerate(i)}
+                            className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/20"
+                          >
+                            <Wand2 className="h-3.5 w-3.5" /> Regenerate
+                          </button>
+                        </div>
+                      )}
+                      {v.status === "gagal" && (
+                        <div className="flex justify-center">
+                          <button
+                            onClick={() => handleRegenerate(i)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/20"
+                          >
+                            <Wand2 className="h-3.5 w-3.5" /> Regenerate
                           </button>
                         </div>
                       )}
