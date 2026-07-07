@@ -328,11 +328,6 @@ export function allNicheAssets(niche: Exclude<Niche, "Semua">): string[] {
   return g ? [g.main, ...g.small, ...extras] : extras;
 }
 
-// Dummy export terminator agar patch mempertahankan closing bento object aslinya.
-const __presetAssetsEnd__ = null;
-export { __presetAssetsEnd__ };
-};
-
 // ---------- LOGO SHOWCASE (7-10 items) ----------
 export const logoShowcase: string[] = [
   "/assets/logo-preset/logo-1.png",
