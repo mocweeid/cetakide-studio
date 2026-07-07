@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 export type ProviderKey = {
   id: string;
@@ -14,12 +15,11 @@ export type ProviderKey = {
 };
 
 /** Pick the next active, non-disabled key by priority. */
-export async function pickNextKey(userId: string): Promise<ProviderKey | null> {
+export async function pickNextKey(userId: string, client: SupabaseClient = supabase): Promise<ProviderKey | null> {
   const nowIso = new Date().toISOString();
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from("ai_providers")
     .select("*")
-    .eq("user_id", userId)
     .eq("is_active", true)
     .or(`disabled_until.is.null,disabled_until.lt.${nowIso}`)
     .order("priority", { ascending: true })
@@ -41,6 +41,7 @@ export async function markKeyResult(
   userId: string,
   key: ProviderKey,
   result: KeyResult,
+  client: SupabaseClient = supabase,
 ): Promise<void> {
   const patch: {
     last_used_at?: string;
@@ -85,8 +86,8 @@ export async function markKeyResult(
     detail = result.message ?? null;
   }
 
-  await supabase.from("ai_providers").update(patch).eq("id", key.id);
-  await supabase.from("ai_key_events").insert({
+  await client.from("ai_providers").update(patch).eq("id", key.id);
+  await client.from("ai_key_events").insert({
     user_id: userId,
     provider_id: key.id,
     event,

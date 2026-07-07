@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { pickNextKey, markKeyResult, ProviderKey } from "@/lib/keyRotation";
 
 type FieldKey =
   | "prompt"
@@ -32,49 +33,36 @@ export const autofillFieldServer = createServerFn({ method: "POST" })
     (data: { field: FieldKey; context: string; currentValue?: string }) => data,
   )
   .handler(async ({ data, context }) => {
-    // Ambil API key Gemini yang dikelola developer dari tabel ai_providers.
-    // Fallback ke env GEMINI_API_KEY bila belum ada row aktif.
-    let apiKey: string | undefined;
-    
+    // Ambil API key Gemini menggunakan Key Rotation (pickNextKey)
+    let keyRow: ProviderKey | null = null;
+    let clientToUse: any = context.supabase;
+
     // 1. Coba baca menggunakan client user (berfungsi jika user saat ini adalah developer)
     try {
-      const { data: row } = await context.supabase
-        .from("ai_providers")
-        .select("api_key")
-        .eq("provider", "gemini")
-        .eq("is_active", true)
-        .order("priority", { ascending: true })
-        .order("last_used_at", { ascending: true, nullsFirst: true })
-        .limit(1)
-        .maybeSingle();
-      apiKey = row?.api_key ?? undefined;
+      keyRow = await pickNextKey(context.userId, context.supabase);
     } catch {
       // ignore
     }
 
     // 2. Coba baca menggunakan admin client (service role)
-    if (!apiKey) {
+    if (!keyRow) {
       try {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: row } = await supabaseAdmin
-          .from("ai_providers")
-          .select("api_key")
-          .eq("provider", "gemini")
-          .eq("is_active", true)
-          .order("priority", { ascending: true })
-          .order("last_used_at", { ascending: true, nullsFirst: true })
-          .limit(1)
-          .maybeSingle();
-        apiKey = row?.api_key ?? undefined;
+        keyRow = await pickNextKey(context.userId, supabaseAdmin);
+        if (keyRow) {
+          clientToUse = supabaseAdmin;
+        }
       } catch {
-        // ignore, fallback ke env
+        // ignore
       }
     }
 
+    let apiKey = keyRow?.api_key;
     if (!apiKey) apiKey = process.env.GEMINI_API_KEY;
+
     if (!apiKey) {
       throw new Error(
-        "API key Gemini belum diatur. Minta Developer menambahkannya di halaman Admin AI Keys.",
+        "API key Gemini belum diatur atau habis limit. Minta Developer menambahkannya di halaman Admin AI Keys.",
       );
     }
 
@@ -99,38 +87,55 @@ export const autofillFieldServer = createServerFn({ method: "POST" })
         }),
       },
     );
+
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
+      
+      // Catat kegagalan key jika menggunakan key dari database
+      if (keyRow) {
+        if (res.status === 429) {
+          await markKeyResult(context.userId, keyRow, { kind: "rate_limit" }, clientToUse);
+        } else if (res.status === 401 || res.status === 403) {
+          await markKeyResult(context.userId, keyRow, { kind: "invalid" }, clientToUse);
+        } else {
+          await markKeyResult(
+            context.userId,
+            keyRow,
+            { kind: "error", statusCode: res.status, message: errText.slice(0, 200) },
+            clientToUse,
+          );
+        }
+      }
+
       throw new Error(`Gemini error ${res.status}: ${errText.slice(0, 200)}`);
     }
+
     const json = (await res.json()) as {
       candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
     };
     const text = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
-    if (!text) throw new Error("Gemini tidak mengembalikan teks.");
+    if (!text) {
+      if (keyRow) {
+        await markKeyResult(
+          context.userId,
+          keyRow,
+          { kind: "error", message: "Gemini tidak mengembalikan teks" },
+          clientToUse,
+        );
+      }
+      throw new Error("Gemini tidak mengembalikan teks.");
+    }
+    
     // Strip surrounding quotes if model added them
     const cleaned = text.replace(/^["'“”]+|["'“”]+$/g, "").trim();
     
-    // Update last_used_at best-effort
-    try {
-      // Coba update lewat user client dulu
-      const { error } = await context.supabase
-        .from("ai_providers")
-        .update({ last_used_at: new Date().toISOString(), last_status: "ok" })
-        .eq("provider", "gemini")
-        .eq("api_key", apiKey);
-        
-      if (error) {
-        // Jika gagal (misal user biasa), coba lewat admin client
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        await supabaseAdmin
-          .from("ai_providers")
-          .update({ last_used_at: new Date().toISOString(), last_status: "ok" })
-          .eq("provider", "gemini")
-          .eq("api_key", apiKey);
+    // Catat sukses pemakaian key
+    if (keyRow) {
+      try {
+        await markKeyResult(context.userId, keyRow, { kind: "ok" }, clientToUse);
+      } catch {
+        /* noop */
       }
-    } catch {
-      /* noop */
     }
     return { value: cleaned };
   });
