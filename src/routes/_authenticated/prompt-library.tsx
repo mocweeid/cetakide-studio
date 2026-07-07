@@ -175,6 +175,18 @@ function PromptLibraryPage() {
                 className="group relative flex flex-col justify-between rounded-xl border border-white/10 bg-white/[0.03] p-5 transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:bg-white/[0.05] hover:shadow-lg cursor-pointer"
               >
                 <div className="space-y-3">
+                  {/* Poster preview 1:1 */}
+                  <div className="relative overflow-hidden rounded-lg border border-white/10 bg-black/40 aspect-square">
+                    <img
+                      src={previewFor(t)}
+                      alt={t.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition group-hover:scale-105"
+                    />
+                    <span className="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold text-primary border border-primary/30">
+                      Referensi visual
+                    </span>
+                  </div>
                   {/* Category Badge */}
                   <span className="inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-primary uppercase">
                     {PROMPT_CATEGORIES.find((c) => c.key === t.category)?.label || t.category}
