@@ -862,86 +862,142 @@ function Workspace() {
                 </button>
               </div>
             </Field>
-            <Field label="Judul">
-              <div className="relative">
-                <input
-                  value={form.title}
-                  onChange={updateField("title")}
-                  className={inputCls + " pr-9"}
-                  placeholder="Diskon 50%"
-                />
-                <AiFillBtn onClick={() => runAutofill("title")} loading={autofillingKey === "title"} />
+            <details className="group rounded-lg border border-white/10 bg-white/[0.03]">
+              <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-white/80 hover:bg-white/5">
+                <ListOrdered className="h-4 w-4 text-primary" />
+                Rundown · Optional Settings
+                <span className="ml-auto text-[10px] text-white/40 group-open:hidden">klik untuk buka</span>
+              </summary>
+              <div className="space-y-3 border-t border-white/10 p-3">
+                <Field label="Judul">
+                  <div className="relative">
+                    <input
+                      value={form.title}
+                      onChange={updateField("title")}
+                      className={inputCls + " pr-9"}
+                      placeholder="Diskon 50%"
+                    />
+                    <AiFillBtn onClick={() => runAutofill("title")} loading={autofillingKey === "title"} />
+                  </div>
+                </Field>
+                <Field label="Sub Judul">
+                  <div className="relative">
+                    <input
+                      value={form.subtitle}
+                      onChange={updateField("subtitle")}
+                      className={inputCls + " pr-9"}
+                      placeholder="Berlaku sampai 31 Des"
+                    />
+                    <AiFillBtn onClick={() => runAutofill("subtitle")} loading={autofillingKey === "subtitle"} />
+                  </div>
+                </Field>
+                <Field label="Isi Konten">
+                  <div className="relative">
+                    <textarea
+                      value={form.body_content}
+                      onChange={updateField("body_content")}
+                      rows={2}
+                      className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-9 text-sm outline-none focus:border-primary/60"
+                      placeholder="Detail penawaran..."
+                    />
+                    <AiFillBtn onClick={() => runAutofill("body_content")} loading={autofillingKey === "body_content"} />
+                  </div>
+                </Field>
               </div>
-            </Field>
-            <Field label="Sub Judul">
-              <div className="relative">
-                <input
-                  value={form.subtitle}
-                  onChange={updateField("subtitle")}
-                  className={inputCls + " pr-9"}
-                  placeholder="Berlaku sampai 31 Des"
-                />
-                <AiFillBtn onClick={() => runAutofill("subtitle")} loading={autofillingKey === "subtitle"} />
-              </div>
-            </Field>
+            </details>
+
             <Field label="Nomor WA">
               <div className="relative">
                 <input
                   value={form.whatsapp}
                   onChange={updateField("whatsapp")}
-                  className={inputCls + " pr-9"}
+                  className={inputCls}
                   placeholder="0812..."
                 />
-                <AiFillBtn onClick={() => runAutofill("whatsapp")} loading={autofillingKey === "whatsapp"} />
               </div>
             </Field>
             <div className="grid grid-cols-3 gap-2">
               <Field label="Facebook">
-                <div className="relative">
-                  <input
-                    value={form.facebook_url}
-                    onChange={updateField("facebook_url")}
-                    className={inputCls + " pr-9"}
-                    placeholder="fb.com/brand"
-                  />
-                  <AiFillBtn onClick={() => runAutofill("facebook_url")} loading={autofillingKey === "facebook_url"} />
-                </div>
+                <input
+                  value={form.facebook_url}
+                  onChange={updateField("facebook_url")}
+                  className={inputCls}
+                  placeholder="fb.com/brand"
+                />
               </Field>
               <Field label="Instagram">
-                <div className="relative">
-                  <input
-                    value={form.instagram_url}
-                    onChange={updateField("instagram_url")}
-                    className={inputCls + " pr-9"}
-                    placeholder="@brand"
-                  />
-                  <AiFillBtn onClick={() => runAutofill("instagram_url")} loading={autofillingKey === "instagram_url"} />
-                </div>
+                <input
+                  value={form.instagram_url}
+                  onChange={updateField("instagram_url")}
+                  className={inputCls}
+                  placeholder="@brand"
+                />
               </Field>
               <Field label="Twitter">
-                <div className="relative">
-                  <input
-                    value={form.twitter_url}
-                    onChange={updateField("twitter_url")}
-                    className={inputCls + " pr-9"}
-                    placeholder="@brand"
-                  />
-                  <AiFillBtn onClick={() => runAutofill("twitter_url")} loading={autofillingKey === "twitter_url"} />
-                </div>
+                <input
+                  value={form.twitter_url}
+                  onChange={updateField("twitter_url")}
+                  className={inputCls}
+                  placeholder="@brand"
+                />
               </Field>
             </div>
-            <Field label="Isi Konten">
-              <div className="relative">
-                <textarea
-                  value={form.body_content}
-                  onChange={updateField("body_content")}
-                  rows={2}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-9 text-sm outline-none focus:border-primary/60"
-                  placeholder="Detail penawaran..."
-                />
-                <AiFillBtn onClick={() => runAutofill("body_content")} loading={autofillingKey === "body_content"} />
+
+            <div>
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Logo Brand
+              </p>
+              <div className="flex items-center gap-2">
+                <label className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs hover:bg-white/10">
+                  <Upload className="h-3.5 w-3.5" /> Upload Logo
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBrandLogoUpload}
+                    className="hidden"
+                  />
+                </label>
+                {brandLogo && (
+                  <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-2 py-1">
+                    <img src={brandLogo} alt="Logo" className="h-8 w-8 rounded object-contain bg-white/10" />
+                    <button
+                      onClick={() => setBrandLogo(null)}
+                      className="text-white/50 hover:text-white"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
-            </Field>
+            </div>
+
+            {/* Save / Load Draft */}
+            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Simpan Settingan
+              </p>
+              <div className="flex gap-2">
+                <input
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  placeholder="Nama draft (mis. Promo Ramadhan)"
+                  className={inputCls + " flex-1"}
+                />
+                <button
+                  onClick={saveDraft}
+                  className="inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20"
+                >
+                  <Save className="h-3.5 w-3.5" /> Simpan
+                </button>
+                <button
+                  onClick={() => setDraftOpen(true)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold hover:bg-white/10"
+                  title="Muat Draft"
+                >
+                  <FolderOpen className="h-3.5 w-3.5" /> {draftList.length}
+                </button>
+              </div>
+            </div>
 
             <div>
               <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
