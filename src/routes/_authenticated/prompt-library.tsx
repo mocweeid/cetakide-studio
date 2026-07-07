@@ -7,6 +7,23 @@ import { useServerFn } from "@tanstack/react-start";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { PROMPT_CATEGORIES, PROMPT_TEMPLATES, PromptTemplate } from "@/config/prompt-templates";
 
+// Map category → representative reference posters (dari /public/assets/feed-ig)
+const CATEGORY_PREVIEWS: Record<string, string[]> = {
+  laundry: ["/assets/feed-ig/ig-1.png", "/assets/feed-ig/ig-4.png"],
+  kuliner: ["/assets/feed-ig/ig-2.png", "/assets/feed-ig/ig-5.png", "/assets/feed-ig/ig-8.png"],
+  fashion: ["/assets/feed-ig/ig-3.png", "/assets/feed-ig/ig-6.png", "/assets/feed-ig/ig-7.png"],
+  jasa: ["/assets/feed-ig/ig-1.png", "/assets/feed-ig/ig-3.png"],
+  ecommerce: ["/assets/feed-ig/ig-2.png", "/assets/feed-ig/ig-6.png"],
+  edukasi: ["/assets/feed-ig/ig-5.png", "/assets/feed-ig/ig-8.png"],
+};
+
+function previewFor(t: PromptTemplate): string {
+  const pool = CATEGORY_PREVIEWS[t.category] ?? ["/assets/feed-ig/ig-1.png"];
+  // Deterministic by id suffix
+  const n = parseInt(t.id.split("-").pop() || "1", 10) || 1;
+  return pool[(n - 1) % pool.length];
+}
+
 export const Route = createFileRoute("/_authenticated/prompt-library")({
   head: () => ({
     meta: [
