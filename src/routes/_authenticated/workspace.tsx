@@ -270,10 +270,10 @@ function Workspace() {
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<string[]>([]);
   type Variant =
-    | { status: "proses" }
-    | { status: "streaming"; imageUrl: string }
-    | { status: "sukses"; imageUrl: string }
-    | { status: "gagal"; error: string };
+    | { status: "proses"; prompt?: string; ratio?: string }
+    | { status: "streaming"; imageUrl: string; prompt?: string; ratio?: string }
+    | { status: "sukses"; imageUrl: string; prompt?: string; ratio?: string }
+    | { status: "gagal"; error: string; prompt?: string; ratio?: string };
   const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
   const generateImage = useServerFn(generateImageServer);
