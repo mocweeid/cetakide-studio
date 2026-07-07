@@ -44,6 +44,7 @@ import {
   UserCheck,
   CreditCard,
   FileJson,
+  BookOpen,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -61,6 +62,7 @@ function buildGroups(isDeveloper: boolean): { title: string; items: NavItem[] }[
       items: [
         { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { to: "/workspace", label: "Workspace", icon: Wand2 },
+        { to: "/prompt-library", label: "Perpustakaan Prompt", icon: BookOpen },
         { to: "/project", label: "Project", icon: FolderKanban },
         { to: "/auto-uploader", label: "Auto Uploader", icon: UploadCloud },
         { to: "/analytics", label: "Analitik Hub", icon: BarChart3 },

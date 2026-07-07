@@ -30,6 +30,7 @@ import { Route as AuthenticatedSecurityLogsRouteImport } from './routes/_authent
 import { Route as AuthenticatedSchedulerRouteImport } from './routes/_authenticated/scheduler'
 import { Route as AuthenticatedReviewsRouteImport } from './routes/_authenticated/reviews'
 import { Route as AuthenticatedReferencesRouteImport } from './routes/_authenticated/references'
+import { Route as AuthenticatedPromptLibraryRouteImport } from './routes/_authenticated/prompt-library'
 import { Route as AuthenticatedProjectRouteImport } from './routes/_authenticated/project'
 import { Route as AuthenticatedPresetThemeRouteImport } from './routes/_authenticated/preset-theme'
 import { Route as AuthenticatedPlaygroundRouteImport } from './routes/_authenticated/playground'
@@ -165,6 +166,12 @@ const AuthenticatedReferencesRoute = AuthenticatedReferencesRouteImport.update({
   path: '/references',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPromptLibraryRoute =
+  AuthenticatedPromptLibraryRouteImport.update({
+    id: '/prompt-library',
+    path: '/prompt-library',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProjectRoute = AuthenticatedProjectRouteImport.update({
   id: '/project',
   path: '/project',
@@ -329,6 +336,7 @@ export interface FileRoutesByFullPath {
   '/playground': typeof AuthenticatedPlaygroundRoute
   '/preset-theme': typeof AuthenticatedPresetThemeRoute
   '/project': typeof AuthenticatedProjectRoute
+  '/prompt-library': typeof AuthenticatedPromptLibraryRoute
   '/references': typeof AuthenticatedReferencesRoute
   '/reviews': typeof AuthenticatedReviewsRoute
   '/scheduler': typeof AuthenticatedSchedulerRoute
@@ -376,6 +384,7 @@ export interface FileRoutesByTo {
   '/playground': typeof AuthenticatedPlaygroundRoute
   '/preset-theme': typeof AuthenticatedPresetThemeRoute
   '/project': typeof AuthenticatedProjectRoute
+  '/prompt-library': typeof AuthenticatedPromptLibraryRoute
   '/references': typeof AuthenticatedReferencesRoute
   '/reviews': typeof AuthenticatedReviewsRoute
   '/scheduler': typeof AuthenticatedSchedulerRoute
@@ -425,6 +434,7 @@ export interface FileRoutesById {
   '/_authenticated/playground': typeof AuthenticatedPlaygroundRoute
   '/_authenticated/preset-theme': typeof AuthenticatedPresetThemeRoute
   '/_authenticated/project': typeof AuthenticatedProjectRoute
+  '/_authenticated/prompt-library': typeof AuthenticatedPromptLibraryRoute
   '/_authenticated/references': typeof AuthenticatedReferencesRoute
   '/_authenticated/reviews': typeof AuthenticatedReviewsRoute
   '/_authenticated/scheduler': typeof AuthenticatedSchedulerRoute
@@ -474,6 +484,7 @@ export interface FileRouteTypes {
     | '/playground'
     | '/preset-theme'
     | '/project'
+    | '/prompt-library'
     | '/references'
     | '/reviews'
     | '/scheduler'
@@ -521,6 +532,7 @@ export interface FileRouteTypes {
     | '/playground'
     | '/preset-theme'
     | '/project'
+    | '/prompt-library'
     | '/references'
     | '/reviews'
     | '/scheduler'
@@ -569,6 +581,7 @@ export interface FileRouteTypes {
     | '/_authenticated/playground'
     | '/_authenticated/preset-theme'
     | '/_authenticated/project'
+    | '/_authenticated/prompt-library'
     | '/_authenticated/references'
     | '/_authenticated/reviews'
     | '/_authenticated/scheduler'
@@ -743,6 +756,13 @@ declare module '@tanstack/react-router' {
       path: '/references'
       fullPath: '/references'
       preLoaderRoute: typeof AuthenticatedReferencesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/prompt-library': {
+      id: '/_authenticated/prompt-library'
+      path: '/prompt-library'
+      fullPath: '/prompt-library'
+      preLoaderRoute: typeof AuthenticatedPromptLibraryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/project': {
@@ -949,6 +969,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPlaygroundRoute: typeof AuthenticatedPlaygroundRoute
   AuthenticatedPresetThemeRoute: typeof AuthenticatedPresetThemeRoute
   AuthenticatedProjectRoute: typeof AuthenticatedProjectRoute
+  AuthenticatedPromptLibraryRoute: typeof AuthenticatedPromptLibraryRoute
   AuthenticatedReferencesRoute: typeof AuthenticatedReferencesRoute
   AuthenticatedReviewsRoute: typeof AuthenticatedReviewsRoute
   AuthenticatedSchedulerRoute: typeof AuthenticatedSchedulerRoute
@@ -994,6 +1015,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPlaygroundRoute: AuthenticatedPlaygroundRoute,
   AuthenticatedPresetThemeRoute: AuthenticatedPresetThemeRoute,
   AuthenticatedProjectRoute: AuthenticatedProjectRoute,
+  AuthenticatedPromptLibraryRoute: AuthenticatedPromptLibraryRoute,
   AuthenticatedReferencesRoute: AuthenticatedReferencesRoute,
   AuthenticatedReviewsRoute: AuthenticatedReviewsRoute,
   AuthenticatedSchedulerRoute: AuthenticatedSchedulerRoute,
@@ -1025,3 +1047,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

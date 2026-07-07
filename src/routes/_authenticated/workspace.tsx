@@ -33,6 +33,7 @@ import JSZip from "jszip";
 export const Route = createFileRoute("/_authenticated/workspace")({
   validateSearch: z.object({
     preset: z.string().optional(),
+    prompt: z.string().optional(),
   }),
   head: () => ({
     meta: [{ title: "Workspace — Cetak Ide" }, { name: "robots", content: "noindex" }],
@@ -259,6 +260,13 @@ function Workspace() {
         if (def) setSelectedBrandId((prev) => prev ?? def.id);
       });
   }, [user]);
+
+  // Load prompt dari query parameter pencarian jika ada
+  useEffect(() => {
+    if (search.prompt) {
+      setForm((f) => ({ ...f, prompt: search.prompt }));
+    }
+  }, [search.prompt]);
 
   async function handleEnhance() {
     if (!form.prompt.trim()) {
