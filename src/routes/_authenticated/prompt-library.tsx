@@ -7,6 +7,23 @@ import { useServerFn } from "@tanstack/react-start";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { PROMPT_CATEGORIES, PROMPT_TEMPLATES, PromptTemplate } from "@/config/prompt-templates";
 
+// Map category → representative reference posters (dari /public/assets/feed-ig)
+const CATEGORY_PREVIEWS: Record<string, string[]> = {
+  laundry: ["/assets/feed-ig/ig-1.png", "/assets/feed-ig/ig-4.png"],
+  kuliner: ["/assets/feed-ig/ig-2.png", "/assets/feed-ig/ig-5.png", "/assets/feed-ig/ig-8.png"],
+  fashion: ["/assets/feed-ig/ig-3.png", "/assets/feed-ig/ig-6.png", "/assets/feed-ig/ig-7.png"],
+  jasa: ["/assets/feed-ig/ig-1.png", "/assets/feed-ig/ig-3.png"],
+  ecommerce: ["/assets/feed-ig/ig-2.png", "/assets/feed-ig/ig-6.png"],
+  edukasi: ["/assets/feed-ig/ig-5.png", "/assets/feed-ig/ig-8.png"],
+};
+
+function previewFor(t: PromptTemplate): string {
+  const pool = CATEGORY_PREVIEWS[t.category] ?? ["/assets/feed-ig/ig-1.png"];
+  // Deterministic by id suffix
+  const n = parseInt(t.id.split("-").pop() || "1", 10) || 1;
+  return pool[(n - 1) % pool.length];
+}
+
 export const Route = createFileRoute("/_authenticated/prompt-library")({
   head: () => ({
     meta: [
@@ -158,6 +175,18 @@ function PromptLibraryPage() {
                 className="group relative flex flex-col justify-between rounded-xl border border-white/10 bg-white/[0.03] p-5 transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:bg-white/[0.05] hover:shadow-lg cursor-pointer"
               >
                 <div className="space-y-3">
+                  {/* Poster preview 1:1 */}
+                  <div className="relative overflow-hidden rounded-lg border border-white/10 bg-black/40 aspect-square">
+                    <img
+                      src={previewFor(t)}
+                      alt={t.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition group-hover:scale-105"
+                    />
+                    <span className="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold text-primary border border-primary/30">
+                      Referensi visual
+                    </span>
+                  </div>
                   {/* Category Badge */}
                   <span className="inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-primary uppercase">
                     {PROMPT_CATEGORIES.find((c) => c.key === t.category)?.label || t.category}

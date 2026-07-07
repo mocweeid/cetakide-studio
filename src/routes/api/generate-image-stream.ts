@@ -53,6 +53,46 @@ export const Route = createFileRoute("/api/generate-image-stream")({
 
         const userKey = keys?.[0];
 
+        // Try Cloudflare Workers AI FLUX.1-schnell first (free tier, fast, mirip OpenAI)
+        const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+        const cfToken = process.env.CLOUDFLARE_API_TOKEN;
+        if (cfAccountId && cfToken) {
+          try {
+            const cfRes = await fetch(
+              `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${cfToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ prompt, steps: 4 }),
+              },
+            );
+            if (cfRes.ok) {
+              const j = (await cfRes.json()) as {
+                result?: { image?: string };
+                success?: boolean;
+              };
+              const b64 = j?.result?.image;
+              if (b64) {
+                // Wrap into single SSE completed event so client parser handles it uniformly
+                const sseBody = `event: image_generation.completed\ndata: ${JSON.stringify({ type: "image_generation.completed", b64_json: b64, created_at: Date.now() })}\n\n`;
+                return new Response(sseBody, {
+                  headers: {
+                    "Content-Type": "text/event-stream",
+                    "Cache-Control": "no-cache, no-transform",
+                    "X-Accel-Buffering": "no",
+                  },
+                });
+              }
+            }
+            // fall through to Lovable Gateway on any failure
+          } catch {
+            /* fall through */
+          }
+        }
+
         // Fallback / default: Lovable Gateway streaming
         const gatewayKey = process.env.LOVABLE_API_KEY;
         if (!gatewayKey && !userKey) {

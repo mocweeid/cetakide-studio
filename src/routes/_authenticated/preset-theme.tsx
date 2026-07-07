@@ -11,7 +11,7 @@ export const DEFAULT_IMG = "/assets/preset-default.jpg";
  * masing-masing gaya (Glassmorphism, Neumorphism, Brutalism, Minimalism)
  * tanpa perlu load gambar sungguhan.
  */
-function ThemeSkeletonPreview({ theme }: { theme: string }) {
+export function ThemeSkeletonPreview({ theme }: { theme: string }) {
   const t = theme.toLowerCase();
 
   if (t.includes("glass")) {
