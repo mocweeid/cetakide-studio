@@ -23,6 +23,8 @@ import {
   Save,
   FolderOpen,
   Trash2,
+  Bug,
+  ChevronUp,
 } from "lucide-react";
 import { PRESET_THEMES, getThemeStyles, ThemeSkeletonPreview } from "./preset-theme";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
@@ -162,6 +164,69 @@ function Workspace() {
   const [draftName, setDraftName] = useState("");
   const [draftList, setDraftList] = useState<Array<{ name: string; savedAt: string }>>([]);
   const [draftOpen, setDraftOpen] = useState(false);
+
+  // Debug panel state
+  type DebugEntry = {
+    ts: string;
+    level: "info" | "success" | "error";
+    message: string;
+    provider?: string;
+    jobId?: string;
+  };
+  const [debugOpen, setDebugOpen] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<DebugEntry[]>([]);
+  const [checkingOpenai, setCheckingOpenai] = useState(false);
+  const [openaiStatus, setOpenaiStatus] = useState<null | {
+    ok: boolean;
+    detail: string;
+    latency?: number;
+  }>(null);
+  function pushDebug(entry: Omit<DebugEntry, "ts">) {
+    setDebugLogs((prev) =>
+      [{ ts: new Date().toISOString(), ...entry }, ...prev].slice(0, 30),
+    );
+  }
+  async function handleCheckOpenai() {
+    setCheckingOpenai(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Belum sign in.");
+      const res = await fetch("/api/check-openai", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const j = (await res.json()) as {
+        ok: boolean;
+        found?: boolean;
+        status?: number;
+        latency_ms?: number;
+        model?: string | null;
+        model_count?: number;
+        has_image_model?: boolean;
+        error?: string;
+      };
+      if (j.ok) {
+        const detail = `Key valid · ${j.model_count ?? 0} model tersedia${j.has_image_model ? " · gpt-image/dall-e siap" : " · TIDAK ada model image"} · ${j.latency_ms}ms`;
+        setOpenaiStatus({ ok: true, detail, latency: j.latency_ms });
+        pushDebug({ level: "success", message: `OpenAI check OK — ${detail}` });
+        toast.success("OpenAI key valid", { description: detail });
+      } else {
+        const detail = j.error || (j.status ? `HTTP ${j.status}` : "Gagal");
+        setOpenaiStatus({ ok: false, detail });
+        pushDebug({ level: "error", message: `OpenAI check gagal — ${detail}` });
+        toast.error("OpenAI key bermasalah", { description: detail });
+      }
+      setDebugOpen(true);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setOpenaiStatus({ ok: false, detail: msg });
+      pushDebug({ level: "error", message: `OpenAI check exception: ${msg}` });
+      toast.error("Cek OpenAI gagal", { description: msg });
+    } finally {
+      setCheckingOpenai(false);
+    }
+  }
 
   useEffect(() => {
     if (!draftStorageKey) return;
@@ -501,6 +566,12 @@ function Workspace() {
           if (!finalUrl) throw new Error("Tidak ada gambar final.");
           usedKeys.add(provider);
           newResults.push(finalUrl);
+          pushDebug({
+            level: "success",
+            message: `Variasi ${i + 1} sukses (${jobRatio})`,
+            provider,
+            jobId,
+          });
           await supabase
             .from("projects")
             .update({ image_url: finalUrl, status: "sukses", provider })
@@ -517,6 +588,11 @@ function Workspace() {
             .from("projects")
             .update({ status: "gagal", error_message: msg.slice(0, 500) })
             .eq("id", projectId);
+          pushDebug({
+            level: "error",
+            message: `Variasi ${i + 1} gagal: ${msg}`,
+            jobId,
+          });
           toast.error(`Variasi ${i + 1} gagal`, { description: msg });
         }
         await refresh();
@@ -609,6 +685,12 @@ function Workspace() {
       }
       await refresh();
       toast.success(`Variasi ${i + 1} berhasil di-regenerate.`);
+      pushDebug({
+        level: "success",
+        message: `Regenerate variasi ${i + 1} sukses`,
+        provider,
+        jobId,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Regenerate gagal";
       setVariants((prev) => {
@@ -623,6 +705,11 @@ function Workspace() {
           .eq("id", projectId);
       }
       toast.error(`Regenerate variasi ${i + 1} gagal`, { description: msg });
+      pushDebug({
+        level: "error",
+        message: `Regenerate variasi ${i + 1} gagal: ${msg}`,
+        jobId,
+      });
     }
   }
 
@@ -649,6 +736,21 @@ function Workspace() {
       right={
         <div className="flex items-center gap-3">
           <button
+            onClick={() => setDebugOpen((v) => !v)}
+            className={`flex items-center gap-1.5 text-xs font-semibold transition ${
+              debugLogs.some((d) => d.level === "error")
+                ? "text-rose-300 hover:text-rose-200"
+                : "text-white/70 hover:text-white"
+            }`}
+          >
+            <Bug className="h-4 w-4" /> Debug
+            {debugLogs.length > 0 && (
+              <span className="ml-1 rounded-full bg-white/10 px-1.5 text-[10px]">
+                {debugLogs.length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setPanduanOpen(true)}
             className="flex items-center gap-1.5 text-xs font-semibold text-white/70 hover:text-white transition"
           >
@@ -657,6 +759,102 @@ function Workspace() {
         </div>
       }
     >
+      {debugOpen && (
+        <div className="mb-4 rounded-2xl border border-white/15 bg-black/40 p-4 backdrop-blur-md">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Bug className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">Debug Panel</h3>
+              <span className="text-[11px] text-white/50">
+                Log terakhir, status provider, dan tes koneksi
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCheckOpenai}
+                disabled={checkingOpenai}
+                className="rounded-md border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold hover:bg-white/10 disabled:opacity-50"
+              >
+                {checkingOpenai ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Cek OpenAI…
+                  </span>
+                ) : (
+                  "Cek OpenAI"
+                )}
+              </button>
+              <button
+                onClick={() => setDebugLogs([])}
+                className="rounded-md border border-white/10 px-2 py-1 text-xs text-white/60 hover:text-white"
+              >
+                Bersihkan
+              </button>
+              <button
+                onClick={() => setDebugOpen(false)}
+                className="rounded-md p-1 text-white/60 hover:text-white"
+                aria-label="Tutup"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          {openaiStatus && (
+            <div
+              className={`mb-3 rounded-lg border px-3 py-2 text-xs ${
+                openaiStatus.ok
+                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
+                  : "border-rose-400/30 bg-rose-500/10 text-rose-200"
+              }`}
+            >
+              <span className="font-semibold">
+                {openaiStatus.ok ? "OpenAI OK · " : "OpenAI Error · "}
+              </span>
+              <span className="font-mono">{openaiStatus.detail}</span>
+            </div>
+          )}
+          <div className="max-h-56 overflow-y-auto rounded-lg border border-white/10 bg-black/30">
+            {debugLogs.length === 0 ? (
+              <p className="p-3 text-xs text-white/40">
+                Belum ada log. Log muncul otomatis saat generate/regenerate atau saat cek OpenAI.
+              </p>
+            ) : (
+              <ul className="divide-y divide-white/5">
+                {debugLogs.map((d, idx) => (
+                  <li key={idx} className="flex gap-3 px-3 py-2 text-[11px]">
+                    <span className="w-16 shrink-0 text-white/40">
+                      {new Date(d.ts).toLocaleTimeString()}
+                    </span>
+                    <span
+                      className={`w-14 shrink-0 font-semibold uppercase ${
+                        d.level === "error"
+                          ? "text-rose-300"
+                          : d.level === "success"
+                            ? "text-emerald-300"
+                            : "text-sky-300"
+                      }`}
+                    >
+                      {d.level}
+                    </span>
+                    <span className="flex-1 break-words text-white/80">
+                      {d.message}
+                      {d.provider && (
+                        <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-white/70">
+                          {d.provider}
+                        </span>
+                      )}
+                      {d.jobId && (
+                        <span className="ml-2 font-mono text-[10px] text-white/40">
+                          {d.jobId.slice(0, 8)}
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
         {/* Canvas Area */}
         <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-5 backdrop-blur-md flex flex-col">
