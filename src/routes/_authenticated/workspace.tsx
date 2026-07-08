@@ -25,7 +25,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { PRESET_THEMES, getThemeStyles, ThemeSkeletonPreview } from "./preset-theme";
-import { generateImageServer } from "@/lib/generateImage.functions";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { autofillFieldServer } from "@/lib/autofillField.functions";
 import { streamImage } from "@/lib/streamImage";
@@ -276,7 +275,6 @@ function Workspace() {
     | { status: "gagal"; error: string; prompt?: string; ratio?: string };
   const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
-  const generateImage = useServerFn(generateImageServer);
   const enhancePrompt = useServerFn(enhancePromptServer);
   const autofillField = useServerFn(autofillFieldServer);
   const [enhancing, setEnhancing] = useState(false);
