@@ -47,9 +47,9 @@ Do not include any preachy words, explanations, or quotes. Output ONLY the final
       } else if (process.env.OPENAI_API_KEY) {
         apiKey = process.env.OPENAI_API_KEY;
         provider = "openai";
-      } else if (process.env.LOVABLE_API_KEY) {
-        apiKey = process.env.LOVABLE_API_KEY;
-        provider = "lovable";
+      } else if (process.env.GROQ_API_KEY) {
+        apiKey = process.env.GROQ_API_KEY;
+        provider = "groq";
       }
     }
 
@@ -122,28 +122,6 @@ Do not include any preachy words, explanations, or quotes. Output ONLY the final
             ],
             temperature: 0.7,
             max_tokens: 400,
-          }),
-        });
-
-        if (res.ok) {
-          const json = await res.json();
-          enhanced = json.choices?.[0]?.message?.content?.trim() ?? data.prompt;
-        }
-      } else if (provider === "lovable") {
-        // --- Call Lovable Gateway Fallback ---
-        const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
-            messages: [
-              { role: "system", content: system },
-              { role: "user", content: data.prompt },
-            ],
-            temperature: 0.7,
           }),
         });
 

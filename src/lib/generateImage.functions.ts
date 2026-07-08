@@ -22,25 +22,7 @@ async function callOpenAI(apiKey: string, model: string, prompt: string, size: s
   return res;
 }
 
-async function callLovableGateway(prompt: string, size: string) {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("LOVABLE_API_KEY belum tersedia di server.");
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "openai/gpt-image-2",
-      prompt,
-      size,
-      quality: "low",
-      n: 1,
-    }),
-  });
-  return res;
-}
+
 
 export const generateImageServer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -148,19 +130,9 @@ export const generateImageServer = createServerFn({ method: "POST" })
       }
     }
 
-    // Fallback: Lovable AI Gateway (OpenAI gpt-image-2)
-    const res = await callLovableGateway(data.prompt, data.size);
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Gateway error ${res.status}: ${text.slice(0, 200)}`);
-    }
-    const json = (await res.json()) as { data?: Array<{ b64_json?: string }> };
-    const b64 = json.data?.[0]?.b64_json;
-    if (!b64) throw new Error("Gateway tidak mengembalikan gambar.");
-    return {
-      imageUrl: `data:image/png;base64,${b64}`,
-      usedKeyLabel: "Lovable AI (OpenAI gpt-image-2)",
-      usedProvider: "lovable-gateway",
-      failovers,
-    };
+    // Semua key gagal – tampilkan error yang informatif
+    const hint = attempts.length > 0
+      ? `Semua API key OpenAI gagal:\n- ${(attempts as string[]).join("\n- ")}`
+      : "Tidak ada API key OpenAI aktif. Silakan tambahkan key di halaman Admin AI Keys.";
+    throw new Error(hint);
   });

@@ -51,109 +51,7 @@ function pickB64(payload: unknown): string | undefined {
   return typeof nested === "string" ? nested : undefined;
 }
 
-function proxyGatewayStream(upstream: Response, headers: Headers) {
-  const provider = "Lovable Gateway gpt-image-1-mini";
-  headers.set("X-Image-Provider", provider);
-  const encoder = new TextEncoder();
-  return new Response(
-    new ReadableStream<Uint8Array>({
-      async start(controller) {
-        const reader = upstream.body!.pipeThrough(new TextDecoderStream()).getReader();
-        let buffer = "";
-        let lastB64 = "";
-        let completed = false;
 
-        const emit = (event: string, payload: Record<string, unknown>) => {
-          controller.enqueue(encoder.encode(sseEvent(event, payload)));
-        };
-
-        const processPayload = (payload: unknown, eventName = "") => {
-          if (!payload || typeof payload !== "object") return;
-          const p = payload as { type?: string; error?: { message?: string } };
-          if (p.type === "error" || eventName === "error") {
-            emit("error", {
-              type: "error",
-              error: { message: p.error?.message ?? "Gateway belum berhasil generate gambar." },
-            });
-            completed = true;
-            return;
-          }
-          const b64 = pickB64(payload);
-          if (!b64) return;
-          lastB64 = b64;
-          const incoming = p.type || eventName;
-          const isDone = incoming.includes("completed") || incoming.includes("final");
-          emit(isDone ? "image_generation.completed" : "image_generation.partial_image", {
-            type: isDone ? "image_generation.completed" : "image_generation.partial_image",
-            b64_json: b64,
-            partial_image_index: 0,
-            provider,
-            created_at: Date.now(),
-          });
-          if (isDone) completed = true;
-        };
-
-        const processBlock = (block: string) => {
-          const trimmed = block.trim();
-          if (!trimmed || trimmed === "data: [DONE]" || trimmed === "[DONE]") return;
-          if (trimmed.startsWith("{")) {
-            try {
-              processPayload(JSON.parse(trimmed));
-            } catch {
-              /* ignore malformed json */
-            }
-            return;
-          }
-          const lines = trimmed.split(/\r?\n/);
-          const eventName = lines.find((line) => line.startsWith("event:"))?.slice(6).trim() ?? "";
-          const data = lines
-            .filter((line) => line.startsWith("data:"))
-            .map((line) => line.slice(5).trim())
-            .join("\n");
-          if (!data || data === "[DONE]") return;
-          try {
-            processPayload(JSON.parse(data), eventName);
-          } catch {
-            /* ignore malformed event data */
-          }
-        };
-
-        try {
-          while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            buffer += value;
-            const blocks = buffer.split(/\n\n/);
-            buffer = blocks.pop() ?? "";
-            for (const block of blocks) processBlock(block);
-          }
-          if (buffer.trim()) processBlock(buffer);
-          if (lastB64 && !completed) {
-            emit("image_generation.completed", {
-              type: "image_generation.completed",
-              b64_json: lastB64,
-              provider,
-              created_at: Date.now(),
-            });
-          } else if (!completed) {
-            emit("error", {
-              type: "error",
-              error: { message: "Gateway selesai tanpa gambar final." },
-            });
-          }
-        } catch (e) {
-          emit("error", {
-            type: "error",
-            error: { message: e instanceof Error ? e.message : "Stream gateway terputus." },
-          });
-        } finally {
-          controller.close();
-        }
-      },
-    }),
-    { headers },
-  );
-}
 
 async function getUserId(token: string): Promise<string | null> {
   const supabase = makeAuthedClient(token);
@@ -219,19 +117,46 @@ export const Route = createFileRoute("/api/generate-image-stream")({
 
         // 1) User OpenAI key with model fallback (gpt-image-1 → dall-e-3)
         if (userKey?.api_key) {
-          const requested = (userKey.model || "gpt-image-1").trim();
-          const candidates: Array<{ model: string }> = [{ model: requested }];
-          if (!/^dall-e-3$/i.test(requested)) {
-            candidates.push({ model: "dall-e-3" });
-          }
-          for (const c of candidates) {
+          const requested = (userKey.model || "gpt-image-1").trim().toLowerCase();
+          // Build candidate list: requested model first, then fallback
+          const candidates: string[] = [requested];
+          if (!candidates.includes("dall-e-3")) candidates.push("dall-e-3");
+          if (!candidates.includes("dall-e-2")) candidates.push("dall-e-2");
+
+          for (const modelName of candidates) {
             try {
-              const oaBody: Record<string, unknown> = {
-                model: c.model,
-                prompt,
-                size: "1024x1024",
-                n: 1,
-              };
+              // Build model-specific request body
+              let oaBody: Record<string, unknown>;
+              if (modelName === "dall-e-3") {
+                // dall-e-3: only supports 1024x1024, 1792x1024, 1024x1792
+                oaBody = {
+                  model: "dall-e-3",
+                  prompt,
+                  size: "1024x1024",
+                  quality: "standard",
+                  n: 1,
+                  response_format: "b64_json",
+                };
+              } else if (modelName === "dall-e-2") {
+                oaBody = {
+                  model: "dall-e-2",
+                  prompt: prompt.slice(0, 1000),
+                  size: "1024x1024",
+                  n: 1,
+                  response_format: "b64_json",
+                };
+              } else {
+                // gpt-image-1 and other models
+                oaBody = {
+                  model: modelName,
+                  prompt,
+                  size: "1024x1024",
+                  quality: "low",
+                  n: 1,
+                  response_format: "b64_json",
+                };
+              }
+
               const res = await fetch("https://api.openai.com/v1/images/generations", {
                 method: "POST",
                 headers: {
@@ -269,16 +194,21 @@ export const Route = createFileRoute("/api/generate-image-stream")({
                       disabled_until: null,
                     })
                     .eq("id", userKey.id);
-                  return sseComplete(b64, `OpenAI ${c.model}`);
+                  return sseComplete(b64, `OpenAI ${modelName}`);
                 }
-                attempts.push(`OpenAI ${c.model}: response tanpa gambar`);
+                attempts.push(`OpenAI ${modelName}: response tanpa gambar`);
               } else {
-                attempts.push(`OpenAI ${c.model} → ${res.status}: ${text.slice(0, 160)}`);
+                let errMsg = text.slice(0, 300);
+                try {
+                  const j = JSON.parse(text) as { error?: { message?: string } };
+                  if (j.error?.message) errMsg = j.error.message;
+                } catch { /* ignore */ }
+                attempts.push(`OpenAI ${modelName} → ${res.status}: ${errMsg}`);
                 console.error(
                   "[generate-image-stream] OpenAI failed",
-                  c.model,
+                  modelName,
                   res.status,
-                  text.slice(0, 300),
+                  errMsg,
                 );
                 const status = res.status;
                 await supabaseClient
@@ -296,12 +226,15 @@ export const Route = createFileRoute("/api/generate-image-stream")({
                     is_active: status === 401 ? false : userKey.is_active,
                   })
                   .eq("id", userKey.id);
+                // Stop trying if key is invalid/unauthorized
                 if (status === 401) break;
+                // Stop trying if out of credit (no point trying other models with same key)
+                if (status === 402 || status === 403) break;
               }
             } catch (e) {
               const msg = e instanceof Error ? e.message : String(e);
-              attempts.push(`OpenAI ${c.model} exception: ${msg}`);
-              console.error("[generate-image-stream] OpenAI exception", c.model, e);
+              attempts.push(`OpenAI ${modelName} exception: ${msg}`);
+              console.error("[generate-image-stream] OpenAI exception", modelName, e);
             }
           }
         }
@@ -339,52 +272,15 @@ export const Route = createFileRoute("/api/generate-image-stream")({
           }
         }
 
-        // 3) Lovable AI Gateway (streaming)
-        const gatewayKey = process.env.LOVABLE_API_KEY;
-        if (!gatewayKey) {
-          return sseError(
-            attempts.length
-              ? `Semua provider belum berhasil:\n- ${attempts.join("\n- ")}`
-              : "LOVABLE_API_KEY belum tersedia dan tidak ada provider lain.",
-          );
-        }
-        try {
-          const upstream = await fetch(
-            "https://ai.gateway.lovable.dev/v1/images/generations",
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${gatewayKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                model: "openai/gpt-image-1-mini",
-                prompt,
-                quality: "low",
-                size,
-                n: 1,
-                stream: true,
-                partial_images: 1,
-              }),
-            },
-          );
-          if (!upstream.ok || !upstream.body) {
-            const t = await upstream.text().catch(() => "");
-            attempts.push(`Lovable Gateway → ${upstream.status}: ${t.slice(0, 200)}`);
-            console.error(
-              "[generate-image-stream] Lovable Gateway failed",
-              upstream.status,
-              t.slice(0, 400),
-            );
-            return sseError(`Semua provider belum berhasil:\n- ${attempts.join("\n- ")}`);
-          }
-          const headers = new Headers(sseHeaders);
-          return proxyGatewayStream(upstream, headers);
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          attempts.push(`Lovable Gateway exception: ${msg}`);
-          return sseError(`Semua provider belum berhasil:\n- ${attempts.join("\n- ")}`);
-        }
+        // Semua provider gagal – tampilkan error informatif
+        const hint = !keys?.length
+          ? "Belum ada API key OpenAI yang tersimpan. Silakan tambahkan key di halaman Admin AI Keys."
+          : "Semua provider gambar gagal. Pastikan API key OpenAI aktif dan memiliki saldo/akses model DALL-E.";
+        return sseError(
+          attempts.length
+            ? `${hint}\n\nDetail:\n- ${attempts.join("\n- ")}`
+            : hint,
+        );
       },
     },
   },
