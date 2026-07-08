@@ -567,6 +567,12 @@ function Workspace() {
           if (!finalUrl) throw new Error("Tidak ada gambar final.");
           usedKeys.add(provider);
           newResults.push(finalUrl);
+          pushDebug({
+            level: "success",
+            message: `Variasi ${i + 1} sukses (${jobRatio})`,
+            provider,
+            jobId,
+          });
           await supabase
             .from("projects")
             .update({ image_url: finalUrl, status: "sukses", provider })
@@ -583,6 +589,11 @@ function Workspace() {
             .from("projects")
             .update({ status: "gagal", error_message: msg.slice(0, 500) })
             .eq("id", projectId);
+          pushDebug({
+            level: "error",
+            message: `Variasi ${i + 1} gagal: ${msg}`,
+            jobId,
+          });
           toast.error(`Variasi ${i + 1} gagal`, { description: msg });
         }
         await refresh();
@@ -675,6 +686,12 @@ function Workspace() {
       }
       await refresh();
       toast.success(`Variasi ${i + 1} berhasil di-regenerate.`);
+      pushDebug({
+        level: "success",
+        message: `Regenerate variasi ${i + 1} sukses`,
+        provider,
+        jobId,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Regenerate gagal";
       setVariants((prev) => {
@@ -689,6 +706,11 @@ function Workspace() {
           .eq("id", projectId);
       }
       toast.error(`Regenerate variasi ${i + 1} gagal`, { description: msg });
+      pushDebug({
+        level: "error",
+        message: `Regenerate variasi ${i + 1} gagal: ${msg}`,
+        jobId,
+      });
     }
   }
 
