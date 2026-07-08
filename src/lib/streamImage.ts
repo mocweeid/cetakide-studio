@@ -36,7 +36,7 @@ export async function streamImage(
   });
   if (!res.ok || !res.body) {
     const text = await res.text().catch(() => "");
-    throw new Error(`Generate gagal (${res.status}): ${text.slice(0, 200)}`);
+    throw new Error(`Generate belum berhasil (${res.status}): ${text.slice(0, 200)}`);
   }
   const headerProvider = res.headers.get("X-Image-Provider") ?? "";
 
