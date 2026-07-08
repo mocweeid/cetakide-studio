@@ -2,15 +2,38 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-async function getUserId(request: Request): Promise<string | null> {
-  const auth = request.headers.get("authorization");
-  if (!auth) return null;
-  const token = auth.replace(/^Bearer\s+/i, "");
-  const supabase = createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
+function createSupabaseFetch(supabaseKey: string): typeof fetch {
+  return (input, init) => {
+    const headers = new Headers(
+      typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
+    );
+    if (init?.headers) new Headers(init.headers).forEach((value, key) => headers.set(key, value));
+    if (
+      (supabaseKey.startsWith("sb_publishable_") || supabaseKey.startsWith("sb_secret_")) &&
+      headers.get("Authorization") === `Bearer ${supabaseKey}`
+    ) {
+      headers.delete("Authorization");
+    }
+    headers.set("apikey", supabaseKey);
+    return fetch(input, { ...init, headers });
+  };
+}
+
+function makeAuthedClient(token: string) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) throw new Error("Konfigurasi database belum tersedia.");
+  return createClient<Database>(url, key, {
+    global: {
+      fetch: createSupabaseFetch(key),
+      headers: { Authorization: `Bearer ${token}` },
+    },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+async function getUserId(token: string): Promise<string | null> {
+  const supabase = makeAuthedClient(token);
   const { data } = await supabase.auth.getUser(token);
   return data.user?.id ?? null;
 }
@@ -19,7 +42,10 @@ export const Route = createFileRoute("/api/generate-image-stream")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const userId = await getUserId(request);
+        const auth = request.headers.get("authorization");
+        if (!auth) return new Response("Unauthorized", { status: 401 });
+        const token = auth.replace(/^Bearer\s+/i, "");
+        const userId = await getUserId(token);
         if (!userId) return new Response("Unauthorized", { status: 401 });
 
         const body = (await request.json()) as { prompt: string; size?: string };
@@ -51,21 +77,21 @@ export const Route = createFileRoute("/api/generate-image-stream")({
         const attempts: string[] = [];
 
         // Load user's OpenAI keys (highest priority)
-        const supabaseAdminClient = createClient<Database>(
-          process.env.SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-          { auth: { persistSession: false, autoRefreshToken: false } },
-        );
+        const supabaseClient = makeAuthedClient(token);
         const nowIso = new Date().toISOString();
-        const { data: keys } = await supabaseAdminClient
+        const { data: keys, error: keyError } = await supabaseClient
           .from("ai_providers")
           .select("*")
           .eq("user_id", userId)
           .eq("is_active", true)
-          .eq("provider", "openai")
+          .in("provider", ["openai", "OpenAI", "OPENAI"])
           .or(`disabled_until.is.null,disabled_until.lt.${nowIso}`)
           .order("priority", { ascending: true })
           .limit(1);
+        if (keyError) {
+          attempts.push(`Database provider key → ${keyError.message}`);
+          console.error("[generate-image-stream] provider key query failed", keyError.message);
+        }
         const userKey = keys?.[0];
 
         // 1) User OpenAI key with model fallback (gpt-image-1 → dall-e-3)
@@ -114,7 +140,7 @@ export const Route = createFileRoute("/api/generate-image-stream")({
                   /* ignore parse */
                 }
                 if (b64) {
-                  await supabaseAdminClient
+                  await supabaseClient
                     .from("ai_providers")
                     .update({
                       last_used_at: nowIso,
@@ -135,7 +161,7 @@ export const Route = createFileRoute("/api/generate-image-stream")({
                   text.slice(0, 300),
                 );
                 const status = res.status;
-                await supabaseAdminClient
+                await supabaseClient
                   .from("ai_providers")
                   .update({
                     failure_count: (userKey.failure_count ?? 0) + 1,
