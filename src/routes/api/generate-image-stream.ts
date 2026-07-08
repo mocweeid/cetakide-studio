@@ -115,13 +115,28 @@ export const Route = createFileRoute("/api/generate-image-stream")({
         }
         const userKey = keys?.[0];
 
-        // 1) User OpenAI key with model fallback (gpt-image-1 → dall-e-3)
-        if (userKey?.api_key) {
-          const requested = (userKey.model || "gpt-image-1").trim().toLowerCase();
-          // Build candidate list: requested model first, then fallback
+        // Jika tidak ada key di DB, coba dari env variable sebagai fallback
+        const envApiKey = process.env.OPENAI_API_KEY;
+        const openaiBaseUrl = (process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, "");
+        const openaiEnvModel = process.env.OPENAI_MODEL ?? "dall-e-3";
+        // Apakah provider ini custom (non-OpenAI asli)?
+        const isCustomProvider = openaiBaseUrl !== "https://api.openai.com/v1";
+
+        const activeApiKey = userKey?.api_key ?? envApiKey;
+
+        // 1) OpenAI key (dari DB atau env) dengan model fallback
+        if (activeApiKey) {
+          // Untuk custom provider: coba model dari env terlebih dahulu
+          // Untuk OpenAI asli: fallback ke gpt-image-1 → dall-e-3 → dall-e-2
+          const requested = userKey
+            ? (userKey.model || "gpt-image-1").trim().toLowerCase()
+            : openaiEnvModel.trim().toLowerCase();
+          // Untuk custom provider: jangan fallback ke dall-e (model berbeda)
           const candidates: string[] = [requested];
-          if (!candidates.includes("dall-e-3")) candidates.push("dall-e-3");
-          if (!candidates.includes("dall-e-2")) candidates.push("dall-e-2");
+          if (!isCustomProvider) {
+            if (!candidates.includes("dall-e-3")) candidates.push("dall-e-3");
+            if (!candidates.includes("dall-e-2")) candidates.push("dall-e-2");
+          }
 
           for (const modelName of candidates) {
             try {
@@ -157,10 +172,10 @@ export const Route = createFileRoute("/api/generate-image-stream")({
                 };
               }
 
-              const res = await fetch("https://api.openai.com/v1/images/generations", {
+              const res = await fetch(`${openaiBaseUrl}/images/generations`, {
                 method: "POST",
                 headers: {
-                  Authorization: `Bearer ${userKey.api_key}`,
+                  Authorization: `Bearer ${activeApiKey}`,
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify(oaBody),
@@ -185,16 +200,18 @@ export const Route = createFileRoute("/api/generate-image-stream")({
                   /* ignore parse */
                 }
                 if (b64) {
-                  await supabaseClient
-                    .from("ai_providers")
-                    .update({
-                      last_used_at: nowIso,
-                      last_status: "ok",
-                      failure_count: 0,
-                      disabled_until: null,
-                    })
-                    .eq("id", userKey.id);
-                  return sseComplete(b64, `OpenAI ${modelName}`);
+                  if (userKey) {
+                    await supabaseClient
+                      .from("ai_providers")
+                      .update({
+                        last_used_at: nowIso,
+                        last_status: "ok",
+                        failure_count: 0,
+                        disabled_until: null,
+                      })
+                      .eq("id", userKey.id);
+                  }
+                  return sseComplete(b64, `${isCustomProvider ? "Custom" : "OpenAI"} ${modelName}`);
                 }
                 attempts.push(`OpenAI ${modelName}: response tanpa gambar`);
               } else {

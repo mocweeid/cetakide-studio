@@ -53,6 +53,10 @@ Do not include any preachy words, explanations, or quotes. Output ONLY the final
       }
     }
 
+    // Deteksi custom OpenAI-compatible base URL dari env
+    const openaiBaseUrl = (process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, "");
+    const openaiDefaultModel = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+
     if (!apiKey) {
       throw new Error("Tidak ada API credentials untuk melakukan enhance prompt.");
     }
@@ -106,9 +110,9 @@ Do not include any preachy words, explanations, or quotes. Output ONLY the final
           enhanced = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? data.prompt;
         }
       } else if (provider === "openai") {
-        // --- Call OpenAI ---
-        const targetModel = model && model !== "default" ? model : "gpt-4o-mini";
-        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        // --- Call OpenAI-compatible API (mendukung custom base URL) ---
+        const targetModel = (model && model !== "default") ? model : openaiDefaultModel;
+        const res = await fetch(`${openaiBaseUrl}/chat/completions`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
