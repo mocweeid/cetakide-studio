@@ -593,9 +593,19 @@ function Workspace() {
             .eq("id", projectId);
         } catch (genErr) {
           failedCount++;
-          const msg = genErr instanceof Error ? genErr.message : "Generate gagal";
+          const msg = genErr instanceof Error ? genErr.message : "Generate belum berhasil";
+          const shouldHideFailureCard =
+            msg.includes("Semua provider gagal") ||
+            msg.includes("LOVABLE_API_KEY") ||
+            msg.includes("Stream berakhir") ||
+            msg.includes("Gateway") ||
+            msg.includes("OpenAI");
           setVariants((prev) => {
             const next = [...prev];
+            if (shouldHideFailureCard) {
+              next.splice(i, 1);
+              return next;
+            }
             next[i] = { status: "gagal", error: msg, prompt: finalBasePrompt, ratio: jobRatio };
             return next;
           });
@@ -608,7 +618,7 @@ function Workspace() {
             message: `Variasi ${i + 1} gagal: ${msg}`,
             jobId,
           });
-          toast.error(`Variasi ${i + 1} gagal`, { description: msg });
+          toast.error(`Variasi ${i + 1} belum berhasil`, { description: msg });
         }
         await refresh();
       }
@@ -623,10 +633,10 @@ function Workspace() {
           `${newResults.length} variasi sukses${failedCount > 0 ? `, ${failedCount} gagal` : ""}!${keyInfo}${failInfo}`,
         );
       } else if (failedCount > 0) {
-        toast.error(`Semua ${failedCount} variasi gagal di-generate.`);
+        toast.error(`Semua ${failedCount} variasi belum berhasil di-generate.`);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Generate gagal");
+      toast.error(err instanceof Error ? err.message : "Generate belum berhasil");
     } finally {
       setGenerating(false);
     }
@@ -874,60 +884,11 @@ function Workspace() {
         {/* Canvas Area */}
         <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-5 backdrop-blur-md flex flex-col">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <select
-                value={platform}
-                onChange={(e) => setPlatform(e.target.value as keyof typeof PLATFORMS)}
-                className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm outline-none"
-              >
-                {Object.entries(PLATFORMS).map(([k, v]) => (
-                  <option key={k} value={k} className="bg-background">
-                    {v.label}
-                  </option>
-                ))}
-              </select>
-              <div className="flex gap-1.5">
-                {ratios.map((r) => (
-                  <button
-                    key={r.key}
-                    onClick={() => setRatio(r.key)}
-                    className={`rounded-md px-2.5 py-1 text-xs transition ${
-                      r.key === ratio
-                        ? "bg-primary text-black font-semibold"
-                        : "bg-white/5 text-muted-foreground hover:bg-white/10"
-                    }`}
-                  >
-                    {r.key}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Jumlah Generate Dropdown */}
-            <div className="flex items-center gap-2 border-l border-white/10 pl-3">
-              <span className="text-xs font-medium text-white/60">Jumlah Generate:</span>
-              <select
-                value={generateCount}
-                onChange={(e) => setGenerateCount(Number(e.target.value))}
-                disabled={allRatios}
-                className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-sm outline-none"
-              >
-                {[1, 2, 3, 4].map((n) => (
-                  <option key={n} value={n} className="bg-background">
-                    {n} Gambar
-                  </option>
-                ))}
-              </select>
-              <label className="flex items-center gap-1.5 pl-3 text-xs font-medium text-white/70 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={allRatios}
-                  onChange={(e) => setAllRatios(e.target.checked)}
-                  className="accent-primary"
-                />
-                <Layers className="h-3.5 w-3.5 text-primary" />
-                Semua Rasio ({PLATFORMS[platform].ratios.length})
-              </label>
+            <div>
+              <p className="text-sm font-semibold text-white/85">Canvas Output</p>
+              <p className="text-xs text-white/45">
+                {PLATFORMS[platform].label} · {allRatios ? `Semua rasio (${PLATFORMS[platform].ratios.length})` : ratio}
+              </p>
             </div>
           </div>
           {selectedBrand && (
@@ -1247,6 +1208,45 @@ function Workspace() {
 
             {/* ============ 4. Style Visual ============ */}
             <SectionHeader index={4} title="Style Visual" />
+            <Field label="Platform">
+              <select
+                value={platform}
+                onChange={(e) => setPlatform(e.target.value as keyof typeof PLATFORMS)}
+                className={inputCls}
+              >
+                {Object.entries(PLATFORMS).map(([k, v]) => (
+                  <option key={k} value={k} className="bg-background">
+                    {v.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Jumlah Generate">
+              <div className="space-y-2">
+                <select
+                  value={generateCount}
+                  onChange={(e) => setGenerateCount(Number(e.target.value))}
+                  disabled={allRatios}
+                  className={inputCls}
+                >
+                  {[1, 2, 3, 4].map((n) => (
+                    <option key={n} value={n} className="bg-background">
+                      {n} Gambar
+                    </option>
+                  ))}
+                </select>
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/70">
+                  <input
+                    type="checkbox"
+                    checked={allRatios}
+                    onChange={(e) => setAllRatios(e.target.checked)}
+                    className="accent-primary"
+                  />
+                  <Layers className="h-3.5 w-3.5 text-primary" />
+                  Generate semua rasio {PLATFORMS[platform].label} ({PLATFORMS[platform].ratios.length})
+                </label>
+              </div>
+            </Field>
             <Field label="Rasio Aspek">
               <div className="flex flex-wrap gap-1.5">
                 {ratios.map((r) => (
