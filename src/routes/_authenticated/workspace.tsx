@@ -737,6 +737,21 @@ function Workspace() {
       right={
         <div className="flex items-center gap-3">
           <button
+            onClick={() => setDebugOpen((v) => !v)}
+            className={`flex items-center gap-1.5 text-xs font-semibold transition ${
+              debugLogs.some((d) => d.level === "error")
+                ? "text-rose-300 hover:text-rose-200"
+                : "text-white/70 hover:text-white"
+            }`}
+          >
+            <Bug className="h-4 w-4" /> Debug
+            {debugLogs.length > 0 && (
+              <span className="ml-1 rounded-full bg-white/10 px-1.5 text-[10px]">
+                {debugLogs.length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setPanduanOpen(true)}
             className="flex items-center gap-1.5 text-xs font-semibold text-white/70 hover:text-white transition"
           >
@@ -745,6 +760,102 @@ function Workspace() {
         </div>
       }
     >
+      {debugOpen && (
+        <div className="mb-4 rounded-2xl border border-white/15 bg-black/40 p-4 backdrop-blur-md">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Bug className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">Debug Panel</h3>
+              <span className="text-[11px] text-white/50">
+                Log terakhir, status provider, dan tes koneksi
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCheckOpenai}
+                disabled={checkingOpenai}
+                className="rounded-md border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold hover:bg-white/10 disabled:opacity-50"
+              >
+                {checkingOpenai ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Cek OpenAI…
+                  </span>
+                ) : (
+                  "Cek OpenAI"
+                )}
+              </button>
+              <button
+                onClick={() => setDebugLogs([])}
+                className="rounded-md border border-white/10 px-2 py-1 text-xs text-white/60 hover:text-white"
+              >
+                Bersihkan
+              </button>
+              <button
+                onClick={() => setDebugOpen(false)}
+                className="rounded-md p-1 text-white/60 hover:text-white"
+                aria-label="Tutup"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          {openaiStatus && (
+            <div
+              className={`mb-3 rounded-lg border px-3 py-2 text-xs ${
+                openaiStatus.ok
+                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
+                  : "border-rose-400/30 bg-rose-500/10 text-rose-200"
+              }`}
+            >
+              <span className="font-semibold">
+                {openaiStatus.ok ? "OpenAI OK · " : "OpenAI Error · "}
+              </span>
+              <span className="font-mono">{openaiStatus.detail}</span>
+            </div>
+          )}
+          <div className="max-h-56 overflow-y-auto rounded-lg border border-white/10 bg-black/30">
+            {debugLogs.length === 0 ? (
+              <p className="p-3 text-xs text-white/40">
+                Belum ada log. Log muncul otomatis saat generate/regenerate atau saat cek OpenAI.
+              </p>
+            ) : (
+              <ul className="divide-y divide-white/5">
+                {debugLogs.map((d, idx) => (
+                  <li key={idx} className="flex gap-3 px-3 py-2 text-[11px]">
+                    <span className="w-16 shrink-0 text-white/40">
+                      {new Date(d.ts).toLocaleTimeString()}
+                    </span>
+                    <span
+                      className={`w-14 shrink-0 font-semibold uppercase ${
+                        d.level === "error"
+                          ? "text-rose-300"
+                          : d.level === "success"
+                            ? "text-emerald-300"
+                            : "text-sky-300"
+                      }`}
+                    >
+                      {d.level}
+                    </span>
+                    <span className="flex-1 break-words text-white/80">
+                      {d.message}
+                      {d.provider && (
+                        <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-white/70">
+                          {d.provider}
+                        </span>
+                      )}
+                      {d.jobId && (
+                        <span className="ml-2 font-mono text-[10px] text-white/40">
+                          {d.jobId.slice(0, 8)}
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
         {/* Canvas Area */}
         <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-5 backdrop-blur-md flex flex-col">
