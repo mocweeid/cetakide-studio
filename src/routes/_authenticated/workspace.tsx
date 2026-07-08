@@ -1137,6 +1137,134 @@ function Workspace() {
               </button>
             </div>
 
+            {/* ============ 1. Nama Brand & Produk ============ */}
+            <SectionHeader index={1} title="Nama Brand & Produk" />
+            <Field label="Nama Brand">
+              <input
+                value={form.brand_name}
+                onChange={updateField("brand_name")}
+                className={inputCls}
+                placeholder="mis. Kopi Nusantara"
+              />
+            </Field>
+            <Field label="Kategori Produk">
+              <div className="relative">
+                <input
+                  value={form.category}
+                  onChange={updateField("category")}
+                  className={inputCls + " pr-9"}
+                  placeholder="mis. Jasa Servis AC, Kuliner, Fashion Muslimah"
+                />
+                <AiFillBtn onClick={() => runAutofill("category")} loading={autofillingKey === "category"} />
+              </div>
+            </Field>
+            <details className="group rounded-lg border border-white/10 bg-white/[0.03]">
+              <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-white/80 hover:bg-white/5">
+                <Settings2 className="h-4 w-4 text-primary" />
+                Optional Setting · Brand & Produk
+                <span className="ml-auto text-[10px] text-white/40 group-open:hidden">klik untuk buka</span>
+              </summary>
+              <div className="space-y-3 border-t border-white/10 p-3">
+                <Field label="Judul Utama">
+                  <div className="relative">
+                    <input
+                      value={form.title}
+                      onChange={updateField("title")}
+                      className={inputCls + " pr-9"}
+                      placeholder="mis. Diskon Servis AC 30%"
+                    />
+                    <AiFillBtn onClick={() => runAutofill("title")} loading={autofillingKey === "title"} />
+                  </div>
+                </Field>
+                <Field label="Sub Judul">
+                  <div className="relative">
+                    <input
+                      value={form.subtitle}
+                      onChange={updateField("subtitle")}
+                      className={inputCls + " pr-9"}
+                      placeholder="mis. Bersih & dingin dalam 1 jam"
+                    />
+                    <AiFillBtn onClick={() => runAutofill("subtitle")} loading={autofillingKey === "subtitle"} />
+                  </div>
+                </Field>
+                <Field label="CTA / Call-to-Action">
+                  <div className="relative">
+                    <input
+                      value={form.cta}
+                      onChange={updateField("cta")}
+                      className={inputCls + " pr-9"}
+                      placeholder="mis. Pesan Sekarang, Konsultasi Gratis"
+                    />
+                    <AiFillBtn onClick={() => runAutofill("cta")} loading={autofillingKey === "cta"} />
+                  </div>
+                </Field>
+              </div>
+            </details>
+
+            {/* ============ 2. Fitur Unggulan Produk ============ */}
+            <SectionHeader index={2} title="Fitur Unggulan Produk" />
+            <Field label="Fitur Unggulan">
+              <div className="relative">
+                <textarea
+                  value={form.features}
+                  onChange={updateField("features")}
+                  rows={3}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-9 text-sm outline-none focus:border-primary/60"
+                  placeholder={"mis.\nTeknisi bersertifikat\nGaransi 30 hari\nHarga transparan"}
+                />
+                <AiFillBtn onClick={() => runAutofill("features")} loading={autofillingKey === "features"} />
+              </div>
+            </Field>
+
+            {/* ============ 3. Tata Letak & Multi Image ============ */}
+            <SectionHeader index={3} title="Tata Letak & Multi Image" />
+            <Field label="Target Jumlah Gambar">
+              <select
+                value={targetImageCount}
+                onChange={(e) => setTargetImageCount(Number(e.target.value))}
+                className={inputCls}
+              >
+                <option value={1} className="bg-background">1 Gambar Utama (Hero Focus)</option>
+                <option value={2} className="bg-background">2 Gambar (Comparison/Dual)</option>
+                <option value={3} className="bg-background">3 Gambar (Showcase Composition)</option>
+                <option value={4} className="bg-background">4 Gambar (Grid Layout)</option>
+                <option value={5} className="bg-background">5 Gambar (Collage Style)</option>
+              </select>
+            </Field>
+            <Field label="Posisi Visual">
+              <select
+                value={visualPosition}
+                onChange={(e) => setVisualPosition(e.target.value)}
+                className={inputCls}
+              >
+                <option value="center" className="bg-background">Tengah (Fokus Utama)</option>
+                <option value="right" className="bg-background">Di Kanan (Teks Di Kiri)</option>
+                <option value="left" className="bg-background">Di Kiri (Teks Di Kanan)</option>
+                <option value="isometric" className="bg-background">Isometric Melayang</option>
+                <option value="dynamic" className="bg-background">Dynamic Multiple Layout</option>
+              </select>
+            </Field>
+
+            {/* ============ 4. Style Visual ============ */}
+            <SectionHeader index={4} title="Style Visual" />
+            <Field label="Rasio Aspek">
+              <div className="flex flex-wrap gap-1.5">
+                {ratios.map((r) => (
+                  <button
+                    key={r.key}
+                    type="button"
+                    onClick={() => setRatio(r.key)}
+                    className={`rounded-md px-2.5 py-1 text-xs transition ${
+                      r.key === ratio
+                        ? "bg-primary text-black font-semibold"
+                        : "bg-white/5 text-muted-foreground hover:bg-white/10"
+                    }`}
+                  >
+                    {r.key}
+                  </button>
+                ))}
+              </div>
+            </Field>
             <Field label="Preset Theme">
               <div className="flex items-center gap-2">
                 <select
@@ -1160,14 +1288,43 @@ function Workspace() {
                 </button>
               </div>
             </Field>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setFontModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs hover:bg-white/10"
+              >
+                <Type className="h-3.5 w-3.5 text-primary" /> Font: {selectedFont.split(" ")[0]}
+              </button>
+              <button
+                type="button"
+                onClick={() => setBrandModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs hover:bg-white/10"
+              >
+                <Palette className="h-3.5 w-3.5 text-primary" />
+                <span className="truncate">{selectedBrand ? selectedBrand.name : "Brand Kit"}</span>
+              </button>
+            </div>
 
-            <Field label="Prompt">
+            {/* Mockup Wireframe realtime preview */}
+            <MockupWireframe
+              ratioW={active.w}
+              ratioH={active.h}
+              preset={selectedPreset}
+              position={visualPosition}
+              imageCount={targetImageCount}
+              title={form.title || form.brand_name}
+              subtitle={form.subtitle || form.category}
+              cta={form.cta}
+            />
+
+            <Field label="Deskripsi Singkat">
               <div className="relative">
                 <textarea
                   value={form.prompt}
                   onChange={updateField("prompt")}
                   rows={4}
-                  placeholder="Contoh: Banner promo kopi susu, warna coklat gold"
+                  placeholder="Contoh: buatkan saya desain poster untuk iklan jasa servis AC"
                   className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-9 text-sm outline-none focus:border-primary/60"
                 />
                 <AiFillBtn onClick={() => runAutofill("prompt")} loading={autofillingKey === "prompt"} />
