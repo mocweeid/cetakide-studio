@@ -220,9 +220,9 @@ function Workspace() {
         pushDebug({ level: "success", message: `OpenAI check OK — ${detail}` });
         toast.success("OpenAI key valid", { description: detail });
       } else {
-        const detail = j.error || (j.status ? `HTTP ${j.status}` : "Gagal");
+        const detail = j.error || (j.status ? `HTTP ${j.status}` : "Belum berhasil");
         setOpenaiStatus({ ok: false, detail });
-        pushDebug({ level: "error", message: `OpenAI check gagal — ${detail}` });
+        pushDebug({ level: "error", message: `OpenAI check belum berhasil — ${detail}` });
         toast.error("OpenAI key bermasalah", { description: detail });
       }
       setDebugOpen(true);
@@ -230,7 +230,7 @@ function Workspace() {
       const msg = e instanceof Error ? e.message : String(e);
       setOpenaiStatus({ ok: false, detail: msg });
       pushDebug({ level: "error", message: `OpenAI check exception: ${msg}` });
-      toast.error("Cek OpenAI gagal", { description: msg });
+      toast.error("Cek OpenAI belum berhasil", { description: msg });
     } finally {
       setCheckingOpenai(false);
     }
@@ -615,7 +615,7 @@ function Workspace() {
             .eq("id", projectId);
           pushDebug({
             level: "error",
-            message: `Variasi ${i + 1} gagal: ${msg}`,
+            message: `Variasi ${i + 1} belum berhasil: ${msg}`,
             jobId,
           });
           toast.error(`Variasi ${i + 1} belum berhasil`, { description: msg });
@@ -630,7 +630,7 @@ function Workspace() {
       const failInfo = totalFailovers > 0 ? ` (${totalFailovers}× failover)` : "";
       if (newResults.length > 0) {
         toast.success(
-          `${newResults.length} variasi sukses${failedCount > 0 ? `, ${failedCount} gagal` : ""}!${keyInfo}${failInfo}`,
+          `${newResults.length} variasi sukses${failedCount > 0 ? `, ${failedCount} belum berhasil` : ""}!${keyInfo}${failInfo}`,
         );
       } else if (failedCount > 0) {
         toast.error(`Semua ${failedCount} variasi belum berhasil di-generate.`);
@@ -717,7 +717,7 @@ function Workspace() {
         jobId,
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Regenerate gagal";
+      const msg = err instanceof Error ? err.message : "Regenerate belum berhasil";
       setVariants((prev) => {
         const next = [...prev];
         next[i] = { status: "gagal", error: msg, prompt, ratio: jobRatio };
@@ -729,10 +729,10 @@ function Workspace() {
           .update({ status: "gagal", error_message: msg.slice(0, 500) })
           .eq("id", projectId);
       }
-      toast.error(`Regenerate variasi ${i + 1} gagal`, { description: msg });
+      toast.error(`Regenerate variasi ${i + 1} belum berhasil`, { description: msg });
       pushDebug({
         level: "error",
-        message: `Regenerate variasi ${i + 1} gagal: ${msg}`,
+        message: `Regenerate variasi ${i + 1} belum berhasil: ${msg}`,
         jobId,
       });
     }
@@ -1012,7 +1012,7 @@ function Workspace() {
                         {v.status === "gagal" && (
                           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 bg-red-950/30">
                             <span className="rounded-full bg-red-500/20 border border-red-500/40 px-2 py-0.5 text-[10px] font-semibold text-red-300">
-                              gagal
+                              belum berhasil
                             </span>
                             <p className="text-xs text-red-200/80 text-center line-clamp-3">
                               {v.error}
