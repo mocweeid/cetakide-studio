@@ -11,7 +11,10 @@ type FieldKey =
   | "instagram_url"
   | "twitter_url"
   | "social_url"
-  | "body_content";
+  | "body_content"
+  | "category"
+  | "cta"
+  | "features";
 
 const INSTRUCTIONS: Record<FieldKey, string> = {
   prompt:
@@ -25,6 +28,12 @@ const INSTRUCTIONS: Record<FieldKey, string> = {
   social_url: "Buat satu URL sosial media pendek yang relevan.",
   body_content:
     "Tulis isi konten iklan 1-2 kalimat pendek, persuasif, dalam bahasa Indonesia, tanpa tanda kutip.",
+  category:
+    "Sebutkan SATU kategori produk/jasa yang spesifik dalam bahasa Indonesia, maks 4 kata. Contoh: Jasa Servis AC, Kopi Kekinian, Fashion Muslimah.",
+  cta:
+    "Tulis SATU Call-to-Action singkat 2-4 kata dalam bahasa Indonesia, gaya action, tanpa tanda kutip. Contoh: Pesan Sekarang, Konsultasi Gratis, Order Hari Ini.",
+  features:
+    "Tulis 3 bullet fitur unggulan produk/jasa singkat (pisah dengan newline, tiap bullet maks 6 kata), tanpa nomor/tanda bullet/tanda kutip, sesuai kategori/brand.",
 };
 
 export const autofillFieldServer = createServerFn({ method: "POST" })

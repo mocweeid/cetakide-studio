@@ -154,7 +154,15 @@ function Workspace() {
     twitter_url: "",
     social_url: "",
     body_content: "",
+    brand_name: "",
+    category: "",
+    cta: "",
+    features: "",
   });
+
+  // Tata letak & multi image
+  const [targetImageCount, setTargetImageCount] = useState<number>(1);
+  const [visualPosition, setVisualPosition] = useState<string>("center");
 
   const [reference, setReference] = useState<string | null>(null);
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
@@ -355,13 +363,20 @@ function Workspace() {
     | "instagram_url"
     | "twitter_url"
     | "social_url"
-    | "body_content") {
+    | "body_content"
+    | "category"
+    | "cta"
+    | "features") {
     setAutofillingKey(field);
     try {
       const context = [
+        form.brand_name && `Brand: ${form.brand_name}`,
+        form.category && `Kategori Produk: ${form.category}`,
         form.prompt && `Prompt: ${form.prompt}`,
         form.title && `Judul: ${form.title}`,
         form.subtitle && `Subjudul: ${form.subtitle}`,
+        form.cta && `CTA: ${form.cta}`,
+        form.features && `Fitur: ${form.features}`,
         selectedBrand && `Brand: ${selectedBrand.name}`,
         selectedBrand?.brand_voice && `Voice: ${selectedBrand.brand_voice}`,
       ]
@@ -1122,6 +1137,134 @@ function Workspace() {
               </button>
             </div>
 
+            {/* ============ 1. Nama Brand & Produk ============ */}
+            <SectionHeader index={1} title="Nama Brand & Produk" />
+            <Field label="Nama Brand">
+              <input
+                value={form.brand_name}
+                onChange={updateField("brand_name")}
+                className={inputCls}
+                placeholder="mis. Kopi Nusantara"
+              />
+            </Field>
+            <Field label="Kategori Produk">
+              <div className="relative">
+                <input
+                  value={form.category}
+                  onChange={updateField("category")}
+                  className={inputCls + " pr-9"}
+                  placeholder="mis. Jasa Servis AC, Kuliner, Fashion Muslimah"
+                />
+                <AiFillBtn onClick={() => runAutofill("category")} loading={autofillingKey === "category"} />
+              </div>
+            </Field>
+            <details className="group rounded-lg border border-white/10 bg-white/[0.03]">
+              <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-white/80 hover:bg-white/5">
+                <Settings2 className="h-4 w-4 text-primary" />
+                Optional Setting · Brand & Produk
+                <span className="ml-auto text-[10px] text-white/40 group-open:hidden">klik untuk buka</span>
+              </summary>
+              <div className="space-y-3 border-t border-white/10 p-3">
+                <Field label="Judul Utama">
+                  <div className="relative">
+                    <input
+                      value={form.title}
+                      onChange={updateField("title")}
+                      className={inputCls + " pr-9"}
+                      placeholder="mis. Diskon Servis AC 30%"
+                    />
+                    <AiFillBtn onClick={() => runAutofill("title")} loading={autofillingKey === "title"} />
+                  </div>
+                </Field>
+                <Field label="Sub Judul">
+                  <div className="relative">
+                    <input
+                      value={form.subtitle}
+                      onChange={updateField("subtitle")}
+                      className={inputCls + " pr-9"}
+                      placeholder="mis. Bersih & dingin dalam 1 jam"
+                    />
+                    <AiFillBtn onClick={() => runAutofill("subtitle")} loading={autofillingKey === "subtitle"} />
+                  </div>
+                </Field>
+                <Field label="CTA / Call-to-Action">
+                  <div className="relative">
+                    <input
+                      value={form.cta}
+                      onChange={updateField("cta")}
+                      className={inputCls + " pr-9"}
+                      placeholder="mis. Pesan Sekarang, Konsultasi Gratis"
+                    />
+                    <AiFillBtn onClick={() => runAutofill("cta")} loading={autofillingKey === "cta"} />
+                  </div>
+                </Field>
+              </div>
+            </details>
+
+            {/* ============ 2. Fitur Unggulan Produk ============ */}
+            <SectionHeader index={2} title="Fitur Unggulan Produk" />
+            <Field label="Fitur Unggulan">
+              <div className="relative">
+                <textarea
+                  value={form.features}
+                  onChange={updateField("features")}
+                  rows={3}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-9 text-sm outline-none focus:border-primary/60"
+                  placeholder={"mis.\nTeknisi bersertifikat\nGaransi 30 hari\nHarga transparan"}
+                />
+                <AiFillBtn onClick={() => runAutofill("features")} loading={autofillingKey === "features"} />
+              </div>
+            </Field>
+
+            {/* ============ 3. Tata Letak & Multi Image ============ */}
+            <SectionHeader index={3} title="Tata Letak & Multi Image" />
+            <Field label="Target Jumlah Gambar">
+              <select
+                value={targetImageCount}
+                onChange={(e) => setTargetImageCount(Number(e.target.value))}
+                className={inputCls}
+              >
+                <option value={1} className="bg-background">1 Gambar Utama (Hero Focus)</option>
+                <option value={2} className="bg-background">2 Gambar (Comparison/Dual)</option>
+                <option value={3} className="bg-background">3 Gambar (Showcase Composition)</option>
+                <option value={4} className="bg-background">4 Gambar (Grid Layout)</option>
+                <option value={5} className="bg-background">5 Gambar (Collage Style)</option>
+              </select>
+            </Field>
+            <Field label="Posisi Visual">
+              <select
+                value={visualPosition}
+                onChange={(e) => setVisualPosition(e.target.value)}
+                className={inputCls}
+              >
+                <option value="center" className="bg-background">Tengah (Fokus Utama)</option>
+                <option value="right" className="bg-background">Di Kanan (Teks Di Kiri)</option>
+                <option value="left" className="bg-background">Di Kiri (Teks Di Kanan)</option>
+                <option value="isometric" className="bg-background">Isometric Melayang</option>
+                <option value="dynamic" className="bg-background">Dynamic Multiple Layout</option>
+              </select>
+            </Field>
+
+            {/* ============ 4. Style Visual ============ */}
+            <SectionHeader index={4} title="Style Visual" />
+            <Field label="Rasio Aspek">
+              <div className="flex flex-wrap gap-1.5">
+                {ratios.map((r) => (
+                  <button
+                    key={r.key}
+                    type="button"
+                    onClick={() => setRatio(r.key)}
+                    className={`rounded-md px-2.5 py-1 text-xs transition ${
+                      r.key === ratio
+                        ? "bg-primary text-black font-semibold"
+                        : "bg-white/5 text-muted-foreground hover:bg-white/10"
+                    }`}
+                  >
+                    {r.key}
+                  </button>
+                ))}
+              </div>
+            </Field>
             <Field label="Preset Theme">
               <div className="flex items-center gap-2">
                 <select
@@ -1145,14 +1288,43 @@ function Workspace() {
                 </button>
               </div>
             </Field>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setFontModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs hover:bg-white/10"
+              >
+                <Type className="h-3.5 w-3.5 text-primary" /> Font: {selectedFont.split(" ")[0]}
+              </button>
+              <button
+                type="button"
+                onClick={() => setBrandModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs hover:bg-white/10"
+              >
+                <Palette className="h-3.5 w-3.5 text-primary" />
+                <span className="truncate">{selectedBrand ? selectedBrand.name : "Brand Kit"}</span>
+              </button>
+            </div>
 
-            <Field label="Prompt">
+            {/* Mockup Wireframe realtime preview */}
+            <MockupWireframe
+              ratioW={active.w}
+              ratioH={active.h}
+              preset={selectedPreset}
+              position={visualPosition}
+              imageCount={targetImageCount}
+              title={form.title || form.brand_name}
+              subtitle={form.subtitle || form.category}
+              cta={form.cta}
+            />
+
+            <Field label="Deskripsi Singkat">
               <div className="relative">
                 <textarea
                   value={form.prompt}
                   onChange={updateField("prompt")}
                   rows={4}
-                  placeholder="Contoh: Banner promo kopi susu, warna coklat gold"
+                  placeholder="Contoh: buatkan saya desain poster untuk iklan jasa servis AC"
                   className="w-full rounded-lg border border-white/10 bg-white/5 p-2.5 pr-9 text-sm outline-none focus:border-primary/60"
                 />
                 <AiFillBtn onClick={() => runAutofill("prompt")} loading={autofillingKey === "prompt"} />
@@ -1917,5 +2089,192 @@ function AiFillBtn({
         <Sparkles className="h-3 w-3" />
       )}
     </button>
+  );
+}
+
+function SectionHeader({ index, title }: { index: number; title: string }) {
+  return (
+    <div className="mt-2 flex items-center gap-2 border-b border-white/10 pb-1.5">
+      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
+        {index}
+      </span>
+      <h4 className="text-xs font-bold uppercase tracking-widest text-white/90">
+        {title}
+      </h4>
+    </div>
+  );
+}
+
+function MockupWireframe({
+  ratioW,
+  ratioH,
+  preset,
+  position,
+  imageCount,
+  title,
+  subtitle,
+  cta,
+}: {
+  ratioW: number;
+  ratioH: number;
+  preset: string;
+  position: string;
+  imageCount: number;
+  title?: string;
+  subtitle?: string;
+  cta?: string;
+}) {
+  const t = (preset || "").toLowerCase();
+  const isDark = !t || t.includes("default") || t.includes("dark") || t.includes("cyber");
+  const isBrutal = t.includes("brutal");
+  const isGlass = t.includes("glass");
+  const isNeu = t.includes("neu") || t.includes("soft");
+
+  const surface = isBrutal
+    ? "bg-yellow-400 border-4 border-black text-black"
+    : isGlass
+      ? "bg-white/10 border border-white/30 backdrop-blur text-white"
+      : isNeu
+        ? "bg-[#e0e5ec] border border-[#c8d0e0] text-gray-700"
+        : isDark
+          ? "bg-[#0D1117] border border-white/15 text-white"
+          : "bg-white border border-gray-200 text-black";
+
+  const barColor = isBrutal
+    ? "bg-black"
+    : isNeu
+      ? "bg-gray-400/60"
+      : "bg-white/40 dark:bg-white/40";
+  const btnColor = isBrutal
+    ? "bg-black text-white"
+    : isGlass
+      ? "bg-white/30 text-white"
+      : isNeu
+        ? "bg-gray-700 text-white"
+        : "bg-primary text-black";
+
+  // Grid layout for images
+  const imgBoxes = Array.from({ length: Math.max(1, Math.min(5, imageCount)) });
+
+  const renderImages = () => {
+    if (imgBoxes.length === 1) {
+      return <div className={`h-full w-full rounded-md ${barColor} opacity-60`} />;
+    }
+    if (imgBoxes.length === 2) {
+      return (
+        <div className="grid h-full w-full grid-cols-2 gap-1">
+          {imgBoxes.map((_, i) => (
+            <div key={i} className={`rounded-md ${barColor} opacity-60`} />
+          ))}
+        </div>
+      );
+    }
+    if (imgBoxes.length === 3) {
+      return (
+        <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-1">
+          <div className={`row-span-2 rounded-md ${barColor} opacity-60`} />
+          <div className={`rounded-md ${barColor} opacity-60`} />
+          <div className={`rounded-md ${barColor} opacity-60`} />
+        </div>
+      );
+    }
+    if (imgBoxes.length === 4) {
+      return (
+        <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-1">
+          {imgBoxes.map((_, i) => (
+            <div key={i} className={`rounded-md ${barColor} opacity-60`} />
+          ))}
+        </div>
+      );
+    }
+    return (
+      <div className="grid h-full w-full grid-cols-3 grid-rows-2 gap-1">
+        <div className={`col-span-2 row-span-2 rounded-md ${barColor} opacity-60`} />
+        <div className={`rounded-md ${barColor} opacity-60`} />
+        <div className={`rounded-md ${barColor} opacity-60`} />
+      </div>
+    );
+  };
+
+  const textBlock = (
+    <div className="flex flex-col justify-center gap-1.5 p-2">
+      <div className={`h-2 w-3/4 rounded ${barColor}`} />
+      <div className={`h-1.5 w-1/2 rounded ${barColor} opacity-70`} />
+      <div className="mt-1 flex flex-col gap-1">
+        <div className={`h-1 w-full rounded ${barColor} opacity-50`} />
+        <div className={`h-1 w-5/6 rounded ${barColor} opacity-50`} />
+      </div>
+      {cta && (
+        <div className={`mt-1 inline-block w-fit rounded px-2 py-0.5 text-[8px] font-bold ${btnColor}`}>
+          {cta}
+        </div>
+      )}
+      {title && (
+        <p className="mt-1 line-clamp-1 text-[8px] opacity-70">
+          {title}
+          {subtitle ? ` · ${subtitle}` : ""}
+        </p>
+      )}
+    </div>
+  );
+
+  const imageBlock = <div className="p-2 h-full">{renderImages()}</div>;
+
+  let content: React.ReactNode;
+  if (position === "left") {
+    content = (
+      <div className="grid h-full grid-cols-[45%_55%]">
+        {imageBlock}
+        {textBlock}
+      </div>
+    );
+  } else if (position === "right") {
+    content = (
+      <div className="grid h-full grid-cols-[55%_45%]">
+        {textBlock}
+        {imageBlock}
+      </div>
+    );
+  } else if (position === "isometric") {
+    content = (
+      <div className="relative h-full w-full overflow-hidden p-2">
+        <div className="absolute inset-2 rotate-[-8deg] scale-90">{renderImages()}</div>
+        <div className="absolute bottom-2 left-2 right-2 rounded bg-black/30 p-1.5 backdrop-blur-sm">
+          {textBlock}
+        </div>
+      </div>
+    );
+  } else if (position === "dynamic") {
+    content = (
+      <div className="grid h-full grid-rows-[60%_40%] gap-1 p-2">
+        <div>{renderImages()}</div>
+        <div className="border-t border-current/10">{textBlock}</div>
+      </div>
+    );
+  } else {
+    // center
+    content = (
+      <div className="grid h-full grid-rows-[65%_35%]">
+        {imageBlock}
+        {textBlock}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        Mockup Wireframe · {ratioW}:{ratioH} · realtime
+      </p>
+      <div
+        className={`w-full overflow-hidden rounded-lg shadow-inner transition-all ${surface}`}
+        style={{ aspectRatio: `${ratioW} / ${ratioH}` }}
+      >
+        {content}
+      </div>
+      <p className="mt-1 text-[10px] text-white/40">
+        Preview otomatis mengikuti Rasio, Preset, Posisi & Jumlah Gambar.
+      </p>
+    </div>
   );
 }
