@@ -73,7 +73,7 @@ function proxyGatewayStream(upstream: Response, headers: Headers) {
           if (p.type === "error" || eventName === "error") {
             emit("error", {
               type: "error",
-              error: { message: p.error?.message ?? "Gateway gagal generate gambar." },
+              error: { message: p.error?.message ?? "Gateway belum berhasil generate gambar." },
             });
             completed = true;
             return;
@@ -344,7 +344,7 @@ export const Route = createFileRoute("/api/generate-image-stream")({
         if (!gatewayKey) {
           return sseError(
             attempts.length
-              ? `Semua provider gagal:\n- ${attempts.join("\n- ")}`
+              ? `Semua provider belum berhasil:\n- ${attempts.join("\n- ")}`
               : "LOVABLE_API_KEY belum tersedia dan tidak ada provider lain.",
           );
         }
@@ -376,14 +376,14 @@ export const Route = createFileRoute("/api/generate-image-stream")({
               upstream.status,
               t.slice(0, 400),
             );
-            return sseError(`Semua provider gagal:\n- ${attempts.join("\n- ")}`);
+            return sseError(`Semua provider belum berhasil:\n- ${attempts.join("\n- ")}`);
           }
           const headers = new Headers(sseHeaders);
           return proxyGatewayStream(upstream, headers);
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           attempts.push(`Lovable Gateway exception: ${msg}`);
-          return sseError(`Semua provider gagal:\n- ${attempts.join("\n- ")}`);
+          return sseError(`Semua provider belum berhasil:\n- ${attempts.join("\n- ")}`);
         }
       },
     },
