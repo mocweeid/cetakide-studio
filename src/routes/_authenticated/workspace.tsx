@@ -719,8 +719,19 @@ function Workspace() {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Regenerate belum berhasil";
+      const shouldHideFailureCard =
+        msg.includes("Semua provider gagal") ||
+        msg.includes("Semua provider belum berhasil") ||
+        msg.includes("LOVABLE_API_KEY") ||
+        msg.includes("Stream berakhir") ||
+        msg.includes("Gateway") ||
+        msg.includes("OpenAI");
       setVariants((prev) => {
         const next = [...prev];
+        if (shouldHideFailureCard) {
+          next.splice(i, 1);
+          return next;
+        }
         next[i] = { status: "gagal", error: msg, prompt, ratio: jobRatio };
         return next;
       });
