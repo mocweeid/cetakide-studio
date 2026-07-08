@@ -97,6 +97,62 @@ export const Route = createFileRoute("/api/generate-image-stream")({
           );
         const attempts: string[] = [];
 
+        // 0) Custom AI provider (ai.yogathedev.com) via CUSTOM_AI_API_KEY env
+        //    Prioritas tertinggi jika env tersedia — aman: key tidak pernah bocor ke client.
+        const customKey = process.env.CUSTOM_AI_API_KEY;
+        const customBaseUrl = (process.env.CUSTOM_AI_BASE_URL ?? "https://ai.yogathedev.com/v1").replace(/\/$/, "");
+        const customModel = process.env.CUSTOM_AI_MODEL ?? "gpt-image-1";
+        if (customKey) {
+          try {
+            const res = await fetch(`${customBaseUrl}/images/generations`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${customKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: customModel,
+                prompt,
+                size,
+                n: 1,
+                response_format: "b64_json",
+              }),
+            });
+            const text = await res.text();
+            if (res.ok) {
+              let b64: string | undefined;
+              try {
+                const j = JSON.parse(text) as {
+                  data?: Array<{ b64_json?: string; url?: string }>;
+                };
+                b64 = j.data?.[0]?.b64_json;
+                const url = j.data?.[0]?.url;
+                if (!b64 && url) {
+                  const imgRes = await fetch(url);
+                  const buf = new Uint8Array(await imgRes.arrayBuffer());
+                  let bin = "";
+                  for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+                  b64 = btoa(bin);
+                }
+              } catch { /* ignore parse */ }
+              if (b64) return sseComplete(b64, `Custom ${customModel}`);
+              attempts.push(`Custom ${customModel}: response tanpa gambar`);
+            } else {
+              let errMsg = text.slice(0, 300);
+              try {
+                const j = JSON.parse(text) as { error?: { message?: string } };
+                if (j.error?.message) errMsg = j.error.message;
+              } catch { /* ignore */ }
+              attempts.push(`Custom ${customModel} → ${res.status}: ${errMsg}`);
+              console.error("[generate-image-stream] Custom provider failed", res.status, errMsg);
+            }
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            attempts.push(`Custom ${customModel} exception: ${msg}`);
+            console.error("[generate-image-stream] Custom provider exception", e);
+          }
+        }
+
         // Load user's OpenAI keys (highest priority)
         const supabaseClient = makeAuthedClient(token);
         const nowIso = new Date().toISOString();
@@ -228,21 +284,23 @@ export const Route = createFileRoute("/api/generate-image-stream")({
                   errMsg,
                 );
                 const status = res.status;
-                await supabaseClient
-                  .from("ai_providers")
-                  .update({
-                    failure_count: (userKey.failure_count ?? 0) + 1,
-                    last_status:
-                      status === 401
-                        ? "invalid"
-                        : status === 429
-                          ? "rate_limit"
-                          : status === 402 || status === 403
-                            ? "out_of_credit"
-                            : "error",
-                    is_active: status === 401 ? false : userKey.is_active,
-                  })
-                  .eq("id", userKey.id);
+                if (userKey) {
+                  await supabaseClient
+                    .from("ai_providers")
+                    .update({
+                      failure_count: (userKey.failure_count ?? 0) + 1,
+                      last_status:
+                        status === 401
+                          ? "invalid"
+                          : status === 429
+                            ? "rate_limit"
+                            : status === 402 || status === 403
+                              ? "out_of_credit"
+                              : "error",
+                      is_active: status === 401 ? false : userKey.is_active,
+                    })
+                    .eq("id", userKey.id);
+                }
                 // Stop trying if key is invalid/unauthorized
                 if (status === 401) break;
                 // Stop trying if out of credit (no point trying other models with same key)
