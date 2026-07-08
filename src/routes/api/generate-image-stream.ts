@@ -174,12 +174,11 @@ export const Route = createFileRoute("/api/generate-image-stream")({
             let authWorked = false;
             for (const requestBody of imageRequestBodies(customModel, prompt, size)) {
               try {
+                const headers = new Headers({ "Content-Type": "application/json" });
+                Object.entries(authHeader.headers).forEach(([key, value]) => headers.set(key, value));
                 const res = await fetch(`${customBaseUrl}/images/generations`, {
                   method: "POST",
-                  headers: {
-                    ...authHeader.headers,
-                    "Content-Type": "application/json",
-                  },
+                  headers,
                   body: JSON.stringify(requestBody),
                 });
                 const text = await res.text();
