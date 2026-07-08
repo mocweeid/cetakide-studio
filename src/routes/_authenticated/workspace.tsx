@@ -552,11 +552,16 @@ function Workspace() {
       return;
     }
     const size = ratioToSize(jobRatio);
+    const jobId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `job_${Date.now()}_${i}`;
     setVariants((prev) => {
       const next = [...prev];
       next[i] = { status: "proses", prompt, ratio: jobRatio };
       return next;
     });
+    let projectId: string | null = null;
     try {
       const { data: ok } = await supabase.rpc("potong_saldo_generate");
       if (!ok) {
@@ -568,7 +573,25 @@ function Workspace() {
         });
         return;
       }
-      await streamImage(prompt, size, (dataUrl, isFinal) => {
+      if (user) {
+        const { data: inserted } = await supabase
+          .from("projects")
+          .insert({
+            user_id: user.userId,
+            kebutuhan: prompt.slice(0, 80),
+            prompt,
+            image_url: null,
+            aspect_ratio: jobRatio,
+            platform,
+            status: "proses",
+            job_id: jobId,
+            provider: null,
+          })
+          .select("id")
+          .single();
+        projectId = inserted?.id ?? null;
+      }
+      const { provider } = await streamImage(prompt, size, (dataUrl, isFinal) => {
         setVariants((prev) => {
           const next = [...prev];
           next[i] = isFinal
@@ -577,6 +600,16 @@ function Workspace() {
           return next;
         });
       });
+      if (projectId) {
+        const finalV = variants[i];
+        const finalUrl =
+          finalV?.status === "sukses" ? finalV.imageUrl ?? null : null;
+        await supabase
+          .from("projects")
+          .update({ status: "sukses", provider, image_url: finalUrl })
+          .eq("id", projectId);
+      }
+      await refresh();
       toast.success(`Variasi ${i + 1} berhasil di-regenerate.`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Regenerate gagal";
@@ -585,6 +618,12 @@ function Workspace() {
         next[i] = { status: "gagal", error: msg, prompt, ratio: jobRatio };
         return next;
       });
+      if (projectId) {
+        await supabase
+          .from("projects")
+          .update({ status: "gagal", error_message: msg.slice(0, 500) })
+          .eq("id", projectId);
+      }
       toast.error(`Regenerate variasi ${i + 1} gagal`, { description: msg });
     }
   }
