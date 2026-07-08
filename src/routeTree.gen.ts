@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiGenerateImageStreamRouteImport } from './routes/api/generate-image-stream'
+import { Route as ApiCheckOpenaiRouteImport } from './routes/api/check-openai'
 import { Route as AuthenticatedWorkspaceRouteImport } from './routes/_authenticated/workspace'
 import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
 import { Route as AuthenticatedUsageLimitsRouteImport } from './routes/_authenticated/usage-limits'
@@ -74,6 +75,11 @@ const IndexRoute = IndexRouteImport.update({
 const ApiGenerateImageStreamRoute = ApiGenerateImageStreamRouteImport.update({
   id: '/api/generate-image-stream',
   path: '/api/generate-image-stream',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCheckOpenaiRoute = ApiCheckOpenaiRouteImport.update({
+  id: '/api/check-openai',
+  path: '/api/check-openai',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedWorkspaceRoute = AuthenticatedWorkspaceRouteImport.update({
@@ -354,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/usage-limits': typeof AuthenticatedUsageLimitsRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
+  '/api/check-openai': typeof ApiCheckOpenaiRoute
   '/api/generate-image-stream': typeof ApiGenerateImageStreamRoute
 }
 export interface FileRoutesByTo {
@@ -402,6 +409,7 @@ export interface FileRoutesByTo {
   '/usage-limits': typeof AuthenticatedUsageLimitsRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
+  '/api/check-openai': typeof ApiCheckOpenaiRoute
   '/api/generate-image-stream': typeof ApiGenerateImageStreamRoute
 }
 export interface FileRoutesById {
@@ -452,6 +460,7 @@ export interface FileRoutesById {
   '/_authenticated/usage-limits': typeof AuthenticatedUsageLimitsRoute
   '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
   '/_authenticated/workspace': typeof AuthenticatedWorkspaceRoute
+  '/api/check-openai': typeof ApiCheckOpenaiRoute
   '/api/generate-image-stream': typeof ApiGenerateImageStreamRoute
 }
 export interface FileRouteTypes {
@@ -502,6 +511,7 @@ export interface FileRouteTypes {
     | '/usage-limits'
     | '/webhooks'
     | '/workspace'
+    | '/api/check-openai'
     | '/api/generate-image-stream'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -550,6 +560,7 @@ export interface FileRouteTypes {
     | '/usage-limits'
     | '/webhooks'
     | '/workspace'
+    | '/api/check-openai'
     | '/api/generate-image-stream'
   id:
     | '__root__'
@@ -599,6 +610,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usage-limits'
     | '/_authenticated/webhooks'
     | '/_authenticated/workspace'
+    | '/api/check-openai'
     | '/api/generate-image-stream'
   fileRoutesById: FileRoutesById
 }
@@ -606,6 +618,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiCheckOpenaiRoute: typeof ApiCheckOpenaiRoute
   ApiGenerateImageStreamRoute: typeof ApiGenerateImageStreamRoute
 }
 
@@ -637,6 +650,13 @@ declare module '@tanstack/react-router' {
       path: '/api/generate-image-stream'
       fullPath: '/api/generate-image-stream'
       preLoaderRoute: typeof ApiGenerateImageStreamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/check-openai': {
+      id: '/api/check-openai'
+      path: '/api/check-openai'
+      fullPath: '/api/check-openai'
+      preLoaderRoute: typeof ApiCheckOpenaiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/workspace': {
@@ -1042,6 +1062,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiCheckOpenaiRoute: ApiCheckOpenaiRoute,
   ApiGenerateImageStreamRoute: ApiGenerateImageStreamRoute,
 }
 export const routeTree = rootRouteImport

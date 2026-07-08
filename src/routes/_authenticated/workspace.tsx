@@ -23,6 +23,9 @@ import {
   Save,
   FolderOpen,
   Trash2,
+  Bug,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { PRESET_THEMES, getThemeStyles, ThemeSkeletonPreview } from "./preset-theme";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
