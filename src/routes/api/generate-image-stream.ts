@@ -165,53 +165,43 @@ export const Route = createFileRoute("/api/generate-image-stream")({
         const customBaseUrl = (process.env.CUSTOM_AI_BASE_URL ?? "https://ai.yogathedev.com/v1").replace(/\/$/, "");
         const customModel = process.env.CUSTOM_AI_MODEL ?? "gpt-image-1";
         if (customKey) {
-          try {
-            const res = await fetch(`${customBaseUrl}/images/generations`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${customKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                model: customModel,
-                prompt,
-                size,
-                n: 1,
-                response_format: "b64_json",
-              }),
-            });
-            const text = await res.text();
-            if (res.ok) {
-              let b64: string | undefined;
+          const customAuthHeaders = [
+            { label: "Bearer", headers: { Authorization: `Bearer ${customKey}` } },
+            { label: "x-api-key", headers: { "x-api-key": customKey } },
+            { label: "api-key", headers: { "api-key": customKey } },
+          ];
+          for (const authHeader of customAuthHeaders) {
+            let authWorked = false;
+            for (const requestBody of imageRequestBodies(customModel, prompt, size)) {
               try {
-                const j = JSON.parse(text) as {
-                  data?: Array<{ b64_json?: string; url?: string }>;
-                };
-                b64 = j.data?.[0]?.b64_json;
-                const url = j.data?.[0]?.url;
-                if (!b64 && url) {
-                  const imgRes = await fetch(url);
-                  const buf = new Uint8Array(await imgRes.arrayBuffer());
-                  let bin = "";
-                  for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-                  b64 = btoa(bin);
+                const res = await fetch(`${customBaseUrl}/images/generations`, {
+                  method: "POST",
+                  headers: {
+                    ...authHeader.headers,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(requestBody),
+                });
+                const text = await res.text();
+                if (res.ok) {
+                  authWorked = true;
+                  const b64 = await imageResponseToB64(text).catch(() => undefined);
+                  if (b64) return sseComplete(b64, `Custom ${customModel}`);
+                  attempts.push(`Custom ${customModel} (${authHeader.label}): response tanpa gambar`);
+                } else {
+                  const errMsg = parseProviderError(text);
+                  attempts.push(`Custom ${customModel} (${authHeader.label}) → ${res.status}: ${errMsg}`);
+                  console.error("[generate-image-stream] Custom provider failed", res.status, errMsg);
+                  if (res.status === 401 || res.status === 403) break;
+                  authWorked = true;
                 }
-              } catch { /* ignore parse */ }
-              if (b64) return sseComplete(b64, `Custom ${customModel}`);
-              attempts.push(`Custom ${customModel}: response tanpa gambar`);
-            } else {
-              let errMsg = text.slice(0, 300);
-              try {
-                const j = JSON.parse(text) as { error?: { message?: string } };
-                if (j.error?.message) errMsg = j.error.message;
-              } catch { /* ignore */ }
-              attempts.push(`Custom ${customModel} → ${res.status}: ${errMsg}`);
-              console.error("[generate-image-stream] Custom provider failed", res.status, errMsg);
+              } catch (e) {
+                const msg = e instanceof Error ? e.message : String(e);
+                attempts.push(`Custom ${customModel} (${authHeader.label}) exception: ${msg}`);
+                console.error("[generate-image-stream] Custom provider exception", e);
+              }
             }
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            attempts.push(`Custom ${customModel} exception: ${msg}`);
-            console.error("[generate-image-stream] Custom provider exception", e);
+            if (authWorked) break;
           }
         }
 
@@ -258,37 +248,8 @@ export const Route = createFileRoute("/api/generate-image-stream")({
 
           for (const modelName of candidates) {
             try {
-              // Build model-specific request body
-              let oaBody: Record<string, unknown>;
-              if (modelName === "dall-e-3") {
-                // dall-e-3: only supports 1024x1024, 1792x1024, 1024x1792
-                oaBody = {
-                  model: "dall-e-3",
-                  prompt,
-                  size: "1024x1024",
-                  quality: "standard",
-                  n: 1,
-                  response_format: "b64_json",
-                };
-              } else if (modelName === "dall-e-2") {
-                oaBody = {
-                  model: "dall-e-2",
-                  prompt: prompt.slice(0, 1000),
-                  size: "1024x1024",
-                  n: 1,
-                  response_format: "b64_json",
-                };
-              } else {
-                // gpt-image-1 and other models
-                oaBody = {
-                  model: modelName,
-                  prompt,
-                  size: "1024x1024",
-                  quality: "low",
-                  n: 1,
-                  response_format: "b64_json",
-                };
-              }
+              // Build model-specific request body.
+              const oaBody = imageRequestBodies(modelName, prompt, size)[0];
 
               const res = await fetch(`${openaiBaseUrl}/images/generations`, {
                 method: "POST",
@@ -300,23 +261,7 @@ export const Route = createFileRoute("/api/generate-image-stream")({
               });
               const text = await res.text();
               if (res.ok) {
-                let b64: string | undefined;
-                try {
-                  const j = JSON.parse(text) as {
-                    data?: Array<{ b64_json?: string; url?: string }>;
-                  };
-                  b64 = j.data?.[0]?.b64_json;
-                  const url = j.data?.[0]?.url;
-                  if (!b64 && url) {
-                    const imgRes = await fetch(url);
-                    const buf = new Uint8Array(await imgRes.arrayBuffer());
-                    let bin = "";
-                    for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-                    b64 = btoa(bin);
-                  }
-                } catch {
-                  /* ignore parse */
-                }
+                const b64 = await imageResponseToB64(text).catch(() => undefined);
                 if (b64) {
                   if (userKey) {
                     await supabaseClient
@@ -333,11 +278,7 @@ export const Route = createFileRoute("/api/generate-image-stream")({
                 }
                 attempts.push(`OpenAI ${modelName}: response tanpa gambar`);
               } else {
-                let errMsg = text.slice(0, 300);
-                try {
-                  const j = JSON.parse(text) as { error?: { message?: string } };
-                  if (j.error?.message) errMsg = j.error.message;
-                } catch { /* ignore */ }
+                const errMsg = parseProviderError(text);
                 attempts.push(`OpenAI ${modelName} → ${res.status}: ${errMsg}`);
                 console.error(
                   "[generate-image-stream] OpenAI failed",
