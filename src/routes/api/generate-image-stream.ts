@@ -33,11 +33,12 @@ export const Route = createFileRoute("/api/generate-image-stream")({
           "Cache-Control": "no-cache, no-transform",
           "X-Accel-Buffering": "no",
         };
-        const sseComplete = (b64: string) =>
+        const sseComplete = (b64: string, provider: string) =>
           new Response(
             `event: image_generation.completed\ndata: ${JSON.stringify({
               type: "image_generation.completed",
               b64_json: b64,
+              provider,
               created_at: Date.now(),
             })}\n\n`,
             { headers: sseHeaders },
@@ -122,7 +123,7 @@ export const Route = createFileRoute("/api/generate-image-stream")({
                       disabled_until: null,
                     })
                     .eq("id", userKey.id);
-                  return sseComplete(b64);
+                  return sseComplete(b64, `OpenAI ${c.model}`);
                 }
                 attempts.push(`OpenAI ${c.model}: response tanpa gambar`);
               } else {
@@ -178,7 +179,7 @@ export const Route = createFileRoute("/api/generate-image-stream")({
             if (cfRes.ok) {
               const j = (await cfRes.json()) as { result?: { image?: string } };
               const b64 = j?.result?.image;
-              if (b64) return sseComplete(b64);
+              if (b64) return sseComplete(b64, "Cloudflare flux-1-schnell");
               attempts.push("Cloudflare: response tanpa gambar");
             } else {
               const t = await cfRes.text().catch(() => "");
@@ -231,7 +232,10 @@ export const Route = createFileRoute("/api/generate-image-stream")({
             );
             return sseError(`Semua provider gagal:\n- ${attempts.join("\n- ")}`);
           }
-          return new Response(upstream.body, { headers: sseHeaders });
+          // Tag upstream with a synthetic provider header the client can read.
+          const headers = new Headers(sseHeaders);
+          headers.set("X-Image-Provider", "Lovable Gateway gpt-image-1-mini");
+          return new Response(upstream.body, { headers });
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           attempts.push(`Lovable Gateway exception: ${msg}`);
