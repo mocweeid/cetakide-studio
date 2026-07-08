@@ -285,11 +285,14 @@ export type Database = {
           aspect_ratio: string
           body_content: string | null
           created_at: string
+          error_message: string | null
           id: string
           image_url: string | null
+          job_id: string | null
           kebutuhan: string
           platform: string
           prompt: string | null
+          provider: string | null
           reference_url: string | null
           social_url: string | null
           status: string
@@ -302,11 +305,14 @@ export type Database = {
           aspect_ratio?: string
           body_content?: string | null
           created_at?: string
+          error_message?: string | null
           id?: string
           image_url?: string | null
+          job_id?: string | null
           kebutuhan: string
           platform?: string
           prompt?: string | null
+          provider?: string | null
           reference_url?: string | null
           social_url?: string | null
           status?: string
@@ -319,11 +325,14 @@ export type Database = {
           aspect_ratio?: string
           body_content?: string | null
           created_at?: string
+          error_message?: string | null
           id?: string
           image_url?: string | null
+          job_id?: string | null
           kebutuhan?: string
           platform?: string
           prompt?: string | null
+          provider?: string | null
           reference_url?: string | null
           social_url?: string | null
           status?: string

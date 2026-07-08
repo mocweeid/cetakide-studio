@@ -12,6 +12,7 @@ type ImageEventPayload =
   | {
       type: "image_generation.completed";
       b64_json: string;
+      provider?: string;
       created_at: number;
     }
   | { type: "error"; error: { message: string; type?: string; code?: string } };
@@ -20,7 +21,7 @@ export async function streamImage(
   prompt: string,
   size: string,
   onFrame: (dataUrl: string, isFinal: boolean) => void,
-): Promise<void> {
+): Promise<{ provider: string }> {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
   if (!token) throw new Error("Belum sign in.");
@@ -37,9 +38,11 @@ export async function streamImage(
     const text = await res.text().catch(() => "");
     throw new Error(`Generate gagal (${res.status}): ${text.slice(0, 200)}`);
   }
+  const headerProvider = res.headers.get("X-Image-Provider") ?? "";
 
   let sawCompleted = false;
   let streamError: string | undefined;
+  let provider = headerProvider;
 
   const parser = createParser({
     onEvent(event) {
@@ -62,6 +65,10 @@ export async function streamImage(
         return;
       if (!payload) return;
       const isFinal = event.event === "image_generation.completed";
+      if (isFinal) {
+        const p = (payload as { provider?: string }).provider;
+        if (p) provider = p;
+      }
       flushSync(() => {
         onFrame(
           `data:image/png;base64,${(payload as { b64_json: string }).b64_json}`,
@@ -84,4 +91,5 @@ export async function streamImage(
   }
   if (streamError) throw new Error(streamError);
   if (!sawCompleted) throw new Error("Stream berakhir tanpa gambar final.");
+  return { provider: provider || "unknown" };
 }
