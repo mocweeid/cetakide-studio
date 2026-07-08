@@ -132,7 +132,7 @@ export const generateImageServer = createServerFn({ method: "POST" })
 
     // Semua key gagal – tampilkan error yang informatif
     const hint = attempts.length > 0
-      ? `Semua API key OpenAI gagal:\n- ${(attempts as string[]).join("\n- ")}`
+      ? `Semua API key OpenAI gagal:\n- ${attempts.map((a) => a.label ?? "OpenAI").join("\n- ")}`
       : "Tidak ada API key OpenAI aktif. Silakan tambahkan key di halaman Admin AI Keys.";
     throw new Error(hint);
   });
