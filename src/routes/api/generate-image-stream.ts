@@ -42,13 +42,75 @@ function pickB64(payload: unknown): string | undefined {
     b64_json?: unknown;
     partial_image_b64?: unknown;
     image?: unknown;
-    data?: Array<{ b64_json?: unknown }>;
+    url?: unknown;
+    data?: Array<{ b64_json?: unknown; url?: unknown }>;
+    images?: Array<string | { b64_json?: unknown; url?: unknown }>;
   };
-  if (typeof p.b64_json === "string") return p.b64_json;
-  if (typeof p.partial_image_b64 === "string") return p.partial_image_b64;
-  if (typeof p.image === "string") return p.image;
-  const nested = p.data?.[0]?.b64_json;
-  return typeof nested === "string" ? nested : undefined;
+  const normalize = (value: unknown) => {
+    if (typeof value !== "string" || !value.trim()) return undefined;
+    const trimmed = value.trim();
+    if (trimmed.startsWith("data:image/")) return trimmed.split(",")[1] || undefined;
+    if (/^https?:\/\//i.test(trimmed)) return undefined;
+    return trimmed;
+  };
+  return (
+    normalize(p.b64_json) ??
+    normalize(p.partial_image_b64) ??
+    normalize(p.image) ??
+    normalize(p.data?.[0]?.b64_json) ??
+    normalize(typeof p.images?.[0] === "string" ? p.images[0] : p.images?.[0]?.b64_json)
+  );
+}
+
+async function urlToB64(url: string): Promise<string | undefined> {
+  const imgRes = await fetch(url);
+  if (!imgRes.ok) return undefined;
+  const buf = new Uint8Array(await imgRes.arrayBuffer());
+  let bin = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < buf.length; i += chunkSize) {
+    bin += String.fromCharCode(...buf.subarray(i, i + chunkSize));
+  }
+  return btoa(bin);
+}
+
+async function imageResponseToB64(text: string): Promise<string | undefined> {
+  const json = JSON.parse(text) as {
+    data?: Array<{ b64_json?: string; url?: string }>;
+    url?: string;
+    images?: Array<string | { b64_json?: string; url?: string }>;
+  };
+  const direct = pickB64(json);
+  if (direct) return direct;
+  const firstImage = json.images?.[0];
+  const url =
+    json.data?.[0]?.url ??
+    json.url ??
+    (typeof firstImage === "string" && /^https?:\/\//i.test(firstImage) ? firstImage : undefined) ??
+    (typeof firstImage === "object" ? firstImage.url : undefined);
+  return url ? urlToB64(url) : undefined;
+}
+
+function parseProviderError(text: string) {
+  try {
+    const j = JSON.parse(text) as { error?: { message?: string }; message?: string };
+    return (j.error?.message ?? j.message ?? text).slice(0, 300);
+  } catch {
+    return text.slice(0, 300);
+  }
+}
+
+function imageRequestBodies(model: string, prompt: string, size: string) {
+  const modelSize = model.includes("dall-e") ? "1024x1024" : size;
+  const base = { model, prompt, size: modelSize, n: 1 };
+  if (model.includes("dall-e")) {
+    return [{ ...base, response_format: "b64_json" }];
+  }
+  return [
+    { ...base, quality: "low", response_format: "b64_json" },
+    { ...base, quality: "low" },
+    base,
+  ];
 }
 
 
