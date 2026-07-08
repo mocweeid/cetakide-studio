@@ -166,6 +166,69 @@ function Workspace() {
   const [draftList, setDraftList] = useState<Array<{ name: string; savedAt: string }>>([]);
   const [draftOpen, setDraftOpen] = useState(false);
 
+  // Debug panel state
+  type DebugEntry = {
+    ts: string;
+    level: "info" | "success" | "error";
+    message: string;
+    provider?: string;
+    jobId?: string;
+  };
+  const [debugOpen, setDebugOpen] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<DebugEntry[]>([]);
+  const [checkingOpenai, setCheckingOpenai] = useState(false);
+  const [openaiStatus, setOpenaiStatus] = useState<null | {
+    ok: boolean;
+    detail: string;
+    latency?: number;
+  }>(null);
+  function pushDebug(entry: Omit<DebugEntry, "ts">) {
+    setDebugLogs((prev) =>
+      [{ ts: new Date().toISOString(), ...entry }, ...prev].slice(0, 30),
+    );
+  }
+  async function handleCheckOpenai() {
+    setCheckingOpenai(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Belum sign in.");
+      const res = await fetch("/api/check-openai", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const j = (await res.json()) as {
+        ok: boolean;
+        found?: boolean;
+        status?: number;
+        latency_ms?: number;
+        model?: string | null;
+        model_count?: number;
+        has_image_model?: boolean;
+        error?: string;
+      };
+      if (j.ok) {
+        const detail = `Key valid · ${j.model_count ?? 0} model tersedia${j.has_image_model ? " · gpt-image/dall-e siap" : " · TIDAK ada model image"} · ${j.latency_ms}ms`;
+        setOpenaiStatus({ ok: true, detail, latency: j.latency_ms });
+        pushDebug({ level: "success", message: `OpenAI check OK — ${detail}` });
+        toast.success("OpenAI key valid", { description: detail });
+      } else {
+        const detail = j.error || (j.status ? `HTTP ${j.status}` : "Gagal");
+        setOpenaiStatus({ ok: false, detail });
+        pushDebug({ level: "error", message: `OpenAI check gagal — ${detail}` });
+        toast.error("OpenAI key bermasalah", { description: detail });
+      }
+      setDebugOpen(true);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setOpenaiStatus({ ok: false, detail: msg });
+      pushDebug({ level: "error", message: `OpenAI check exception: ${msg}` });
+      toast.error("Cek OpenAI gagal", { description: msg });
+    } finally {
+      setCheckingOpenai(false);
+    }
+  }
+
   useEffect(() => {
     if (!draftStorageKey) return;
     try {
