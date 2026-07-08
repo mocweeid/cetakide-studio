@@ -154,7 +154,15 @@ function Workspace() {
     twitter_url: "",
     social_url: "",
     body_content: "",
+    brand_name: "",
+    category: "",
+    cta: "",
+    features: "",
   });
+
+  // Tata letak & multi image
+  const [targetImageCount, setTargetImageCount] = useState<number>(1);
+  const [visualPosition, setVisualPosition] = useState<string>("center");
 
   const [reference, setReference] = useState<string | null>(null);
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
@@ -355,13 +363,20 @@ function Workspace() {
     | "instagram_url"
     | "twitter_url"
     | "social_url"
-    | "body_content") {
+    | "body_content"
+    | "category"
+    | "cta"
+    | "features") {
     setAutofillingKey(field);
     try {
       const context = [
+        form.brand_name && `Brand: ${form.brand_name}`,
+        form.category && `Kategori Produk: ${form.category}`,
         form.prompt && `Prompt: ${form.prompt}`,
         form.title && `Judul: ${form.title}`,
         form.subtitle && `Subjudul: ${form.subtitle}`,
+        form.cta && `CTA: ${form.cta}`,
+        form.features && `Fitur: ${form.features}`,
         selectedBrand && `Brand: ${selectedBrand.name}`,
         selectedBrand?.brand_voice && `Voice: ${selectedBrand.brand_voice}`,
       ]
