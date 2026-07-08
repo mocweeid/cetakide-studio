@@ -284,21 +284,23 @@ export const Route = createFileRoute("/api/generate-image-stream")({
                   errMsg,
                 );
                 const status = res.status;
-                await supabaseClient
-                  .from("ai_providers")
-                  .update({
-                    failure_count: (userKey.failure_count ?? 0) + 1,
-                    last_status:
-                      status === 401
-                        ? "invalid"
-                        : status === 429
-                          ? "rate_limit"
-                          : status === 402 || status === 403
-                            ? "out_of_credit"
-                            : "error",
-                    is_active: status === 401 ? false : userKey.is_active,
-                  })
-                  .eq("id", userKey.id);
+                if (userKey) {
+                  await supabaseClient
+                    .from("ai_providers")
+                    .update({
+                      failure_count: (userKey.failure_count ?? 0) + 1,
+                      last_status:
+                        status === 401
+                          ? "invalid"
+                          : status === 429
+                            ? "rate_limit"
+                            : status === 402 || status === 403
+                              ? "out_of_credit"
+                              : "error",
+                      is_active: status === 401 ? false : userKey.is_active,
+                    })
+                    .eq("id", userKey.id);
+                }
                 // Stop trying if key is invalid/unauthorized
                 if (status === 401) break;
                 // Stop trying if out of credit (no point trying other models with same key)
