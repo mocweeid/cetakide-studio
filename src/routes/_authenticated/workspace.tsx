@@ -24,7 +24,6 @@ import {
   FolderOpen,
   Trash2,
   Bug,
-  ChevronDown,
   ChevronUp,
 } from "lucide-react";
 import { PRESET_THEMES, getThemeStyles, ThemeSkeletonPreview } from "./preset-theme";
