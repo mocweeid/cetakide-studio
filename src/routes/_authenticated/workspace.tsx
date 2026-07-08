@@ -596,6 +596,7 @@ function Workspace() {
           const msg = genErr instanceof Error ? genErr.message : "Generate belum berhasil";
           const shouldHideFailureCard =
             msg.includes("Semua provider gagal") ||
+            msg.includes("Semua provider belum berhasil") ||
             msg.includes("LOVABLE_API_KEY") ||
             msg.includes("Stream berakhir") ||
             msg.includes("Gateway") ||
