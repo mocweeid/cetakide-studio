@@ -32,6 +32,129 @@ function makeAuthedClient(token: string) {
   });
 }
 
+function sseEvent(event: string, payload: Record<string, unknown>) {
+  return `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
+}
+
+function pickB64(payload: unknown): string | undefined {
+  if (!payload || typeof payload !== "object") return undefined;
+  const p = payload as {
+    b64_json?: unknown;
+    partial_image_b64?: unknown;
+    image?: unknown;
+    data?: Array<{ b64_json?: unknown }>;
+  };
+  if (typeof p.b64_json === "string") return p.b64_json;
+  if (typeof p.partial_image_b64 === "string") return p.partial_image_b64;
+  if (typeof p.image === "string") return p.image;
+  const nested = p.data?.[0]?.b64_json;
+  return typeof nested === "string" ? nested : undefined;
+}
+
+function proxyGatewayStream(upstream: Response, headers: Headers) {
+  const provider = "Lovable Gateway gpt-image-1-mini";
+  headers.set("X-Image-Provider", provider);
+  const encoder = new TextEncoder();
+  return new Response(
+    new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const reader = upstream.body!.pipeThrough(new TextDecoderStream()).getReader();
+        let buffer = "";
+        let lastB64 = "";
+        let completed = false;
+
+        const emit = (event: string, payload: Record<string, unknown>) => {
+          controller.enqueue(encoder.encode(sseEvent(event, payload)));
+        };
+
+        const processPayload = (payload: unknown, eventName = "") => {
+          if (!payload || typeof payload !== "object") return;
+          const p = payload as { type?: string; error?: { message?: string } };
+          if (p.type === "error" || eventName === "error") {
+            emit("error", {
+              type: "error",
+              error: { message: p.error?.message ?? "Gateway gagal generate gambar." },
+            });
+            completed = true;
+            return;
+          }
+          const b64 = pickB64(payload);
+          if (!b64) return;
+          lastB64 = b64;
+          const incoming = p.type || eventName;
+          const isDone = incoming.includes("completed") || incoming.includes("final");
+          emit(isDone ? "image_generation.completed" : "image_generation.partial_image", {
+            type: isDone ? "image_generation.completed" : "image_generation.partial_image",
+            b64_json: b64,
+            partial_image_index: 0,
+            provider,
+            created_at: Date.now(),
+          });
+          if (isDone) completed = true;
+        };
+
+        const processBlock = (block: string) => {
+          const trimmed = block.trim();
+          if (!trimmed || trimmed === "data: [DONE]" || trimmed === "[DONE]") return;
+          if (trimmed.startsWith("{")) {
+            try {
+              processPayload(JSON.parse(trimmed));
+            } catch {
+              /* ignore malformed json */
+            }
+            return;
+          }
+          const lines = trimmed.split(/\r?\n/);
+          const eventName = lines.find((line) => line.startsWith("event:"))?.slice(6).trim() ?? "";
+          const data = lines
+            .filter((line) => line.startsWith("data:"))
+            .map((line) => line.slice(5).trim())
+            .join("\n");
+          if (!data || data === "[DONE]") return;
+          try {
+            processPayload(JSON.parse(data), eventName);
+          } catch {
+            /* ignore malformed event data */
+          }
+        };
+
+        try {
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += value;
+            const blocks = buffer.split(/\n\n/);
+            buffer = blocks.pop() ?? "";
+            for (const block of blocks) processBlock(block);
+          }
+          if (buffer.trim()) processBlock(buffer);
+          if (lastB64 && !completed) {
+            emit("image_generation.completed", {
+              type: "image_generation.completed",
+              b64_json: lastB64,
+              provider,
+              created_at: Date.now(),
+            });
+          } else if (!completed) {
+            emit("error", {
+              type: "error",
+              error: { message: "Gateway selesai tanpa gambar final." },
+            });
+          }
+        } catch (e) {
+          emit("error", {
+            type: "error",
+            error: { message: e instanceof Error ? e.message : "Stream gateway terputus." },
+          });
+        } finally {
+          controller.close();
+        }
+      },
+    }),
+    { headers },
+  );
+}
+
 async function getUserId(token: string): Promise<string | null> {
   const supabase = makeAuthedClient(token);
   const { data } = await supabase.auth.getUser(token);
@@ -97,11 +220,9 @@ export const Route = createFileRoute("/api/generate-image-stream")({
         // 1) User OpenAI key with model fallback (gpt-image-1 → dall-e-3)
         if (userKey?.api_key) {
           const requested = (userKey.model || "gpt-image-1").trim();
-          const candidates: Array<{ model: string; withResponseFormat: boolean }> = [
-            { model: requested, withResponseFormat: /^dall-e/i.test(requested) },
-          ];
+          const candidates: Array<{ model: string }> = [{ model: requested }];
           if (!/^dall-e-3$/i.test(requested)) {
-            candidates.push({ model: "dall-e-3", withResponseFormat: true });
+            candidates.push({ model: "dall-e-3" });
           }
           for (const c of candidates) {
             try {
@@ -111,7 +232,6 @@ export const Route = createFileRoute("/api/generate-image-stream")({
                 size: "1024x1024",
                 n: 1,
               };
-              if (c.withResponseFormat) oaBody.response_format = "b64_json";
               const res = await fetch("https://api.openai.com/v1/images/generations", {
                 method: "POST",
                 headers: {
@@ -258,10 +378,8 @@ export const Route = createFileRoute("/api/generate-image-stream")({
             );
             return sseError(`Semua provider gagal:\n- ${attempts.join("\n- ")}`);
           }
-          // Tag upstream with a synthetic provider header the client can read.
           const headers = new Headers(sseHeaders);
-          headers.set("X-Image-Provider", "Lovable Gateway gpt-image-1-mini");
-          return new Response(upstream.body, { headers });
+          return proxyGatewayStream(upstream, headers);
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           attempts.push(`Lovable Gateway exception: ${msg}`);
