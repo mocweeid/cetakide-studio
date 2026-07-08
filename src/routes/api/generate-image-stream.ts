@@ -204,6 +204,39 @@ export const Route = createFileRoute("/api/generate-image-stream")({
           }
         }
 
+        // 0.5) Managed AI gateway fallback — key stays server-side and avoids depending on user OpenAI keys.
+        const gatewayKey = process.env.LOVABLE_API_KEY;
+        if (gatewayKey) {
+          const gatewayModel = process.env.LOVABLE_IMAGE_MODEL ?? "openai/gpt-image-1-mini";
+          for (const requestBody of imageRequestBodies(gatewayModel, prompt, size)) {
+            try {
+              const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${gatewayKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(requestBody),
+              });
+              const text = await res.text();
+              if (res.ok) {
+                const b64 = await imageResponseToB64(text).catch(() => undefined);
+                if (b64) return sseComplete(b64, `Gateway ${gatewayModel}`);
+                attempts.push(`Gateway ${gatewayModel}: response tanpa gambar`);
+              } else {
+                const errMsg = parseProviderError(text);
+                attempts.push(`Gateway ${gatewayModel} → ${res.status}: ${errMsg}`);
+                console.error("[generate-image-stream] Gateway failed", res.status, errMsg);
+                if (res.status === 401 || res.status === 403) break;
+              }
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : String(e);
+              attempts.push(`Gateway ${gatewayModel} exception: ${msg}`);
+              console.error("[generate-image-stream] Gateway exception", e);
+            }
+          }
+        }
+
         // Load user's OpenAI keys (highest priority)
         const supabaseClient = makeAuthedClient(token);
         const nowIso = new Date().toISOString();
