@@ -130,11 +130,12 @@ export const Route = createFileRoute("/api/generate-image-stream")({
         const userId = await getUserId(token);
         if (!userId) return new Response("Unauthorized", { status: 401 });
 
-        const body = (await request.json()) as { prompt: string; size?: string };
+        const body = (await request.json()) as { prompt: string; size?: string; jobId?: string };
         if (!body?.prompt) return new Response("prompt required", { status: 400 });
 
         const size = body.size ?? "1024x1024";
         const prompt = body.prompt.slice(0, 3000);
+        const jobId = body.jobId;
 
         const sseHeaders = {
           "Content-Type": "text/event-stream",
@@ -147,13 +148,14 @@ export const Route = createFileRoute("/api/generate-image-stream")({
               type: "image_generation.completed",
               b64_json: b64,
               provider,
+              jobId,
               created_at: Date.now(),
             })}\n\n`,
             { headers: sseHeaders },
           );
         const sseError = (message: string) =>
           new Response(
-            `event: error\ndata: ${JSON.stringify({ type: "error", error: { message } })}\n\n`,
+            `event: error\ndata: ${JSON.stringify({ type: "error", jobId, error: { message } })}\n\n`,
             { headers: sseHeaders },
           );
         const attempts: string[] = [];
@@ -166,41 +168,54 @@ export const Route = createFileRoute("/api/generate-image-stream")({
         const customBaseUrl = (process.env.CUSTOM_AI_BASE_URL ?? "https://ai.yogathedev.com/v1").replace(/\/$/, "");
         const customModel = process.env.CUSTOM_AI_MODEL ?? "cx/gpt-5.5-image";
         if (customKey) {
-          try {
-            const requestBody = {
-              model: customModel,
-              prompt,
-              n: 1,
-              size: "auto",
-              quality: "auto",
-              background: "auto",
-              image_detail: "high",
-              output_format: "png",
-            };
-            const res = await fetch(`${customBaseUrl}/images/generations`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${customKey}`,
-                Accept: "application/json",
-              },
-              body: JSON.stringify(requestBody),
-            });
-            const text = await res.text();
-            if (res.ok) {
-              const b64 = await imageResponseToB64(text).catch(() => undefined);
-              if (b64) return sseComplete(b64, `Custom ${customModel}`);
-              attempts.push(`Custom ${customModel}: response tanpa gambar`);
-            } else {
-              const errMsg = parseProviderError(text);
-              attempts.push(`Custom ${customModel} → ${res.status}: ${errMsg}`);
-              console.error("[generate-image-stream] Custom provider failed", res.status, errMsg);
+          const maxAttempts = 3;
+          const requestBody = {
+            model: customModel,
+            prompt,
+            n: 1,
+            size: "auto",
+            quality: "auto",
+            background: "auto",
+            image_detail: "high",
+            output_format: "png",
+          };
+          for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            let terminal = false;
+            try {
+              const res = await fetch(`${customBaseUrl}/images/generations`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${customKey}`,
+                  Accept: "application/json",
+                },
+                body: JSON.stringify(requestBody),
+              });
+              const text = await res.text();
+              if (res.ok) {
+                const b64 = await imageResponseToB64(text).catch(() => undefined);
+                if (b64) return sseComplete(b64, `Custom ${customModel}`);
+                attempts.push(`Custom ${customModel} [try ${attempt}]: response tanpa gambar`);
+              } else {
+                const errMsg = parseProviderError(text);
+                attempts.push(`Custom ${customModel} [try ${attempt}] → ${res.status}: ${errMsg}`);
+                console.error("[generate-image-stream] Custom provider failed", res.status, errMsg);
+                // 4xx (kecuali 408/429) = terminal, langsung fallback tanpa retry
+                if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
+                  terminal = true;
+                }
+              }
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : String(e);
+              attempts.push(`Custom ${customModel} [try ${attempt}] exception: ${msg}`);
+              console.error("[generate-image-stream] Custom provider exception", e);
             }
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            attempts.push(`Custom ${customModel} exception: ${msg}`);
-            console.error("[generate-image-stream] Custom provider exception", e);
+            if (terminal) break;
+            if (attempt < maxAttempts) {
+              await new Promise((r) => setTimeout(r, 400 * attempt));
+            }
           }
+          // Semua retry Custom gagal — lanjut ke Lovable Gateway di bawah.
         }
 
         // 1) Managed Lovable AI Gateway — fallback andal jika custom gagal.
