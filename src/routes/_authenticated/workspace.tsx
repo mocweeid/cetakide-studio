@@ -645,8 +645,7 @@ function Workspace() {
   }
 
   async function handleRegenerate(i: number) {
-    // (test generate injected above)
-    // (test generate injected above)
+    // handler body starts below
     const v = variants[i];
     const prompt = v.prompt;
     const jobRatio = v.ratio;
