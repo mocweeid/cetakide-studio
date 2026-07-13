@@ -25,6 +25,7 @@ export async function streamImage(
   size: string,
   onFrame: (dataUrl: string, isFinal: boolean) => void,
   jobId?: string,
+  onStatus?: (status: { provider?: string; message?: string; jobId?: string }) => void,
 ): Promise<{ provider: string }> {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
@@ -60,6 +61,12 @@ export async function streamImage(
         streamError =
           (payload as { error?: { message?: string } })?.error?.message ??
           "Image generation failed";
+        return;
+      }
+      if (payload?.type === "provider_status") {
+        const status = payload as { provider?: string; message?: string; jobId?: string };
+        if (status.provider) provider = status.provider;
+        onStatus?.(status);
         return;
       }
       if (
