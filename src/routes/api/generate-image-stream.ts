@@ -150,7 +150,11 @@ export const Route = createFileRoute("/api/generate-image-stream")({
               let closed = false;
               const write = (event: string, payload: Record<string, unknown>) => {
                 if (closed) return;
-                controller.enqueue(encoder.encode(sseEvent(event, payload)));
+                try {
+                  controller.enqueue(encoder.encode(sseEvent(event, payload)));
+                } catch {
+                  closed = true;
+                }
               };
               const complete = (b64: string, provider: string) => {
                 write("image_generation.completed", {
@@ -428,7 +432,11 @@ export const Route = createFileRoute("/api/generate-image-stream")({
                 })
                 .finally(() => {
                   closed = true;
-                  controller.close();
+                  try {
+                    controller.close();
+                  } catch {
+                    /* client disconnected */
+                  }
                 });
             },
           }),
