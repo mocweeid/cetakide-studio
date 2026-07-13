@@ -645,7 +645,7 @@ function Workspace() {
   }
 
   async function handleRegenerate(i: number) {
-    // handler body starts below
+    return _regen_body_(i);
   }
 
   async function handleTestGenerate() {
