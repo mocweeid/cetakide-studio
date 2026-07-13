@@ -113,16 +113,6 @@ function imageRequestBodies(model: string, prompt: string, size: string) {
   ];
 }
 
-function customImageRequestBodies(model: string, prompt: string, size: string) {
-  const simple = { model, prompt, size, response_format: "b64_json" };
-  const openAiCompatible = imageRequestBodies(model, prompt, size);
-  return [simple, ...openAiCompatible].filter(
-    (body, index, arr) =>
-      index === arr.findIndex((candidate) => JSON.stringify(candidate) === JSON.stringify(body)),
-  );
-}
-
-
 
 async function getUserId(token: string): Promise<string | null> {
   const supabase = makeAuthedClient(token);
