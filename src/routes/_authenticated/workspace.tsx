@@ -883,34 +883,37 @@ function Workspace() {
       }
     >
       {debugOpen && (
-        <div className="mb-4 rounded-2xl border border-white/15 bg-black/40 p-4 backdrop-blur-md">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="mb-4 overflow-hidden rounded-2xl border border-white/15 bg-[#0b0f13] shadow-2xl">
+          {/* Terminal titlebar */}
+          <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent px-3 py-2">
             <div className="flex items-center gap-2">
-              <Bug className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold">Debug Panel</h3>
-              <span className="text-[11px] text-white/50">
-                Log terakhir, status provider, dan tes koneksi
+              <span className="h-3 w-3 rounded-full bg-rose-500/80" />
+              <span className="h-3 w-3 rounded-full bg-amber-400/80" />
+              <span className="h-3 w-3 rounded-full bg-emerald-500/80" />
+              <span className="ml-3 font-mono text-[11px] text-white/60">
+                cetakide@workspace: ~/generate ·{" "}
+                <span className="text-white/40">{debugLogs.length} event</span>
               </span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleCheckOpenai}
                 disabled={checkingOpenai}
-                className="rounded-md border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold hover:bg-white/10 disabled:opacity-50"
+                className="rounded-md border border-white/15 bg-white/5 px-3 py-1 font-mono text-[11px] font-semibold text-white/80 hover:bg-white/10 disabled:opacity-50"
               >
                 {checkingOpenai ? (
                   <span className="flex items-center gap-1.5">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Cek OpenAI…
+                    <Loader2 className="h-3 w-3 animate-spin" /> ping openai…
                   </span>
                 ) : (
-                  "Cek OpenAI"
+                  "$ ping openai"
                 )}
               </button>
               <button
                 onClick={() => setDebugLogs([])}
-                className="rounded-md border border-white/10 px-2 py-1 text-xs text-white/60 hover:text-white"
+                className="rounded-md border border-white/10 px-2 py-1 font-mono text-[11px] text-white/60 hover:text-white"
               >
-                Bersihkan
+                clear
               </button>
               <button
                 onClick={() => setDebugOpen(false)}
@@ -921,58 +924,57 @@ function Workspace() {
               </button>
             </div>
           </div>
-          {openaiStatus && (
-            <div
-              className={`mb-3 rounded-lg border px-3 py-2 text-xs ${
-                openaiStatus.ok
-                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
-                  : "border-rose-400/30 bg-rose-500/10 text-rose-200"
-              }`}
-            >
-              <span className="font-semibold">
-                {openaiStatus.ok ? "OpenAI OK · " : "OpenAI Error · "}
-              </span>
-              <span className="font-mono">{openaiStatus.detail}</span>
-            </div>
-          )}
-          <div className="max-h-56 overflow-y-auto rounded-lg border border-white/10 bg-black/30">
+          {/* Terminal body */}
+          <div className="max-h-72 overflow-y-auto bg-[#0b0f13] px-4 py-3 font-mono text-[12px] leading-relaxed">
+            <p className="text-emerald-400">
+              <span className="text-white/40">$</span> cetakide generate --watch
+            </p>
+            <p className="mb-2 text-white/50">
+              # menunggu event dari pipeline generate (Custom YG → Lovable → OpenAI → Cloudflare)
+            </p>
+            {openaiStatus && (
+              <p className={openaiStatus.ok ? "text-emerald-300" : "text-rose-300"}>
+                <span className="text-white/40">[openai]</span>{" "}
+                {openaiStatus.ok ? "✓ ok" : "✗ error"} — {openaiStatus.detail}
+                {typeof openaiStatus.latency === "number" && (
+                  <span className="text-white/40"> ({openaiStatus.latency}ms)</span>
+                )}
+              </p>
+            )}
             {debugLogs.length === 0 ? (
-              <p className="p-3 text-xs text-white/40">
-                Belum ada log. Log muncul otomatis saat generate/regenerate atau saat cek OpenAI.
+              <p className="mt-2 text-white/30">
+                <span className="animate-pulse">▍</span> idle · belum ada proses berjalan
               </p>
             ) : (
-              <ul className="divide-y divide-white/5">
-                {debugLogs.map((d, idx) => (
-                  <li key={idx} className="flex gap-3 px-3 py-2 text-[11px]">
-                    <span className="w-16 shrink-0 text-white/40">
-                      {new Date(d.ts).toLocaleTimeString()}
-                    </span>
-                    <span
-                      className={`w-14 shrink-0 font-semibold uppercase ${
-                        d.level === "error"
-                          ? "text-rose-300"
-                          : d.level === "success"
-                            ? "text-emerald-300"
-                            : "text-sky-300"
-                      }`}
-                    >
-                      {d.level}
-                    </span>
-                    <span className="flex-1 break-words text-white/80">
-                      {d.message}
+              <ul className="mt-1 space-y-0.5">
+                {[...debugLogs].reverse().map((d, idx) => {
+                  const color =
+                    d.level === "error"
+                      ? "text-rose-300"
+                      : d.level === "success"
+                        ? "text-emerald-300"
+                        : "text-sky-300";
+                  const tag =
+                    d.level === "error" ? "ERR " : d.level === "success" ? "OK  " : "INFO";
+                  const time = new Date(d.ts).toLocaleTimeString("en-GB", { hour12: false });
+                  return (
+                    <li key={idx} className="whitespace-pre-wrap break-words">
+                      <span className="text-white/35">[{time}]</span>{" "}
+                      <span className={color}>{tag}</span>{" "}
                       {d.provider && (
-                        <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-white/70">
-                          {d.provider}
-                        </span>
-                      )}
+                        <span className="text-amber-300">({d.provider})</span>
+                      )}{" "}
+                      <span className="text-white/85">{d.message}</span>
                       {d.jobId && (
-                        <span className="ml-2 font-mono text-[10px] text-white/40">
-                          {d.jobId.slice(0, 8)}
-                        </span>
+                        <span className="text-white/35"> #{d.jobId.slice(0, 8)}</span>
                       )}
-                    </span>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
+                <li className="text-white/40">
+                  <span className="text-emerald-400">$</span>{" "}
+                  <span className="animate-pulse">▍</span>
+                </li>
               </ul>
             )}
           </div>
