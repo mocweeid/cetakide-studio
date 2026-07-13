@@ -30,6 +30,7 @@ import { PRESET_THEMES, getThemeStyles, ThemeSkeletonPreview, getPresetExample }
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { autofillFieldServer } from "@/lib/autofillField.functions";
 import { streamImage } from "@/lib/streamImage";
+import { generateImageSimple } from "@/lib/generateImageSimple";
 import { useServerFn } from "@tanstack/react-start";
 import JSZip from "jszip";
 
