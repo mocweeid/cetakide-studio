@@ -356,6 +356,7 @@ function Workspace() {
   const [enhancing, setEnhancing] = useState(false);
   const [autofillingKey, setAutofillingKey] = useState<string | null>(null);
   const [exportingZip, setExportingZip] = useState(false);
+  const [autofillingAll, setAutofillingAll] = useState(false);
 
   async function runAutofill(field:
     | "prompt"
@@ -395,6 +396,60 @@ function Workspace() {
     } finally {
       setAutofillingKey(null);
     }
+  }
+
+  async function runAutofillAll() {
+    if (autofillingAll) return;
+    if (!form.brand_name && !form.category && !form.prompt) {
+      toast.error("Isi Nama Brand atau Kategori dulu sebagai konteks AI.");
+      return;
+    }
+    setAutofillingAll(true);
+    const fields: Array<"category" | "title" | "subtitle" | "cta" | "features" | "body_content" | "prompt"> = [
+      "category",
+      "title",
+      "subtitle",
+      "cta",
+      "features",
+      "body_content",
+      "prompt",
+    ];
+    let filled = 0;
+    let failed = 0;
+    // Snapshot latest form for context that grows as we fill.
+    let ctxForm = { ...form };
+    for (const field of fields) {
+      setAutofillingKey(field);
+      try {
+        const context = [
+          ctxForm.brand_name && `Brand: ${ctxForm.brand_name}`,
+          ctxForm.category && `Kategori Produk: ${ctxForm.category}`,
+          ctxForm.prompt && `Prompt: ${ctxForm.prompt}`,
+          ctxForm.title && `Judul: ${ctxForm.title}`,
+          ctxForm.subtitle && `Subjudul: ${ctxForm.subtitle}`,
+          ctxForm.cta && `CTA: ${ctxForm.cta}`,
+          ctxForm.features && `Fitur: ${ctxForm.features}`,
+          selectedBrand && `Brand: ${selectedBrand.name}`,
+          selectedBrand?.brand_voice && `Voice: ${selectedBrand.brand_voice}`,
+        ]
+          .filter(Boolean)
+          .join(" | ");
+        const { value } = await autofillField({
+          data: { field, context, currentValue: (ctxForm as Record<string, string>)[field] || undefined },
+        });
+        if (value) {
+          ctxForm = { ...ctxForm, [field]: value };
+          setForm((f) => ({ ...f, [field]: value }));
+          filled++;
+        }
+      } catch {
+        failed++;
+      }
+    }
+    setAutofillingKey(null);
+    setAutofillingAll(false);
+    if (filled > 0) toast.success(`Auto-fill selesai: ${filled} kolom terisi${failed ? ` · ${failed} gagal` : ""} ✨`);
+    else toast.error("Auto-fill gagal untuk semua kolom.");
   }
 
   async function handleExportAll() {
@@ -1126,6 +1181,17 @@ function Workspace() {
 
             {/* ============ 1. Nama Brand & Produk ============ */}
             <SectionHeader index={1} title="Nama Brand & Produk" />
+            <button
+              type="button"
+              onClick={runAutofillAll}
+              disabled={autofillingAll}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/15 hover:bg-primary/25 disabled:opacity-60 disabled:cursor-not-allowed px-3 py-2 text-xs font-semibold text-primary transition"
+            >
+              <Sparkles className={`h-3.5 w-3.5 ${autofillingAll ? "animate-pulse" : ""}`} />
+              {autofillingAll
+                ? `Auto-fill berjalan${autofillingKey ? ` · ${autofillingKey}` : ""}…`
+                : "Auto-fill Semua Deskripsi (1 klik)"}
+            </button>
             <Field label="Nama Brand">
               <input
                 value={form.brand_name}
