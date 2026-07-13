@@ -1,6 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell, useAppUser } from "@/components/app-shell";
 import { toast } from "sonner";
+import brutalismKuliner from "@/assets/preset/brutalism-kuliner.jpg";
+import glassmorphismInterior from "@/assets/preset/glassmorphism-interior.jpg";
+import neumorphismBeauty from "@/assets/preset/neumorphism-beauty.jpg";
+import minimalismFashion from "@/assets/preset/minimalism-fashion.jpg";
+import defaultTech from "@/assets/preset/default-tech.jpg";
 
 export const PRESET_THEMES = [
   "Default",
@@ -13,11 +18,86 @@ export const PRESET_THEMES = [
 export const DEFAULT_IMG = "/assets/preset-default.jpg";
 
 /**
- * Skeleton prototype mini-preview per preset — memberi feel visual
- * masing-masing gaya (Glassmorphism, Neumorphism, Brutalism, Minimalism)
- * tanpa perlu load gambar sungguhan.
+ * Contoh nyata poster per preset — dipakai di ThemeSkeletonPreview,
+ * Mockup Wireframe realtime, dan galeri preset workspace.
+ * Setiap preset dipetakan ke satu kategori niche yang paling cocok
+ * sebagai referensi visual, plus deskripsi singkat.
+ */
+export type PresetExample = {
+  image: string;
+  category: string;
+  description: string;
+};
+
+export const PRESET_EXAMPLES: Record<string, PresetExample> = {
+  default: {
+    image: defaultTech,
+    category: "Tech / SaaS",
+    description: "Dark modern, CTA kuning, dashboard mockup — cocok untuk peluncuran produk digital.",
+  },
+  glassmorphism: {
+    image: glassmorphismInterior,
+    category: "Interior / Properti",
+    description: "Kartu kaca buram di atas gradient, orb pastel — cocok untuk studio interior & real estate.",
+  },
+  neumorphism: {
+    image: neumorphismBeauty,
+    category: "Beauty / Skincare",
+    description: "Soft UI pastel, shadow inset lembut — cocok untuk kosmetik & produk perawatan.",
+  },
+  brutalism: {
+    image: brutalismKuliner,
+    category: "Kuliner / F&B",
+    description: "Border tebal, warna berani, tipografi besar — cocok untuk promo kuliner & event.",
+  },
+  minimalism: {
+    image: minimalismFashion,
+    category: "Fashion / Editorial",
+    description: "Whitespace luas, satu foto editorial, tipografi serif kecil — cocok untuk fashion & lookbook.",
+  },
+};
+
+export function getPresetExample(theme: string | undefined | null): PresetExample | undefined {
+  const t = (theme || "").toLowerCase();
+  if (!t) return undefined;
+  if (t.includes("glass")) return PRESET_EXAMPLES.glassmorphism;
+  if (t.includes("neu") || t.includes("soft")) return PRESET_EXAMPLES.neumorphism;
+  if (t.includes("brutal")) return PRESET_EXAMPLES.brutalism;
+  if (t.includes("minimal")) return PRESET_EXAMPLES.minimalism;
+  if (t.includes("default")) return PRESET_EXAMPLES.default;
+  return undefined;
+}
+
+/**
+ * Mini-preview per preset. Jika preset punya contoh poster nyata
+ * (PRESET_EXAMPLES) — tampilkan poster tersebut sebagai referensi visual
+ * agar user langsung tahu wujud desainnya. Fallback ke skeleton polos
+ * kalau preset belum punya contoh.
  */
 export function ThemeSkeletonPreview({ theme }: { theme: string }) {
+  const example = getPresetExample(theme);
+  if (example) {
+    return (
+      <div className="relative h-40 w-full overflow-hidden rounded-t-xl bg-black/60">
+        <img
+          src={example.image}
+          alt={`Contoh desain preset ${theme}`}
+          width={1024}
+          height={1024}
+          loading="lazy"
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/80 to-transparent px-2.5 py-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-white">
+            Contoh nyata
+          </span>
+          <span className="rounded-full bg-white/15 px-2 py-0.5 text-[9px] font-medium text-white backdrop-blur">
+            {example.category}
+          </span>
+        </div>
+      </div>
+    );
+  }
   const t = theme.toLowerCase();
 
   if (t.includes("default")) {
