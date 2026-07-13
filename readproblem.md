@@ -4,7 +4,7 @@ Tanggal cek: 13 Juli 2026
 
 ## Ringkasan
 
-Generate gambar di Workspace belum bisa dipastikan berjalan karena dari hasil pengecekan saat ini **tidak ada request generate terbaru yang masuk ke endpoint gambar**, dan tabel riwayat `projects` masih kosong. Artinya proses kemungkinan besar berhenti **sebelum job generate tersimpan** atau tombol generate belum mengirim request sampai ke backend.
+Generate gambar di Workspace belum berhasil karena ada **mismatch konfigurasi model custom provider** dan belum ada bukti request generate terbaru yang masuk dari Workspace. Provider custom yang dipakai (`ai.yogathedev.com`) mengikuti dokumentasi YG3/Vani untuk image generation, sedangkan kode sebelumnya masih mengirim default model `gpt-image-1`.
 
 ## Bukti yang ditemukan
 
@@ -31,7 +31,8 @@ Generate gambar di Workspace belum bisa dipastikan berjalan karena dari hasil pe
 5. **Endpoint custom provider**
    - Endpoint `https://ai.yogathedev.com/v1/images/generations` bisa dijangkau.
    - Tanpa API key, endpoint membalas `401` dengan pesan `API key required`.
-   - Ini membuktikan service custom aktif dan memang wajib menerima API key, tetapi valid/tidaknya key yang tersimpan belum bisa dibuktikan karena belum ada request generate yang tercatat masuk dari Workspace.
+   - Dokumentasi provider YG3 menyebut image generation memakai model `vani` pada endpoint `/images/generations` dengan payload `model`, `prompt`, `size`, dan `response_format: "b64_json"`.
+   - Kode sebelumnya default ke `CUSTOM_AI_MODEL ?? "gpt-image-1"`, sehingga jika `CUSTOM_AI_MODEL` tidak diset, provider menerima model yang tidak sesuai.
 
 6. **Status backend**
    - Backend sempat dalam kondisi masih menyiapkan perubahan, lalu kembali normal.
@@ -41,14 +42,34 @@ Generate gambar di Workspace belum bisa dipastikan berjalan karena dari hasil pe
 
 Penyebab paling kuat saat ini:
 
-1. **Generate belum benar-benar mencapai endpoint `/api/generate-image-stream`.**
+1. **Default model custom provider salah.**
+   - Sebelumnya: `gpt-image-1`.
+   - Seharusnya untuk provider ini: `vani`.
+
+2. **Format payload custom provider belum diprioritaskan sesuai dokumentasi Vani.**
+   - Sebelumnya memakai variasi payload OpenAI image lebih dulu.
+   - Sekarang diprioritaskan payload sederhana: `{ model: "vani", prompt, size, response_format: "b64_json" }`.
+
+3. **Generate belum terlihat mencapai endpoint `/api/generate-image-stream` dari sesi user terakhir.**
    - Indikator: tidak ada log endpoint, tidak ada request gateway, dan `projects` masih kosong.
 
-2. **Fallback OpenAI belum siap dari konfigurasi aplikasi.**
+4. **Fallback OpenAI belum siap dari konfigurasi aplikasi.**
    - Indikator: tidak ada `OPENAI_API_KEY` runtime secret dan tidak ada provider `openai` di `ai_providers`.
 
-3. **Custom provider sudah dikonfigurasi lewat `CUSTOM_AI_API_KEY`, tetapi belum ada bukti request sukses/gagal dari Workspace.**
+5. **Custom provider sudah dikonfigurasi lewat `CUSTOM_AI_API_KEY`, tetapi valid/tidaknya key belum bisa dibuktikan dari logs.**
    - Jadi masalahnya belum bisa dipastikan pada key custom, karena request generate belum terlihat sampai ke backend.
+
+## Perbaikan yang sudah diterapkan
+
+File yang diperbaiki: `src/routes/api/generate-image-stream.ts`
+
+- Default `CUSTOM_AI_MODEL` diganti dari `gpt-image-1` menjadi `vani`.
+- Request body custom provider sekarang memprioritaskan format Vani:
+  - `model: "vani"`
+  - `prompt`
+  - `size`
+  - `response_format: "b64_json"`
+- Fallback variasi payload OpenAI-compatible tetap dipertahankan setelah format Vani, agar provider custom yang kompatibel dengan OpenAI masih tetap bisa dicoba.
 
 ## Dampak ke user
 
@@ -57,21 +78,25 @@ Penyebab paling kuat saat ini:
 
 ## Tindakan yang disarankan sebelum production
 
-1. **Pastikan user sedang login saat generate.**
+1. **Coba generate ulang dari Workspace setelah perbaikan ini.**
+   - Jika berhasil, row baru akan muncul di `projects` dengan status `sukses` dan provider `Custom vani`.
+   - Jika gagal, detail error provider harus masuk ke debug panel dan `projects.error_message`.
+
+2. **Pastikan user sedang login saat generate.**
    - Jika session auth kosong, `streamImage` akan berhenti dengan pesan `Belum sign in.` sebelum endpoint dipanggil.
 
-2. **Tambahkan OpenAI provider aktif di Admin AI Keys jika ingin fallback OpenAI berjalan.**
+3. **Tambahkan OpenAI provider aktif di Admin AI Keys jika ingin fallback OpenAI berjalan.**
    - Provider: `openai`
    - Model awal aman: `gpt-image-1` atau `dall-e-3`
    - Status: aktif
 
-3. **Jalankan satu generate dari Workspace setelah backend normal.**
+4. **Jalankan satu generate dari Workspace setelah backend normal.**
    - Setelah tombol ditekan, harus muncul minimal 1 row baru di `projects` dengan `job_id`, `prompt`, `aspect_ratio`, dan `status`.
 
-4. **Jika `projects` tetap kosong, fokus debug di frontend Workspace sebelum pemanggilan endpoint.**
+5. **Jika `projects` tetap kosong, fokus debug di frontend Workspace sebelum pemanggilan endpoint.**
    - Area yang perlu dicek: session login, validasi prompt, pemotongan saldo, dan insert awal ke `projects`.
 
-5. **Jika `projects` terisi tetapi status gagal, fokus debug di endpoint `/api/generate-image-stream`.**
+6. **Jika `projects` terisi tetapi status gagal, fokus debug di endpoint `/api/generate-image-stream`.**
    - Detail error provider akan muncul di `error_message` dan debug panel.
 
 ## Catatan production
