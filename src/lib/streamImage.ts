@@ -1,4 +1,3 @@
-import { createParser } from "eventsource-parser";
 import { flushSync } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,7 +30,9 @@ export async function streamImage(
   const token = sessionData.session?.access_token;
   if (!token) throw new Error("Belum sign in.");
 
-  const res = await fetch("/api/generate-image-stream", {
+  onStatus?.({ provider: "YogaDev", message: "Mengirim permintaan ke YogaDev", jobId });
+
+  const res = await fetch("/api/generate-image-simple", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -39,68 +40,28 @@ export async function streamImage(
     },
     body: JSON.stringify({ prompt, size, jobId }),
   });
-  if (!res.ok || !res.body) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Generate belum berhasil (${res.status}): ${text.slice(0, 200)}`);
-  }
-  const headerProvider = res.headers.get("X-Image-Provider") ?? "";
 
-  let sawCompleted = false;
-  let streamError: string | undefined;
-  let provider = headerProvider;
-
-  const parser = createParser({
-    onEvent(event) {
-      let payload: ImageEventPayload | undefined;
-      try {
-        payload = JSON.parse(event.data) as ImageEventPayload;
-      } catch {
-        /* ignore */
-      }
-      if (event.event === "error" || payload?.type === "error") {
-        streamError =
-          (payload as { error?: { message?: string } })?.error?.message ??
-          "Image generation failed";
-        return;
-      }
-      if (payload?.type === "provider_status") {
-        const status = payload as { provider?: string; message?: string; jobId?: string };
-        if (status.provider) provider = status.provider;
-        onStatus?.(status);
-        return;
-      }
-      if (
-        event.event !== "image_generation.partial_image" &&
-        event.event !== "image_generation.completed"
-      )
-        return;
-      if (!payload) return;
-      const isFinal = event.event === "image_generation.completed";
-      if (isFinal) {
-        const p = (payload as { provider?: string }).provider;
-        if (p) provider = p;
-      }
-      flushSync(() => {
-        onFrame(
-          `data:image/png;base64,${(payload as { b64_json: string }).b64_json}`,
-          isFinal,
-        );
-      });
-      if (isFinal) sawCompleted = true;
-    },
-  });
-
-  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  let json: {
+    success?: boolean;
+    imageUrl?: string;
+    provider?: string;
+    message?: string;
+    details?: unknown;
+  };
   try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      parser.feed(value);
-    }
-  } finally {
-    reader.cancel().catch(() => {});
+    json = (await res.json()) as typeof json;
+  } catch {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Respons YogaDev tidak valid (HTTP ${res.status}) ${text.slice(0, 200)}`);
   }
-  if (streamError) throw new Error(streamError);
-  if (!sawCompleted) throw new Error("Stream berakhir tanpa gambar final.");
-  return { provider: provider || "unknown" };
+
+  if (!res.ok || !json.success || !json.imageUrl) {
+    const details = json.details ? ` · ${JSON.stringify(json.details).slice(0, 300)}` : "";
+    throw new Error(`${json.message || `YogaDev belum berhasil (HTTP ${res.status})`}${details}`);
+  }
+
+  const provider = json.provider || "YogaDev";
+  onStatus?.({ provider, message: "YogaDev mengembalikan gambar", jobId });
+  flushSync(() => onFrame(json.imageUrl!, true));
+  return { provider };
 }

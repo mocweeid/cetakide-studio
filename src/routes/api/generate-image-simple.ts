@@ -41,40 +41,54 @@ function extractImage(payload: unknown): ExtractedImage {
   const p = payload as Record<string, unknown> & {
     data?: Array<Record<string, unknown>>;
     output?: Array<Record<string, unknown>>;
-    image?: Record<string, unknown>;
+    image?: Record<string, unknown> | string;
+    images?: Array<string | Record<string, unknown>>;
     result?: Record<string, unknown>;
   };
 
+  const imageObject = typeof p.image === "object" && p.image !== null ? p.image : undefined;
+  const firstImage = p.images?.[0];
+  const firstImageObject = typeof firstImage === "object" && firstImage !== null ? firstImage : undefined;
+
   const b64Candidates: unknown[] = [
     p.b64_json,
-    p.image?.b64_json,
+    typeof p.image === "string" ? p.image : undefined,
+    imageObject?.b64_json,
     p.data?.[0]?.b64_json,
     (p.data?.[0]?.image as Record<string, unknown> | undefined)?.b64_json,
     p.output?.[0]?.b64_json,
     (p.output?.[0]?.image as Record<string, unknown> | undefined)?.b64_json,
+    typeof firstImage === "string" ? firstImage : undefined,
+    firstImageObject?.b64_json,
     p.result?.b64_json,
   ];
   const urlCandidates: unknown[] = [
     p.url,
     (p as Record<string, unknown>).image_url,
     (p as Record<string, unknown>).imageUrl,
+    typeof p.image === "string" ? p.image : undefined,
+    imageObject?.url,
+    imageObject?.image_url,
     p.data?.[0]?.url,
     p.data?.[0]?.image_url,
     p.data?.[0]?.imageUrl,
     p.output?.[0]?.url,
     p.output?.[0]?.image_url,
+    typeof firstImage === "string" ? firstImage : undefined,
+    firstImageObject?.url,
+    firstImageObject?.image_url,
     p.result?.url,
   ];
 
   const b64 = b64Candidates.find(
-    (v) => typeof v === "string" && (v as string).length > 100,
+    (v) => typeof v === "string" && (v as string).replace(/^data:image\/\w+;base64,/, "").length > 100,
   ) as string | undefined;
   const url = urlCandidates.find(
     (v) => typeof v === "string" && /^https?:\/\//i.test(v as string),
   ) as string | undefined;
 
   if (!b64 && !url) return null;
-  return { b64_json: b64, url, raw: payload };
+  return { b64_json: b64?.replace(/^data:image\/\w+;base64,/, ""), url, raw: payload };
 }
 
 async function parseSseImageResponse(response: Response): Promise<ExtractedImage> {
@@ -204,9 +218,9 @@ export const Route = createFileRoute("/api/generate-image-simple")({
         const authed = await verifySupabaseAuth(request);
         if (authed instanceof Response) return authed;
 
-        let body: { prompt?: unknown };
+        let body: { prompt?: unknown; jobId?: unknown; size?: unknown };
         try {
-          body = (await request.json()) as { prompt?: unknown };
+          body = (await request.json()) as { prompt?: unknown; jobId?: unknown; size?: unknown };
         } catch {
           return jsonResponse({ success: false, message: "Body JSON tidak valid" }, 400);
         }
@@ -230,19 +244,15 @@ export const Route = createFileRoute("/api/generate-image-simple")({
         }
 
         const apiKey = process.env.CUSTOM_AI_API_KEY;
-        const gatewayKey = process.env.LOVABLE_API_KEY;
         const baseUrl = process.env.CUSTOM_AI_BASE_URL || "https://ai.yogathedev.com/v1";
         const model = process.env.CUSTOM_AI_MODEL || "cx/gpt-5.5-image";
-        const providerLabel = apiKey ? `Custom ${model}` : "Gateway openai/gpt-image-1-mini";
-        const targetUrl = apiKey
-          ? `${baseUrl}/images/generations`
-          : "https://ai.gateway.lovable.dev/v1/images/generations";
-        const targetKey = apiKey || gatewayKey;
-        if (!targetKey) {
+        const providerLabel = `YogaDev ${model}`;
+        const targetUrl = `${baseUrl.replace(/\/$/, "")}/images/generations`;
+        if (!apiKey) {
           return jsonResponse(
             {
               success: false,
-              message: "CUSTOM_AI_API_KEY belum terbaca dan fallback gateway belum tersedia",
+              message: "CUSTOM_AI_API_KEY belum terbaca di backend, jadi permintaan belum bisa dikirim ke YogaDev.",
             },
             500,
           );
@@ -256,21 +266,21 @@ export const Route = createFileRoute("/api/generate-image-simple")({
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${targetKey}`,
-                Accept: apiKey ? "text/event-stream" : "application/json",
+                Authorization: `Bearer ${apiKey}`,
+                Accept: "text/event-stream",
               },
               body: JSON.stringify({
-                model: apiKey ? model : "openai/gpt-image-1-mini",
+                model,
                 prompt,
                 n: 1,
-                size: apiKey ? "auto" : "1024x1024",
-                quality: apiKey ? "auto" : "low",
-                ...(apiKey
-                  ? { background: "auto", image_detail: "high", output_format: "png" }
-                  : { response_format: "b64_json" }),
+                size: "auto",
+                quality: "auto",
+                background: "auto",
+                image_detail: "high",
+                output_format: "png",
               }),
             },
-            60_000,
+            180_000,
           );
         } catch (err) {
           return jsonResponse(
@@ -300,7 +310,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           const imageUrl = img.b64_json
             ? `data:image/png;base64,${img.b64_json}`
             : img.url!;
-          return jsonResponse({ success: true, imageUrl, provider: providerLabel });
+          return jsonResponse({ success: true, imageUrl, provider: providerLabel, jobId: body.jobId });
         } catch (err) {
           const e = err as Error & { lastPayload?: string };
           return jsonResponse(

@@ -1726,7 +1726,7 @@ function Workspace() {
               <span className="text-white/40">$</span> cetakide generate --watch
             </p>
             <p className="mb-2 text-white/50">
-              # menunggu event dari pipeline generate (Custom YG → Lovable → OpenAI → Cloudflare)
+              # menunggu event dari pipeline generate sederhana (Workspace → YogaDev → Canvas)
             </p>
             {openaiStatus && (
               <p className={openaiStatus.ok ? "text-emerald-300" : "text-rose-300"}>
