@@ -74,12 +74,12 @@ function AuthPage() {
         });
         if (error) throw error;
         toast.success("Akun berhasil dibuat! Saldo Rp50.000 sudah masuk.");
-        navigate({ to: "/dashboard" });
+        window.location.assign("/dashboard");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Selamat datang kembali!");
-        navigate({ to: "/dashboard" });
+        window.location.assign("/dashboard");
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
