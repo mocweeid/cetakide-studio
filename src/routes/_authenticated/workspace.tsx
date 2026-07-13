@@ -30,6 +30,7 @@ import { PRESET_THEMES, getThemeStyles, ThemeSkeletonPreview, getPresetExample }
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { autofillFieldServer } from "@/lib/autofillField.functions";
 import { streamImage } from "@/lib/streamImage";
+import { generateImageSimple } from "@/lib/generateImageSimple";
 import { useServerFn } from "@tanstack/react-start";
 import JSZip from "jszip";
 
@@ -340,6 +341,8 @@ function Workspace() {
   const [presetModalOpen, setPresetModalOpen] = useState(false);
 
   const [generating, setGenerating] = useState(false);
+  const [simpleTesting, setSimpleTesting] = useState(false);
+  const [simplePreviewUrl, setSimplePreviewUrl] = useState<string | null>(null);
   const [results, setResults] = useState<string[]>([]);
   type Variant =
     | { status: "proses"; prompt?: string; ratio?: string }
@@ -1564,6 +1567,42 @@ function Workspace() {
               )}
               Test Generate (prompt default → Project)
             </button>
+            <button
+              onClick={async () => {
+                const p = (form.prompt || "").trim() || "Poster kopi premium Indonesia, warna coklat elegan";
+                setSimpleTesting(true);
+                setSimplePreviewUrl(null);
+                try {
+                  const res = await generateImageSimple(p);
+                  if (res.success && res.imageUrl) {
+                    setSimplePreviewUrl(res.imageUrl);
+                    toast.success(`Simple OK · ${res.provider ?? ""}`);
+                  } else {
+                    const detail =
+                      res.details && typeof res.details === "object"
+                        ? ` — ${JSON.stringify(res.details).slice(0, 160)}`
+                        : "";
+                    toast.error(`${res.message || "Gagal"}${detail}`);
+                  }
+                } finally {
+                  setSimpleTesting(false);
+                }
+              }}
+              disabled={simpleTesting}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 py-2 text-xs font-medium text-foreground transition hover:bg-white/10 disabled:opacity-60 mt-2"
+            >
+              {simpleTesting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Wand2 className="h-3.5 w-3.5" />
+              )}
+              Test Simple Generate (YG langsung, non-stream)
+            </button>
+            {simplePreviewUrl && (
+              <div className="mt-2 overflow-hidden rounded-lg border border-white/15">
+                <img src={simplePreviewUrl} alt="Simple generate preview" className="w-full" />
+              </div>
+            )}
             <p className="text-center text-[11px] text-muted-foreground">
               {user?.isDeveloper
                 ? "God Mode — gratis"

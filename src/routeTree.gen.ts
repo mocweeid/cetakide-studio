@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiGenerateImageStreamRouteImport } from './routes/api/generate-image-stream'
+import { Route as ApiGenerateImageSimpleRouteImport } from './routes/api/generate-image-simple'
 import { Route as ApiCheckOpenaiRouteImport } from './routes/api/check-openai'
 import { Route as AuthenticatedWorkspaceRouteImport } from './routes/_authenticated/workspace'
 import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
@@ -75,6 +76,11 @@ const IndexRoute = IndexRouteImport.update({
 const ApiGenerateImageStreamRoute = ApiGenerateImageStreamRouteImport.update({
   id: '/api/generate-image-stream',
   path: '/api/generate-image-stream',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGenerateImageSimpleRoute = ApiGenerateImageSimpleRouteImport.update({
+  id: '/api/generate-image-simple',
+  path: '/api/generate-image-simple',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCheckOpenaiRoute = ApiCheckOpenaiRouteImport.update({
@@ -361,6 +367,7 @@ export interface FileRoutesByFullPath {
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
   '/api/check-openai': typeof ApiCheckOpenaiRoute
+  '/api/generate-image-simple': typeof ApiGenerateImageSimpleRoute
   '/api/generate-image-stream': typeof ApiGenerateImageStreamRoute
 }
 export interface FileRoutesByTo {
@@ -410,6 +417,7 @@ export interface FileRoutesByTo {
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
   '/api/check-openai': typeof ApiCheckOpenaiRoute
+  '/api/generate-image-simple': typeof ApiGenerateImageSimpleRoute
   '/api/generate-image-stream': typeof ApiGenerateImageStreamRoute
 }
 export interface FileRoutesById {
@@ -461,6 +469,7 @@ export interface FileRoutesById {
   '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
   '/_authenticated/workspace': typeof AuthenticatedWorkspaceRoute
   '/api/check-openai': typeof ApiCheckOpenaiRoute
+  '/api/generate-image-simple': typeof ApiGenerateImageSimpleRoute
   '/api/generate-image-stream': typeof ApiGenerateImageStreamRoute
 }
 export interface FileRouteTypes {
@@ -512,6 +521,7 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/workspace'
     | '/api/check-openai'
+    | '/api/generate-image-simple'
     | '/api/generate-image-stream'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -561,6 +571,7 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/workspace'
     | '/api/check-openai'
+    | '/api/generate-image-simple'
     | '/api/generate-image-stream'
   id:
     | '__root__'
@@ -611,6 +622,7 @@ export interface FileRouteTypes {
     | '/_authenticated/webhooks'
     | '/_authenticated/workspace'
     | '/api/check-openai'
+    | '/api/generate-image-simple'
     | '/api/generate-image-stream'
   fileRoutesById: FileRoutesById
 }
@@ -619,6 +631,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiCheckOpenaiRoute: typeof ApiCheckOpenaiRoute
+  ApiGenerateImageSimpleRoute: typeof ApiGenerateImageSimpleRoute
   ApiGenerateImageStreamRoute: typeof ApiGenerateImageStreamRoute
 }
 
@@ -650,6 +663,13 @@ declare module '@tanstack/react-router' {
       path: '/api/generate-image-stream'
       fullPath: '/api/generate-image-stream'
       preLoaderRoute: typeof ApiGenerateImageStreamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/generate-image-simple': {
+      id: '/api/generate-image-simple'
+      path: '/api/generate-image-simple'
+      fullPath: '/api/generate-image-simple'
+      preLoaderRoute: typeof ApiGenerateImageSimpleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/check-openai': {
@@ -1063,6 +1083,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiCheckOpenaiRoute: ApiCheckOpenaiRoute,
+  ApiGenerateImageSimpleRoute: ApiGenerateImageSimpleRoute,
   ApiGenerateImageStreamRoute: ApiGenerateImageStreamRoute,
 }
 export const routeTree = rootRouteImport
