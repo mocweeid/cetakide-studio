@@ -645,6 +645,9 @@ function Workspace() {
   }
 
   async function handleRegenerate(i: number) {
+    void 0;
+  }
+  // placeholder removed below
     const v = variants[i];
     const prompt = v.prompt;
     const jobRatio = v.ratio;
