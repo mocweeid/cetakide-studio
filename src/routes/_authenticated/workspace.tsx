@@ -26,7 +26,7 @@ import {
   Bug,
   ChevronUp,
 } from "lucide-react";
-import { PRESET_THEMES, getThemeStyles, ThemeSkeletonPreview } from "./preset-theme";
+import { PRESET_THEMES, getThemeStyles, ThemeSkeletonPreview, getPresetExample } from "./preset-theme";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { autofillFieldServer } from "@/lib/autofillField.functions";
 import { streamImage } from "@/lib/streamImage";
@@ -2140,6 +2140,7 @@ function MockupWireframe({
   const isBrutal = t.includes("brutal");
   const isGlass = t.includes("glass");
   const isNeu = t.includes("neu") || t.includes("soft");
+  const example = getPresetExample(preset);
 
   const surface = isBrutal
     ? "bg-yellow-400 border-4 border-black text-black"
@@ -2275,16 +2276,35 @@ function MockupWireframe({
   return (
     <div>
       <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-        Mockup Wireframe · {ratioW}:{ratioH} · realtime
+        Mockup Realtime · {ratioW}:{ratioH}
+        {example ? ` · gaya ${preset}` : ""}
       </p>
       <div
-        className={`w-full overflow-hidden rounded-lg shadow-inner transition-all ${surface}`}
+        className={`relative w-full overflow-hidden rounded-lg shadow-inner transition-all ${surface}`}
         style={{ aspectRatio: `${ratioW} / ${ratioH}` }}
       >
-        {content}
+        {example && (
+          <>
+            <img
+              src={example.image}
+              alt={`Contoh nyata preset ${preset}`}
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-black/25" />
+          </>
+        )}
+        <div className="relative h-full w-full">{content}</div>
+        {example && (
+          <div className="absolute left-1.5 top-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-white backdrop-blur">
+            Referensi · {example.category}
+          </div>
+        )}
       </div>
       <p className="mt-1 text-[10px] text-white/40">
-        Preview otomatis mengikuti Rasio, Preset, Posisi & Jumlah Gambar.
+        {example
+          ? `Referensi nyata gaya ${preset} untuk niche ${example.category}. Wireframe menyesuaikan rasio, posisi & jumlah gambar.`
+          : "Preview otomatis mengikuti Rasio, Preset, Posisi & Jumlah Gambar."}
       </p>
     </div>
   );

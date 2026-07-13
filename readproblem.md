@@ -1,110 +1,109 @@
-# Laporan Masalah Generate Gambar Workspace
+# Laporan Generate Gambar Workspace — Diagnosis & Verifikasi
 
-Tanggal cek: 13 Juli 2026
+Tanggal update: 13 Juli 2026 (revisi)
 
-## Ringkasan
+## Ringkasan status
 
-Generate gambar di Workspace belum berhasil karena ada **mismatch konfigurasi model custom provider** dan belum ada bukti request generate terbaru yang masuk dari Workspace. Provider custom yang dipakai (`ai.yogathedev.com`) mengikuti dokumentasi YG3/Vani untuk image generation, sedangkan kode sebelumnya masih mengirim default model `gpt-image-1`.
+- Generate gambar sekarang **bisa jalan end-to-end** lewat Lovable AI Gateway
+  (`openai/gpt-image-1-mini`). Sudah diuji langsung ke endpoint dan mengembalikan
+  file PNG ~1.6 MB (b64_json valid, status 200).
+- Provider `CUSTOM_AI_API_KEY` (endpoint 9Router/`ai.yogathedev.com`) **belum
+  bisa dipakai untuk gambar** — endpoint membalas `400 No credentials for
+  provider: openai` untuk semua model image (`openai/dall-e-3`,
+  `openai/gpt-image-1`, `openai/dall-e-2`). Artinya key ada, tapi akun 9Router
+  belum punya kredensial upstream OpenAI. Untuk sementara provider ini
+  di-*fast-fail* di kode dan Gateway dijadikan urutan pertama.
 
-## Bukti yang ditemukan
+## Perubahan yang sudah diterapkan
 
-1. **Secret runtime yang tersedia**
-   - `CUSTOM_AI_API_KEY` tersedia.
-   - `GEMINI_API_KEY` tersedia.
-   - `LOVABLE_API_KEY` tersedia.
-   - `OPENAI_API_KEY` tidak tersedia sebagai runtime secret.
+File: `src/routes/api/generate-image-stream.ts`
 
-2. **Data provider AI di dashboard aplikasi**
-   - Tabel `ai_providers` hanya berisi provider `gemini` dengan model `gemini-2.0-flash`.
-   - Belum ada provider `openai` aktif yang tersimpan di tabel tersebut.
-   - Dampaknya: fallback OpenAI dari database tidak akan jalan karena key OpenAI belum ditemukan oleh backend.
+1. **Urutan provider dibalik**: Lovable AI Gateway dicoba **paling pertama**
+   (paling stabil, tidak butuh setup user).
+2. Custom provider dipindah ke posisi kedua & di-*fast-fail* (1 request saja).
+3. Default `CUSTOM_AI_MODEL` diganti dari `vani` (tidak valid — bukan model
+   image di 9Router) ke `openai/dall-e-3` (bentuk model yang benar).
+4. Fallback berikutnya: OpenAI key user (dari `ai_providers`) → env
+   `OPENAI_API_KEY` → Cloudflare Workers AI.
+5. Semua kegagalan tetap dikumpulkan di array `attempts` dan dikirim ke
+   client sebagai detail error di debug panel.
 
-3. **Riwayat project/generate**
-   - Tabel `projects` ada, tetapi jumlah data saat dicek: `0`.
-   - Karena kode Workspace menyimpan row `projects` sebelum memanggil image API, kondisi ini berarti proses generate belum sampai tahap pencatatan job.
+## Bukti verifikasi (dijalankan dari sandbox)
 
-4. **Log backend**
-   - Tidak ada log terbaru untuk `/api/generate-image-stream` dalam 1 jam terakhir.
-   - Tidak ada log error custom provider/gateway dalam 1 jam terakhir.
-   - Tidak ada request Lovable AI Gateway untuk image generation dalam 24 jam terakhir.
+### 1. Cek Lovable Gateway (WORKING)
 
-5. **Endpoint custom provider**
-   - Endpoint `https://ai.yogathedev.com/v1/images/generations` bisa dijangkau.
-   - Tanpa API key, endpoint membalas `401` dengan pesan `API key required`.
-   - Dokumentasi provider YG3 menyebut image generation memakai model `vani` pada endpoint `/images/generations` dengan payload `model`, `prompt`, `size`, dan `response_format: "b64_json"`.
-   - Kode sebelumnya default ke `CUSTOM_AI_MODEL ?? "gpt-image-1"`, sehingga jika `CUSTOM_AI_MODEL` tidak diset, provider menerima model yang tidak sesuai.
+```
+curl -X POST https://ai.gateway.lovable.dev/v1/images/generations \
+  -H "Authorization: Bearer $LOVABLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai/gpt-image-1-mini","prompt":"red apple on white background","quality":"low","size":"1024x1024"}'
+```
 
-6. **Status backend**
-   - Backend sempat dalam kondisi masih menyiapkan perubahan, lalu kembali normal.
-   - Saat dicek ulang, backend sudah merespons normal dan tabel `projects` serta fungsi saldo tersedia.
+Hasil: `HTTP 200`, response 1.641.106 byte, `data[0].b64_json` berisi PNG valid.
 
-## Kesimpulan sementara
+### 2. Cek Custom provider `vani` (FAIL — bukan model image)
 
-Penyebab paling kuat saat ini:
+```
+curl -X POST https://ai.yogathedev.com/v1/images/generations \
+  -H "Authorization: Bearer $CUSTOM_AI_API_KEY" \
+  -d '{"model":"vani","prompt":"red apple","size":"1024x1024"}'
+```
 
-1. **Default model custom provider salah.**
-   - Sebelumnya: `gpt-image-1`.
-   - Seharusnya untuk provider ini: `vani`.
+Hasil: `HTTP 400 {"error":{"message":"No credentials for provider: openai"}}`
 
-2. **Format payload custom provider belum diprioritaskan sesuai dokumentasi Vani.**
-   - Sebelumnya memakai variasi payload OpenAI image lebih dulu.
-   - Sekarang diprioritaskan payload sederhana: `{ model: "vani", prompt, size, response_format: "b64_json" }`.
+`GET /v1/models` di provider tersebut hanya mengembalikan model chat
+(gpt-5.5, claude-opus-4.7, dll) — tidak ada model image. `openapi.json`
+mendokumentasikan `POST /images/generations` dengan contoh
+`model: "openai/dall-e-3"`, tetapi upstream OpenAI belum dikonfigurasi di
+akun 9Router → 400.
 
-3. **Generate belum terlihat mencapai endpoint `/api/generate-image-stream` dari sesi user terakhir.**
-   - Indikator: tidak ada log endpoint, tidak ada request gateway, dan `projects` masih kosong.
+### 3. Cek dari Workspace (langkah manual user)
 
-4. **Fallback OpenAI belum siap dari konfigurasi aplikasi.**
-   - Indikator: tidak ada `OPENAI_API_KEY` runtime secret dan tidak ada provider `openai` di `ai_providers`.
+1. Login ke Workspace.
+2. Isi minimal: **Nama Brand**, **Kategori Produk**, dan **Deskripsi Singkat**.
+3. Pilih **Preset Theme** (mis. Brutalism) — mockup realtime akan menampilkan
+   contoh nyata poster preset tersebut.
+4. Tekan **Cetak Ide**.
+5. Buka panel **Debug** di header Workspace. Log yang benar (path bahagia):
+   - `job_id` tercetak
+   - Event `image_generation.completed`
+   - `provider: "Gateway openai/gpt-image-1-mini"`
+6. Buka menu **Project** — row baru harus muncul dengan
+   `status = sukses`, `provider = Gateway openai/gpt-image-1-mini`,
+   dan preview gambar.
 
-5. **Custom provider sudah dikonfigurasi lewat `CUSTOM_AI_API_KEY`, tetapi valid/tidaknya key belum bisa dibuktikan dari logs.**
-   - Jadi masalahnya belum bisa dipastikan pada key custom, karena request generate belum terlihat sampai ke backend.
+### 4. Cek log & database (langkah verifikasi teknis)
 
-## Perbaikan yang sudah diterapkan
+- Table `projects`: harus ada row baru per klik generate. Kalau kosong,
+  masalah ada di frontend (auth / validasi) sebelum request keluar.
+- Table `ai_providers`: opsional, hanya perlu ada row `openai` aktif kalau
+  ingin fallback pakai key OpenAI user.
+- Log endpoint `/api/generate-image-stream`: cari `[generate-image-stream]`.
+  Kalau tidak ada log dalam beberapa menit setelah user klik generate,
+  request tidak sampai — cek session token di header `Authorization`.
 
-File yang diperbaiki: `src/routes/api/generate-image-stream.ts`
+## Kesimpulan
 
-- Default `CUSTOM_AI_MODEL` diganti dari `gpt-image-1` menjadi `vani`.
-- Request body custom provider sekarang memprioritaskan format Vani:
-  - `model: "vani"`
-  - `prompt`
-  - `size`
-  - `response_format: "b64_json"`
-- Fallback variasi payload OpenAI-compatible tetap dipertahankan setelah format Vani, agar provider custom yang kompatibel dengan OpenAI masih tetap bisa dicoba.
+- **Path produksi**: pakai Lovable AI Gateway sebagai default.
+  `LOVABLE_API_KEY` sudah tersedia sebagai runtime secret dan sudah teruji.
+- Custom provider hanya akan mulai berguna kalau akun 9Router-nya
+  ditambahkan kredensial upstream OpenAI. Sementara itu, dia akan gagal
+  dengan cepat lalu Gateway tetap menyelamatkan generate.
+- Fallback OpenAI native tetap ada bila user menambahkan key mereka
+  sendiri di halaman **Admin AI Keys**.
 
-## Dampak ke user
+## Checklist siap production
 
-- User melihat status “belum berhasil”, tetapi detail penyebab belum muncul dari provider karena request generate tidak tercatat masuk ke endpoint gambar.
-- Riwayat project tidak muncul karena job belum sempat tersimpan ke tabel `projects`.
-
-## Tindakan yang disarankan sebelum production
-
-1. **Coba generate ulang dari Workspace setelah perbaikan ini.**
-   - Jika berhasil, row baru akan muncul di `projects` dengan status `sukses` dan provider `Custom vani`.
-   - Jika gagal, detail error provider harus masuk ke debug panel dan `projects.error_message`.
-
-2. **Pastikan user sedang login saat generate.**
-   - Jika session auth kosong, `streamImage` akan berhenti dengan pesan `Belum sign in.` sebelum endpoint dipanggil.
-
-3. **Tambahkan OpenAI provider aktif di Admin AI Keys jika ingin fallback OpenAI berjalan.**
-   - Provider: `openai`
-   - Model awal aman: `gpt-image-1` atau `dall-e-3`
-   - Status: aktif
-
-4. **Jalankan satu generate dari Workspace setelah backend normal.**
-   - Setelah tombol ditekan, harus muncul minimal 1 row baru di `projects` dengan `job_id`, `prompt`, `aspect_ratio`, dan `status`.
-
-5. **Jika `projects` tetap kosong, fokus debug di frontend Workspace sebelum pemanggilan endpoint.**
-   - Area yang perlu dicek: session login, validasi prompt, pemotongan saldo, dan insert awal ke `projects`.
-
-6. **Jika `projects` terisi tetapi status gagal, fokus debug di endpoint `/api/generate-image-stream`.**
-   - Detail error provider akan muncul di `error_message` dan debug panel.
-
-## Catatan production
-
-Sebelum aplikasi diproduction-kan, minimal perlu dipastikan:
-
-- Satu generate gambar berhasil end-to-end dari Workspace.
-- Riwayat generate tersimpan di `projects`.
-- Fallback provider aktif dan teruji.
-- Debug panel menampilkan error provider dengan jelas.
-- Saldo user tidak terpotong jika generate gagal sebelum request image benar-benar dikirim.
+- [x] Endpoint image generation membalas gambar valid dari Gateway (bukti #1).
+- [x] Kode mem-prioritaskan provider yang teruji lebih dulu.
+- [x] Kegagalan provider tidak menghentikan pipeline — jatuh ke fallback berikut.
+- [x] Preset Theme punya contoh nyata per gaya (Brutalism/Kuliner,
+      Glassmorphism/Interior, Neumorphism/Beauty, Minimalism/Fashion,
+      Default/Tech) dan tampil di mockup realtime.
+- [ ] Satu generate end-to-end dari Workspace user tercatat di tabel
+      `projects` (butuh user login & klik generate — belum bisa saya
+      lakukan otomatis).
+- [ ] Audit saldo: pastikan saldo user tidak terpotong jika semua provider
+      gagal.
+- [ ] Tambah row provider `openai` aktif di Admin AI Keys jika ingin
+      fallback OpenAI langsung dari user.
