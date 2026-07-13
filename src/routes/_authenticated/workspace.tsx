@@ -645,6 +645,90 @@ function Workspace() {
   }
 
   async function handleRegenerate(i: number) {
+    return _regen_body_(i);
+  }
+
+  async function handleTestGenerate() {
+    if (!user) {
+      toast.error("Belum sign in.");
+      return;
+    }
+    const testPrompt =
+      "Poster promosi kopi susu artisan dengan tipografi bold modern, palet coklat-krem hangat, latar tekstur kertas, layout minimalis rapi, teks 'TES GENERATE' terlihat jelas, 1:1 square, kualitas tinggi.";
+    const jobRatio = "1:1";
+    const size = ratioToSize(jobRatio);
+    const jobId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `test_${Date.now()}`;
+    setGenerating(true);
+    setVariants([{ status: "proses", prompt: testPrompt, ratio: jobRatio }]);
+    try {
+      const { data: ok } = await supabase.rpc("potong_saldo_generate");
+      if (!ok) {
+        toast.error("Saldo tidak cukup untuk tes generate.");
+        return;
+      }
+      const { data: inserted, error: insertErr } = await supabase
+        .from("projects")
+        .insert({
+          user_id: user.userId,
+          kebutuhan: "Test Generate",
+          prompt: testPrompt,
+          title: "Test Generate",
+          aspect_ratio: jobRatio,
+          platform,
+          status: "proses",
+          job_id: jobId,
+        })
+        .select("id")
+        .single();
+      if (insertErr) throw insertErr;
+      const projectId = inserted!.id;
+      await refresh();
+      toast.info("Menjalankan test generate…");
+      let finalUrl = "";
+      const { provider } = await streamImage(
+        testPrompt,
+        size,
+        (dataUrl, isFinal) => {
+          setVariants([
+            {
+              status: isFinal ? "sukses" : "streaming",
+              imageUrl: dataUrl,
+              prompt: testPrompt,
+              ratio: jobRatio,
+            },
+          ]);
+          if (isFinal) finalUrl = dataUrl;
+        },
+        jobId,
+        (status) =>
+          pushDebug({
+            level: "info",
+            message: status.message || "Provider memproses tes",
+            provider: status.provider,
+            jobId: status.jobId || jobId,
+          }),
+      );
+      if (!finalUrl) throw new Error("Tidak ada gambar final.");
+      await supabase
+        .from("projects")
+        .update({ image_url: finalUrl, status: "sukses", provider })
+        .eq("id", projectId);
+      await refresh();
+      pushDebug({ level: "success", message: "Test generate sukses", provider, jobId });
+      toast.success(`Test sukses via ${provider}! Cek tab Project.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Test generate gagal";
+      pushDebug({ level: "error", message: msg, jobId });
+      toast.error("Test generate gagal", { description: msg });
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function _regen_body_(i: number) {
     const v = variants[i];
     const prompt = v.prompt;
     const jobRatio = v.ratio;
@@ -1563,6 +1647,18 @@ function Workspace() {
                 <Wand2 className="h-4 w-4" />
               )}
               Cetak Ide Sekarang
+            </button>
+            <button
+              onClick={handleTestGenerate}
+              disabled={generating}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 py-2 text-xs font-medium text-primary transition hover:bg-primary/20 disabled:opacity-60 mt-2"
+            >
+              {generating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Wand2 className="h-3.5 w-3.5" />
+              )}
+              Test Generate (prompt default → Project)
             </button>
             <p className="text-center text-[11px] text-muted-foreground">
               {user?.isDeveloper
