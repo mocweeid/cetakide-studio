@@ -568,16 +568,28 @@ function Workspace() {
         // 2) Jalankan generate; update ke sukses / gagal sesuai hasil
         try {
           let finalUrl = "";
-          const { provider } = await streamImage(finalBasePrompt, size, (dataUrl, isFinal) => {
-            setVariants((prev) => {
-              const next = [...prev];
-              next[i] = isFinal
-                ? { status: "sukses", imageUrl: dataUrl, prompt: finalBasePrompt, ratio: jobRatio }
-                : { status: "streaming", imageUrl: dataUrl, prompt: finalBasePrompt, ratio: jobRatio };
-              return next;
-            });
-            if (isFinal) finalUrl = dataUrl;
-          });
+          const { provider } = await streamImage(
+            finalBasePrompt,
+            size,
+            (dataUrl, isFinal) => {
+              setVariants((prev) => {
+                const next = [...prev];
+                next[i] = isFinal
+                  ? { status: "sukses", imageUrl: dataUrl, prompt: finalBasePrompt, ratio: jobRatio }
+                  : { status: "streaming", imageUrl: dataUrl, prompt: finalBasePrompt, ratio: jobRatio };
+                return next;
+              });
+              if (isFinal) finalUrl = dataUrl;
+            },
+            jobId,
+            (status) =>
+              pushDebug({
+                level: "info",
+                message: status.message || "Provider memproses gambar",
+                provider: status.provider,
+                jobId: status.jobId || jobId,
+              }),
+          );
           if (!finalUrl) throw new Error("Tidak ada gambar final.");
           usedKeys.add(provider);
           newResults.push(finalUrl);
@@ -680,19 +692,31 @@ function Workspace() {
           .single();
         projectId = inserted?.id ?? null;
       }
-      const { provider } = await streamImage(prompt, size, (dataUrl, isFinal) => {
-        setVariants((prev) => {
-          const next = [...prev];
-          next[i] = isFinal
-            ? { status: "sukses", imageUrl: dataUrl, prompt, ratio: jobRatio }
-            : { status: "streaming", imageUrl: dataUrl, prompt, ratio: jobRatio };
-          return next;
-        });
-      });
+      let finalUrl = "";
+      const { provider } = await streamImage(
+        prompt,
+        size,
+        (dataUrl, isFinal) => {
+          setVariants((prev) => {
+            const next = [...prev];
+            next[i] = isFinal
+              ? { status: "sukses", imageUrl: dataUrl, prompt, ratio: jobRatio }
+              : { status: "streaming", imageUrl: dataUrl, prompt, ratio: jobRatio };
+            return next;
+          });
+          if (isFinal) finalUrl = dataUrl;
+        },
+        jobId,
+        (status) =>
+          pushDebug({
+            level: "info",
+            message: status.message || "Provider memproses gambar",
+            provider: status.provider,
+            jobId: status.jobId || jobId,
+          }),
+      );
+      if (!finalUrl) throw new Error("Tidak ada gambar final.");
       if (projectId) {
-        const finalV = variants[i];
-        const finalUrl =
-          finalV?.status === "sukses" ? finalV.imageUrl ?? null : null;
         await supabase
           .from("projects")
           .update({ status: "sukses", provider, image_url: finalUrl })

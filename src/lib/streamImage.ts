@@ -8,19 +8,24 @@ type ImageEventPayload =
       b64_json: string;
       partial_image_index: number;
       created_at: number;
+      jobId?: string;
     }
   | {
       type: "image_generation.completed";
       b64_json: string;
       provider?: string;
       created_at: number;
+      jobId?: string;
     }
-  | { type: "error"; error: { message: string; type?: string; code?: string } };
+  | { type: "error"; jobId?: string; error: { message: string; type?: string; code?: string } }
+  | { type: "provider_status"; provider?: string; message?: string; jobId?: string };
 
 export async function streamImage(
   prompt: string,
   size: string,
   onFrame: (dataUrl: string, isFinal: boolean) => void,
+  jobId?: string,
+  onStatus?: (status: { provider?: string; message?: string; jobId?: string }) => void,
 ): Promise<{ provider: string }> {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
@@ -32,7 +37,7 @@ export async function streamImage(
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ prompt, size }),
+    body: JSON.stringify({ prompt, size, jobId }),
   });
   if (!res.ok || !res.body) {
     const text = await res.text().catch(() => "");
@@ -56,6 +61,12 @@ export async function streamImage(
         streamError =
           (payload as { error?: { message?: string } })?.error?.message ??
           "Image generation failed";
+        return;
+      }
+      if (payload?.type === "provider_status") {
+        const status = payload as { provider?: string; message?: string; jobId?: string };
+        if (status.provider) provider = status.provider;
+        onStatus?.(status);
         return;
       }
       if (

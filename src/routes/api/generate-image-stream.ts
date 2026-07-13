@@ -142,268 +142,305 @@ export const Route = createFileRoute("/api/generate-image-stream")({
           "Cache-Control": "no-cache, no-transform",
           "X-Accel-Buffering": "no",
         };
-        const sseComplete = (b64: string, provider: string) =>
-          new Response(
-            `event: image_generation.completed\ndata: ${JSON.stringify({
-              type: "image_generation.completed",
-              b64_json: b64,
-              provider,
-              jobId,
-              created_at: Date.now(),
-            })}\n\n`,
-            { headers: sseHeaders },
-          );
-        const sseError = (message: string) =>
-          new Response(
-            `event: error\ndata: ${JSON.stringify({ type: "error", jobId, error: { message } })}\n\n`,
-            { headers: sseHeaders },
-          );
-        const attempts: string[] = [];
+        const encoder = new TextEncoder();
 
-        // 0) Custom AI provider (ai.yogathedev.com) — prioritas #1 supaya
-        //    hemat kredit Lovable. Model image yang didukung: `cx/gpt-5.5-image`
-        //    (dikonfirmasi developer YG3, lihat WhatsApp 13 Juli 2026).
-        //    Payload spesifik: size/quality/background=auto, output_format=png.
-        const customKey = process.env.CUSTOM_AI_API_KEY;
-        const customBaseUrl = (process.env.CUSTOM_AI_BASE_URL ?? "https://ai.yogathedev.com/v1").replace(/\/$/, "");
-        const customModel = process.env.CUSTOM_AI_MODEL ?? "cx/gpt-5.5-image";
-        if (customKey) {
-          const maxAttempts = 3;
-          const requestBody = {
-            model: customModel,
-            prompt,
-            n: 1,
-            size: "auto",
-            quality: "auto",
-            background: "auto",
-            image_detail: "high",
-            output_format: "png",
-          };
-          for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-            let terminal = false;
-            try {
-              const res = await fetch(`${customBaseUrl}/images/generations`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${customKey}`,
-                  Accept: "application/json",
-                },
-                body: JSON.stringify(requestBody),
-              });
-              const text = await res.text();
-              if (res.ok) {
-                const b64 = await imageResponseToB64(text).catch(() => undefined);
-                if (b64) return sseComplete(b64, `Custom ${customModel}`);
-                attempts.push(`Custom ${customModel} [try ${attempt}]: response tanpa gambar`);
-              } else {
-                const errMsg = parseProviderError(text);
-                attempts.push(`Custom ${customModel} [try ${attempt}] → ${res.status}: ${errMsg}`);
-                console.error("[generate-image-stream] Custom provider failed", res.status, errMsg);
-                // 4xx (kecuali 408/429) = terminal, langsung fallback tanpa retry
-                if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
-                  terminal = true;
+        return new Response(
+          new ReadableStream({
+            start(controller) {
+              let closed = false;
+              const write = (event: string, payload: Record<string, unknown>) => {
+                if (closed) return;
+                try {
+                  controller.enqueue(encoder.encode(sseEvent(event, payload)));
+                } catch {
+                  closed = true;
                 }
-              }
-            } catch (e) {
-              const msg = e instanceof Error ? e.message : String(e);
-              attempts.push(`Custom ${customModel} [try ${attempt}] exception: ${msg}`);
-              console.error("[generate-image-stream] Custom provider exception", e);
-            }
-            if (terminal) break;
-            if (attempt < maxAttempts) {
-              await new Promise((r) => setTimeout(r, 400 * attempt));
-            }
-          }
-          // Semua retry Custom gagal — lanjut ke Lovable Gateway di bawah.
-        }
+              };
+              const complete = (b64: string, provider: string) => {
+                write("image_generation.completed", {
+                  type: "image_generation.completed",
+                  b64_json: b64,
+                  provider,
+                  jobId,
+                  created_at: Date.now(),
+                });
+              };
+              const fail = (message: string) => {
+                write("error", { type: "error", jobId, error: { message } });
+              };
 
-        // 1) Managed Lovable AI Gateway — fallback andal jika custom gagal.
-        const gatewayKey = process.env.LOVABLE_API_KEY;
-        if (gatewayKey) {
-          const gatewayModel = process.env.LOVABLE_IMAGE_MODEL ?? "openai/gpt-image-1-mini";
-          for (const requestBody of imageRequestBodies(gatewayModel, prompt, size)) {
-            try {
-              const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${gatewayKey}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(requestBody),
-              });
-              const text = await res.text();
-              if (res.ok) {
-                const b64 = await imageResponseToB64(text).catch(() => undefined);
-                if (b64) return sseComplete(b64, `Gateway ${gatewayModel}`);
-                attempts.push(`Gateway ${gatewayModel}: response tanpa gambar`);
-              } else {
-                const errMsg = parseProviderError(text);
-                attempts.push(`Gateway ${gatewayModel} → ${res.status}: ${errMsg}`);
-                console.error("[generate-image-stream] Gateway failed", res.status, errMsg);
-                if (res.status === 401 || res.status === 403) break;
-              }
-            } catch (e) {
-              const msg = e instanceof Error ? e.message : String(e);
-              attempts.push(`Gateway ${gatewayModel} exception: ${msg}`);
-              console.error("[generate-image-stream] Gateway exception", e);
-            }
-          }
-        }
+              const run = async () => {
+                const attempts: string[] = [];
 
-        // Load user's OpenAI keys (highest priority)
-        const supabaseClient = makeAuthedClient(token);
-        const nowIso = new Date().toISOString();
-        const { data: keys, error: keyError } = await supabaseClient
-          .from("ai_providers")
-          .select("*")
-          .eq("user_id", userId)
-          .eq("is_active", true)
-          .in("provider", ["openai", "OpenAI", "OPENAI"])
-          .or(`disabled_until.is.null,disabled_until.lt.${nowIso}`)
-          .order("priority", { ascending: true })
-          .limit(1);
-        if (keyError) {
-          attempts.push(`Database provider key → ${keyError.message}`);
-          console.error("[generate-image-stream] provider key query failed", keyError.message);
-        }
-        const userKey = keys?.[0];
-
-        // Jika tidak ada key di DB, coba dari env variable sebagai fallback
-        const envApiKey = process.env.OPENAI_API_KEY;
-        const openaiBaseUrl = (process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, "");
-        const openaiEnvModel = process.env.OPENAI_MODEL ?? "dall-e-3";
-        // Apakah provider ini custom (non-OpenAI asli)?
-        const isCustomProvider = openaiBaseUrl !== "https://api.openai.com/v1";
-
-        const activeApiKey = userKey?.api_key ?? envApiKey;
-
-        // 1) OpenAI key (dari DB atau env) dengan model fallback
-        if (activeApiKey) {
-          // Untuk custom provider: coba model dari env terlebih dahulu
-          // Untuk OpenAI asli: fallback ke gpt-image-1 → dall-e-3 → dall-e-2
-          const requested = userKey
-            ? (userKey.model || "gpt-image-1").trim().toLowerCase()
-            : openaiEnvModel.trim().toLowerCase();
-          // Untuk custom provider: jangan fallback ke dall-e (model berbeda)
-          const candidates: string[] = [requested];
-          if (!isCustomProvider) {
-            if (!candidates.includes("dall-e-3")) candidates.push("dall-e-3");
-            if (!candidates.includes("dall-e-2")) candidates.push("dall-e-2");
-          }
-
-          for (const modelName of candidates) {
-            try {
-              // Build model-specific request body.
-              const oaBody = imageRequestBodies(modelName, prompt, size)[0];
-
-              const res = await fetch(`${openaiBaseUrl}/images/generations`, {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${activeApiKey}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(oaBody),
-              });
-              const text = await res.text();
-              if (res.ok) {
-                const b64 = await imageResponseToB64(text).catch(() => undefined);
-                if (b64) {
-                  if (userKey) {
-                    await supabaseClient
-                      .from("ai_providers")
-                      .update({
-                        last_used_at: nowIso,
-                        last_status: "ok",
-                        failure_count: 0,
-                        disabled_until: null,
-                      })
-                      .eq("id", userKey.id);
+                // 0) Custom AI provider (ai.yogathedev.com) — prioritas #1 supaya hemat kredit.
+                const customKey = process.env.CUSTOM_AI_API_KEY;
+                const customBaseUrl = (process.env.CUSTOM_AI_BASE_URL ?? "https://ai.yogathedev.com/v1").replace(/\/$/, "");
+                const customModel = process.env.CUSTOM_AI_MODEL ?? "cx/gpt-5.5-image";
+                if (customKey) {
+                  const maxAttempts = 3;
+                  const requestBody = {
+                    model: customModel,
+                    prompt,
+                    n: 1,
+                    size: "auto",
+                    quality: "auto",
+                    background: "auto",
+                    image_detail: "high",
+                    output_format: "png",
+                  };
+                  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                    let terminal = false;
+                    let keepAlive: ReturnType<typeof setInterval> | undefined;
+                    try {
+                      write("provider_status", {
+                        type: "provider_status",
+                        provider: `Custom ${customModel}`,
+                        jobId,
+                        message: `Mencoba YG ${attempt}/${maxAttempts}`,
+                      });
+                      keepAlive = setInterval(() => {
+                        write("provider_status", {
+                          type: "provider_status",
+                          provider: `Custom ${customModel}`,
+                          jobId,
+                          message: "YG masih memproses gambar",
+                        });
+                      }, 8000);
+                      const res = await fetch(`${customBaseUrl}/images/generations`, {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${customKey}`,
+                          Accept: "application/json",
+                        },
+                        body: JSON.stringify(requestBody),
+                      });
+                      const text = await res.text();
+                      if (res.ok) {
+                        const b64 = await imageResponseToB64(text).catch(() => undefined);
+                        if (b64) {
+                          complete(b64, `Custom ${customModel}`);
+                          return;
+                        }
+                        attempts.push(`Custom ${customModel} [try ${attempt}]: response tanpa gambar`);
+                      } else {
+                        const errMsg = parseProviderError(text);
+                        attempts.push(`Custom ${customModel} [try ${attempt}] → ${res.status}: ${errMsg}`);
+                        console.error("[generate-image-stream] Custom provider failed", res.status, errMsg);
+                        if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
+                          terminal = true;
+                        }
+                      }
+                    } catch (e) {
+                      const msg = e instanceof Error ? e.message : String(e);
+                      attempts.push(`Custom ${customModel} [try ${attempt}] exception: ${msg}`);
+                      console.error("[generate-image-stream] Custom provider exception", e);
+                    } finally {
+                      if (keepAlive) clearInterval(keepAlive);
+                    }
+                    if (terminal) break;
+                    if (attempt < maxAttempts) await new Promise((r) => setTimeout(r, 400 * attempt));
                   }
-                  return sseComplete(b64, `${isCustomProvider ? "Custom" : "OpenAI"} ${modelName}`);
+                } else {
+                  attempts.push("Custom YG: CUSTOM_AI_API_KEY belum tersedia");
                 }
-                attempts.push(`OpenAI ${modelName}: response tanpa gambar`);
-              } else {
-                const errMsg = parseProviderError(text);
-                attempts.push(`OpenAI ${modelName} → ${res.status}: ${errMsg}`);
-                console.error(
-                  "[generate-image-stream] OpenAI failed",
-                  modelName,
-                  res.status,
-                  errMsg,
-                );
-                const status = res.status;
-                if (userKey) {
-                  await supabaseClient
-                    .from("ai_providers")
-                    .update({
-                      failure_count: (userKey.failure_count ?? 0) + 1,
-                      last_status:
-                        status === 401
-                          ? "invalid"
-                          : status === 429
-                            ? "rate_limit"
-                            : status === 402 || status === 403
-                              ? "out_of_credit"
-                              : "error",
-                      is_active: status === 401 ? false : userKey.is_active,
-                    })
-                    .eq("id", userKey.id);
+
+                // 1) Managed Lovable AI Gateway — fallback terakhir jika YG gagal.
+                const gatewayKey = process.env.LOVABLE_API_KEY;
+                if (gatewayKey) {
+                  const gatewayModel = process.env.LOVABLE_IMAGE_MODEL ?? "openai/gpt-image-1-mini";
+                  for (const requestBody of imageRequestBodies(gatewayModel, prompt, size)) {
+                    try {
+                      write("provider_status", {
+                        type: "provider_status",
+                        provider: `Gateway ${gatewayModel}`,
+                        jobId,
+                        message: "Fallback ke Gateway",
+                      });
+                      const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+                        method: "POST",
+                        headers: {
+                          Authorization: `Bearer ${gatewayKey}`,
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(requestBody),
+                      });
+                      const text = await res.text();
+                      if (res.ok) {
+                        const b64 = await imageResponseToB64(text).catch(() => undefined);
+                        if (b64) {
+                          complete(b64, `Gateway ${gatewayModel}`);
+                          return;
+                        }
+                        attempts.push(`Gateway ${gatewayModel}: response tanpa gambar`);
+                      } else {
+                        const errMsg = parseProviderError(text);
+                        attempts.push(`Gateway ${gatewayModel} → ${res.status}: ${errMsg}`);
+                        console.error("[generate-image-stream] Gateway failed", res.status, errMsg);
+                        if (res.status === 401 || res.status === 403) break;
+                      }
+                    } catch (e) {
+                      const msg = e instanceof Error ? e.message : String(e);
+                      attempts.push(`Gateway ${gatewayModel} exception: ${msg}`);
+                      console.error("[generate-image-stream] Gateway exception", e);
+                    }
+                  }
                 }
-                // Stop trying if key is invalid/unauthorized
-                if (status === 401) break;
-                // Stop trying if out of credit (no point trying other models with same key)
-                if (status === 402 || status === 403) break;
-              }
-            } catch (e) {
-              const msg = e instanceof Error ? e.message : String(e);
-              attempts.push(`OpenAI ${modelName} exception: ${msg}`);
-              console.error("[generate-image-stream] OpenAI exception", modelName, e);
-            }
-          }
-        }
 
-        // 2) Cloudflare Workers AI (free tier)
-        const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-        const cfToken = process.env.CLOUDFLARE_API_TOKEN;
-        if (cfAccountId && cfToken) {
-          try {
-            const cfRes = await fetch(
-              `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
-              {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${cfToken}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ prompt, steps: 4 }),
-              },
-            );
-            if (cfRes.ok) {
-              const j = (await cfRes.json()) as { result?: { image?: string } };
-              const b64 = j?.result?.image;
-              if (b64) return sseComplete(b64, "Cloudflare flux-1-schnell");
-              attempts.push("Cloudflare: response tanpa gambar");
-            } else {
-              const t = await cfRes.text().catch(() => "");
-              attempts.push(`Cloudflare → ${cfRes.status}: ${t.slice(0, 160)}`);
-              console.error("[generate-image-stream] Cloudflare failed", cfRes.status, t.slice(0, 300));
-            }
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            attempts.push(`Cloudflare exception: ${msg}`);
-            console.error("[generate-image-stream] Cloudflare exception", e);
-          }
-        }
+                // 2) OpenAI key dari dashboard/env sebagai fallback tambahan.
+                const supabaseClient = makeAuthedClient(token);
+                const nowIso = new Date().toISOString();
+                const { data: keys, error: keyError } = await supabaseClient
+                  .from("ai_providers")
+                  .select("*")
+                  .eq("user_id", userId)
+                  .eq("is_active", true)
+                  .in("provider", ["openai", "OpenAI", "OPENAI"])
+                  .or(`disabled_until.is.null,disabled_until.lt.${nowIso}`)
+                  .order("priority", { ascending: true })
+                  .limit(1);
+                if (keyError) {
+                  attempts.push(`Database provider key → ${keyError.message}`);
+                  console.error("[generate-image-stream] provider key query failed", keyError.message);
+                }
+                const userKey = keys?.[0];
+                const envApiKey = process.env.OPENAI_API_KEY;
+                const openaiBaseUrl = (process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, "");
+                const openaiEnvModel = process.env.OPENAI_MODEL ?? "dall-e-3";
+                const isCustomProvider = openaiBaseUrl !== "https://api.openai.com/v1";
+                const activeApiKey = userKey?.api_key ?? envApiKey;
 
-        // Semua provider gagal – tampilkan error informatif
-        const hint = !keys?.length
-          ? "Belum ada API key OpenAI yang tersimpan. Silakan tambahkan key di halaman Admin AI Keys."
-          : "Semua provider gambar gagal. Pastikan API key OpenAI aktif dan memiliki saldo/akses model DALL-E.";
-        return sseError(
-          attempts.length
-            ? `${hint}\n\nDetail:\n- ${attempts.join("\n- ")}`
-            : hint,
+                if (activeApiKey) {
+                  const requested = userKey
+                    ? (userKey.model || "gpt-image-1").trim().toLowerCase()
+                    : openaiEnvModel.trim().toLowerCase();
+                  const candidates: string[] = [requested];
+                  if (!isCustomProvider) {
+                    if (!candidates.includes("dall-e-3")) candidates.push("dall-e-3");
+                    if (!candidates.includes("dall-e-2")) candidates.push("dall-e-2");
+                  }
+
+                  for (const modelName of candidates) {
+                    try {
+                      const oaBody = imageRequestBodies(modelName, prompt, size)[0];
+                      const res = await fetch(`${openaiBaseUrl}/images/generations`, {
+                        method: "POST",
+                        headers: {
+                          Authorization: `Bearer ${activeApiKey}`,
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(oaBody),
+                      });
+                      const text = await res.text();
+                      if (res.ok) {
+                        const b64 = await imageResponseToB64(text).catch(() => undefined);
+                        if (b64) {
+                          if (userKey) {
+                            await supabaseClient
+                              .from("ai_providers")
+                              .update({
+                                last_used_at: nowIso,
+                                last_status: "ok",
+                                failure_count: 0,
+                                disabled_until: null,
+                              })
+                              .eq("id", userKey.id);
+                          }
+                          complete(b64, `${isCustomProvider ? "Custom" : "OpenAI"} ${modelName}`);
+                          return;
+                        }
+                        attempts.push(`OpenAI ${modelName}: response tanpa gambar`);
+                      } else {
+                        const errMsg = parseProviderError(text);
+                        attempts.push(`OpenAI ${modelName} → ${res.status}: ${errMsg}`);
+                        console.error("[generate-image-stream] OpenAI failed", modelName, res.status, errMsg);
+                        const status = res.status;
+                        if (userKey) {
+                          await supabaseClient
+                            .from("ai_providers")
+                            .update({
+                              failure_count: (userKey.failure_count ?? 0) + 1,
+                              last_status:
+                                status === 401
+                                  ? "invalid"
+                                  : status === 429
+                                    ? "rate_limit"
+                                    : status === 402 || status === 403
+                                      ? "out_of_credit"
+                                      : "error",
+                              is_active: status === 401 ? false : userKey.is_active,
+                            })
+                            .eq("id", userKey.id);
+                        }
+                        if (status === 401 || status === 402 || status === 403) break;
+                      }
+                    } catch (e) {
+                      const msg = e instanceof Error ? e.message : String(e);
+                      attempts.push(`OpenAI ${modelName} exception: ${msg}`);
+                      console.error("[generate-image-stream] OpenAI exception", modelName, e);
+                    }
+                  }
+                }
+
+                // 3) Cloudflare Workers AI (free tier) fallback terakhir.
+                const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+                const cfToken = process.env.CLOUDFLARE_API_TOKEN;
+                if (cfAccountId && cfToken) {
+                  try {
+                    const cfRes = await fetch(
+                      `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
+                      {
+                        method: "POST",
+                        headers: {
+                          Authorization: `Bearer ${cfToken}`,
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ prompt, steps: 4 }),
+                      },
+                    );
+                    if (cfRes.ok) {
+                      const j = (await cfRes.json()) as { result?: { image?: string } };
+                      const b64 = j?.result?.image;
+                      if (b64) {
+                        complete(b64, "Cloudflare flux-1-schnell");
+                        return;
+                      }
+                      attempts.push("Cloudflare: response tanpa gambar");
+                    } else {
+                      const t = await cfRes.text().catch(() => "");
+                      attempts.push(`Cloudflare → ${cfRes.status}: ${t.slice(0, 160)}`);
+                      console.error("[generate-image-stream] Cloudflare failed", cfRes.status, t.slice(0, 300));
+                    }
+                  } catch (e) {
+                    const msg = e instanceof Error ? e.message : String(e);
+                    attempts.push(`Cloudflare exception: ${msg}`);
+                    console.error("[generate-image-stream] Cloudflare exception", e);
+                  }
+                }
+
+                const hint = customKey
+                  ? "YG sudah dicoba sebagai provider utama, tetapi belum mengembalikan gambar yang bisa dipakai."
+                  : "CUSTOM_AI_API_KEY untuk YG belum tersedia di backend.";
+                fail(attempts.length ? `${hint}\n\nDetail:\n- ${attempts.join("\n- ")}` : hint);
+              };
+
+              void run()
+                .catch((e) => {
+                  const msg = e instanceof Error ? e.message : String(e);
+                  console.error("[generate-image-stream] fatal", e);
+                  fail(`Generate belum berhasil: ${msg}`);
+                })
+                .finally(() => {
+                  closed = true;
+                  try {
+                    controller.close();
+                  } catch {
+                    /* client disconnected */
+                  }
+                });
+            },
+          }),
+          { headers: sseHeaders },
         );
       },
     },
