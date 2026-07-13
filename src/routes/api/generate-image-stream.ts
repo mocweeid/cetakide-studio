@@ -168,52 +168,9 @@ export const Route = createFileRoute("/api/generate-image-stream")({
           );
         const attempts: string[] = [];
 
-        // 0) Custom AI provider (ai.yogathedev.com) via CUSTOM_AI_API_KEY env
-        //    Prioritas tertinggi jika env tersedia — aman: key tidak pernah bocor ke client.
-        const customKey = process.env.CUSTOM_AI_API_KEY;
-        const customBaseUrl = (process.env.CUSTOM_AI_BASE_URL ?? "https://ai.yogathedev.com/v1").replace(/\/$/, "");
-        const customModel = process.env.CUSTOM_AI_MODEL ?? "vani";
-        if (customKey) {
-          const customAuthHeaders = [
-            { label: "Bearer", headers: { Authorization: `Bearer ${customKey}` } },
-            { label: "x-api-key", headers: { "x-api-key": customKey } },
-            { label: "api-key", headers: { "api-key": customKey } },
-          ];
-          for (const authHeader of customAuthHeaders) {
-            let authWorked = false;
-            for (const requestBody of customImageRequestBodies(customModel, prompt, size)) {
-              try {
-                const headers = new Headers({ "Content-Type": "application/json" });
-                Object.entries(authHeader.headers).forEach(([key, value]) => headers.set(key, value));
-                const res = await fetch(`${customBaseUrl}/images/generations`, {
-                  method: "POST",
-                  headers,
-                  body: JSON.stringify(requestBody),
-                });
-                const text = await res.text();
-                if (res.ok) {
-                  authWorked = true;
-                  const b64 = await imageResponseToB64(text).catch(() => undefined);
-                  if (b64) return sseComplete(b64, `Custom ${customModel}`);
-                  attempts.push(`Custom ${customModel} (${authHeader.label}): response tanpa gambar`);
-                } else {
-                  const errMsg = parseProviderError(text);
-                  attempts.push(`Custom ${customModel} (${authHeader.label}) → ${res.status}: ${errMsg}`);
-                  console.error("[generate-image-stream] Custom provider failed", res.status, errMsg);
-                  if (res.status === 401 || res.status === 403) break;
-                  authWorked = true;
-                }
-              } catch (e) {
-                const msg = e instanceof Error ? e.message : String(e);
-                attempts.push(`Custom ${customModel} (${authHeader.label}) exception: ${msg}`);
-                console.error("[generate-image-stream] Custom provider exception", e);
-              }
-            }
-            if (authWorked) break;
-          }
-        }
-
-        // 0.5) Managed AI gateway fallback — key stays server-side and avoids depending on user OpenAI keys.
+        // 0) Managed Lovable AI Gateway — provider paling andal & sudah teruji.
+        //    Diletakkan lebih dulu supaya user tidak lama menunggu percobaan
+        //    provider lain kalau ini tersedia.
         const gatewayKey = process.env.LOVABLE_API_KEY;
         if (gatewayKey) {
           const gatewayModel = process.env.LOVABLE_IMAGE_MODEL ?? "openai/gpt-image-1-mini";
@@ -243,6 +200,41 @@ export const Route = createFileRoute("/api/generate-image-stream")({
               attempts.push(`Gateway ${gatewayModel} exception: ${msg}`);
               console.error("[generate-image-stream] Gateway exception", e);
             }
+          }
+        }
+
+        // 1) Custom AI provider (ai.yogathedev.com / 9Router-compatible) via CUSTOM_AI_API_KEY env
+        //    Hanya dipakai jika Gateway gagal. Fast-fail: satu auth header,
+        //    satu payload — provider ini butuh model `openai/dall-e-3` +
+        //    kredensial upstream OpenAI di sisi provider (bukan di sini).
+        const customKey = process.env.CUSTOM_AI_API_KEY;
+        const customBaseUrl = (process.env.CUSTOM_AI_BASE_URL ?? "https://ai.yogathedev.com/v1").replace(/\/$/, "");
+        const customModel = process.env.CUSTOM_AI_MODEL ?? "openai/dall-e-3";
+        if (customKey) {
+          try {
+            const requestBody = { model: customModel, prompt, size, n: 1 };
+            const res = await fetch(`${customBaseUrl}/images/generations`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${customKey}`,
+              },
+              body: JSON.stringify(requestBody),
+            });
+            const text = await res.text();
+            if (res.ok) {
+              const b64 = await imageResponseToB64(text).catch(() => undefined);
+              if (b64) return sseComplete(b64, `Custom ${customModel}`);
+              attempts.push(`Custom ${customModel}: response tanpa gambar`);
+            } else {
+              const errMsg = parseProviderError(text);
+              attempts.push(`Custom ${customModel} → ${res.status}: ${errMsg}`);
+              console.error("[generate-image-stream] Custom provider failed", res.status, errMsg);
+            }
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            attempts.push(`Custom ${customModel} exception: ${msg}`);
+            console.error("[generate-image-stream] Custom provider exception", e);
           }
         }
 
