@@ -1181,6 +1181,17 @@ function Workspace() {
 
             {/* ============ 1. Nama Brand & Produk ============ */}
             <SectionHeader index={1} title="Nama Brand & Produk" />
+            <button
+              type="button"
+              onClick={runAutofillAll}
+              disabled={autofillingAll}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/15 hover:bg-primary/25 disabled:opacity-60 disabled:cursor-not-allowed px-3 py-2 text-xs font-semibold text-primary transition"
+            >
+              <Sparkles className={`h-3.5 w-3.5 ${autofillingAll ? "animate-pulse" : ""}`} />
+              {autofillingAll
+                ? `Auto-fill berjalan${autofillingKey ? ` · ${autofillingKey}` : ""}…`
+                : "Auto-fill Semua Deskripsi (1 klik)"}
+            </button>
             <Field label="Nama Brand">
               <input
                 value={form.brand_name}
