@@ -577,7 +577,7 @@ function Workspace() {
               return next;
             });
             if (isFinal) finalUrl = dataUrl;
-          });
+          }, jobId);
           if (!finalUrl) throw new Error("Tidak ada gambar final.");
           usedKeys.add(provider);
           newResults.push(finalUrl);
@@ -680,6 +680,7 @@ function Workspace() {
           .single();
         projectId = inserted?.id ?? null;
       }
+      let finalUrl = "";
       const { provider } = await streamImage(prompt, size, (dataUrl, isFinal) => {
         setVariants((prev) => {
           const next = [...prev];
@@ -688,11 +689,10 @@ function Workspace() {
             : { status: "streaming", imageUrl: dataUrl, prompt, ratio: jobRatio };
           return next;
         });
-      });
+        if (isFinal) finalUrl = dataUrl;
+      }, jobId);
+      if (!finalUrl) throw new Error("Tidak ada gambar final.");
       if (projectId) {
-        const finalV = variants[i];
-        const finalUrl =
-          finalV?.status === "sukses" ? finalV.imageUrl ?? null : null;
         await supabase
           .from("projects")
           .update({ status: "sukses", provider, image_url: finalUrl })
