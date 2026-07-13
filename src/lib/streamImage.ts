@@ -51,8 +51,7 @@ export async function streamImage(
   try {
     json = (await res.json()) as typeof json;
   } catch {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Respons YogaDev tidak valid (HTTP ${res.status}) ${text.slice(0, 200)}`);
+    throw new Error(`Respons YogaDev tidak valid (HTTP ${res.status})`);
   }
 
   if (!res.ok || !json.success || !json.imageUrl) {
