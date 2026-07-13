@@ -1648,6 +1648,18 @@ function Workspace() {
               )}
               Cetak Ide Sekarang
             </button>
+            <button
+              onClick={handleTestGenerate}
+              disabled={generating}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 py-2 text-xs font-medium text-primary transition hover:bg-primary/20 disabled:opacity-60 mt-2"
+            >
+              {generating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Wand2 className="h-3.5 w-3.5" />
+              )}
+              Test Generate (prompt default → Project)
+            </button>
             <p className="text-center text-[11px] text-muted-foreground">
               {user?.isDeveloper
                 ? "God Mode — gratis"
