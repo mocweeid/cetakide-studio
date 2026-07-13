@@ -341,6 +341,8 @@ function Workspace() {
   const [presetModalOpen, setPresetModalOpen] = useState(false);
 
   const [generating, setGenerating] = useState(false);
+  const [simpleTesting, setSimpleTesting] = useState(false);
+  const [simplePreviewUrl, setSimplePreviewUrl] = useState<string | null>(null);
   const [results, setResults] = useState<string[]>([]);
   type Variant =
     | { status: "proses"; prompt?: string; ratio?: string }
