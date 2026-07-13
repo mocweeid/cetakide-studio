@@ -646,9 +646,6 @@ function Workspace() {
 
   async function handleRegenerate(i: number) {
     // handler body starts below
-  }
-
-  async function _placeholder_() {
     const v = variants[i];
     const prompt = v.prompt;
     const jobRatio = v.ratio;
