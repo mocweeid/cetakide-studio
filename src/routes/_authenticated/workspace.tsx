@@ -26,7 +26,7 @@ import {
   Bug,
   ChevronUp,
 } from "lucide-react";
-import { PRESET_THEMES, getThemeStyles, ThemeSkeletonPreview } from "./preset-theme";
+import { PRESET_THEMES, getThemeStyles, ThemeSkeletonPreview, getPresetExample } from "./preset-theme";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { autofillFieldServer } from "@/lib/autofillField.functions";
 import { streamImage } from "@/lib/streamImage";
