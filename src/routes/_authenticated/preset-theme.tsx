@@ -279,6 +279,7 @@ function PresetTheme() {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {PRESET_THEMES.map((theme) => {
           const styles = getThemeStyles(theme);
+          const example = getPresetExample(theme);
           return (
             <button
               key={theme}
@@ -288,6 +289,11 @@ function PresetTheme() {
               <ThemeSkeletonPreview theme={theme} />
               <div className="flex flex-col p-4 flex-1">
                 <h2 className={`text-base font-bold flex-1 ${styles.title}`}>{theme}</h2>
+                {example && (
+                  <p className="mt-1 line-clamp-2 text-[11px] opacity-70">
+                    {example.description}
+                  </p>
+                )}
                 <div className="mt-4 flex items-center justify-between">
                   <span
                     className={`px-3 py-1.5 text-xs font-semibold inline-block ${styles.button}`}
