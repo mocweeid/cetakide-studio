@@ -113,6 +113,15 @@ function imageRequestBodies(model: string, prompt: string, size: string) {
   ];
 }
 
+function customImageRequestBodies(model: string, prompt: string, size: string) {
+  const simple = { model, prompt, size, response_format: "b64_json" };
+  const openAiCompatible = imageRequestBodies(model, prompt, size);
+  return [simple, ...openAiCompatible].filter(
+    (body, index, arr) =>
+      index === arr.findIndex((candidate) => JSON.stringify(candidate) === JSON.stringify(body)),
+  );
+}
+
 
 
 async function getUserId(token: string): Promise<string | null> {
@@ -163,7 +172,7 @@ export const Route = createFileRoute("/api/generate-image-stream")({
         //    Prioritas tertinggi jika env tersedia — aman: key tidak pernah bocor ke client.
         const customKey = process.env.CUSTOM_AI_API_KEY;
         const customBaseUrl = (process.env.CUSTOM_AI_BASE_URL ?? "https://ai.yogathedev.com/v1").replace(/\/$/, "");
-        const customModel = process.env.CUSTOM_AI_MODEL ?? "gpt-image-1";
+        const customModel = process.env.CUSTOM_AI_MODEL ?? "vani";
         if (customKey) {
           const customAuthHeaders = [
             { label: "Bearer", headers: { Authorization: `Bearer ${customKey}` } },
@@ -172,7 +181,7 @@ export const Route = createFileRoute("/api/generate-image-stream")({
           ];
           for (const authHeader of customAuthHeaders) {
             let authWorked = false;
-            for (const requestBody of imageRequestBodies(customModel, prompt, size)) {
+            for (const requestBody of customImageRequestBodies(customModel, prompt, size)) {
               try {
                 const headers = new Headers({ "Content-Type": "application/json" });
                 Object.entries(authHeader.headers).forEach(([key, value]) => headers.set(key, value));
