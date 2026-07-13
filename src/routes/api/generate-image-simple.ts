@@ -230,36 +230,44 @@ export const Route = createFileRoute("/api/generate-image-simple")({
         }
 
         const apiKey = process.env.CUSTOM_AI_API_KEY;
-        if (!apiKey) {
+        const gatewayKey = process.env.LOVABLE_API_KEY;
+        const baseUrl = process.env.CUSTOM_AI_BASE_URL || "https://ai.yogathedev.com/v1";
+        const model = process.env.CUSTOM_AI_MODEL || "cx/gpt-5.5-image";
+        const providerLabel = apiKey ? `Custom ${model}` : "Gateway openai/gpt-image-1-mini";
+        const targetUrl = apiKey
+          ? `${baseUrl}/images/generations`
+          : "https://ai.gateway.lovable.dev/v1/images/generations";
+        const targetKey = apiKey || gatewayKey;
+        if (!targetKey) {
           return jsonResponse(
-            { success: false, message: "CUSTOM_AI_API_KEY belum dikonfigurasi" },
+            {
+              success: false,
+              message: "CUSTOM_AI_API_KEY belum terbaca dan fallback gateway belum tersedia",
+            },
             500,
           );
         }
-        const baseUrl = process.env.CUSTOM_AI_BASE_URL || "https://ai.yogathedev.com/v1";
-        const model = process.env.CUSTOM_AI_MODEL || "cx/gpt-5.5-image";
-        const providerLabel = `Custom ${model}`;
 
         let response: Response;
         try {
           response = await fetchWithTimeout(
-            `${baseUrl}/images/generations`,
+            targetUrl,
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`,
-                Accept: "text/event-stream",
+                Authorization: `Bearer ${targetKey}`,
+                Accept: apiKey ? "text/event-stream" : "application/json",
               },
               body: JSON.stringify({
-                model,
+                model: apiKey ? model : "openai/gpt-image-1-mini",
                 prompt,
                 n: 1,
-                size: "auto",
-                quality: "auto",
-                background: "auto",
-                image_detail: "high",
-                output_format: "png",
+                size: apiKey ? "auto" : "1024x1024",
+                quality: apiKey ? "auto" : "low",
+                ...(apiKey
+                  ? { background: "auto", image_detail: "high", output_format: "png" }
+                  : { response_format: "b64_json" }),
               }),
             },
             60_000,
@@ -268,7 +276,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           return jsonResponse(
             {
               success: false,
-              message: (err as Error)?.message || "YG network error",
+              message: (err as Error)?.message || "Image provider network error",
             },
             502,
           );
@@ -279,7 +287,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           return jsonResponse(
             {
               success: false,
-              message: "YG request failed",
+              message: `${providerLabel} request failed`,
               details: { status: response.status, body: truncate(raw) },
             },
             response.status >= 400 && response.status < 600 ? response.status : 502,
