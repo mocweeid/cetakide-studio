@@ -60,7 +60,7 @@ function ApiKeysPage() {
     }
     setSaving(true);
     const { error } = await supabase.from("ai_providers").insert({
-      user_id: user!.id,
+      user_id: user!.userId,
       provider: "openai",
       model: model || "gpt-image-1",
       api_key: apiKey.trim(),
