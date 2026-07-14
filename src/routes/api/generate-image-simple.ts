@@ -475,6 +475,47 @@ const BREAKER_WINDOW_MS = 120_000; // 2 minutes
 const BREAKER_FAILURE_THRESHOLD = 4; // failed requests (not individual retries)
 const BREAKER_COOLDOWN_MS = 60_000; // pause YG for 60s
 
+// Adaptive degradation: kurangi retry & jumlah shape YogaDev seiring naiknya
+// kegagalan terkini agar sistem lebih cepat menyerah dan beralih ke fallback.
+function computeDegradation(
+  cfgMaxAttempts: number,
+  totalShapes: number,
+  breakerProbe: boolean,
+): {
+  maxRetries: number;
+  maxShapes: number;
+  level: "normal" | "degraded" | "critical" | "probe";
+  recentFailures: number;
+} {
+  const now = Date.now();
+  BREAKER.recentFailures = BREAKER.recentFailures.filter(
+    (t) => now - t <= BREAKER_WINDOW_MS,
+  );
+  const recent = BREAKER.recentFailures.length;
+  if (breakerProbe) {
+    // HALF_OPEN probe: 1 shape, 1 retry — cek cepat apakah YG sudah pulih
+    return { maxRetries: 1, maxShapes: 1, level: "probe", recentFailures: recent };
+  }
+  if (recent >= BREAKER_FAILURE_THRESHOLD - 1) {
+    // Hampir trip: minimalkan usaha ke YG, biarkan fallback ambil alih
+    return { maxRetries: 1, maxShapes: 1, level: "critical", recentFailures: recent };
+  }
+  if (recent >= 2) {
+    return {
+      maxRetries: Math.max(1, Math.min(cfgMaxAttempts, 2)),
+      maxShapes: Math.max(1, Math.min(totalShapes, 2)),
+      level: "degraded",
+      recentFailures: recent,
+    };
+  }
+  return {
+    maxRetries: cfgMaxAttempts,
+    maxShapes: totalShapes,
+    level: "normal",
+    recentFailures: recent,
+  };
+}
+
 function breakerRemainingMs(): number {
   if (BREAKER.state !== "OPEN") return 0;
   return Math.max(0, BREAKER.openedAt + BREAKER.cooldownMs - Date.now());
