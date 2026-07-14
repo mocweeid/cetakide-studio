@@ -33,9 +33,75 @@ import { streamImage, GenerateImageError } from "@/lib/streamImage";
 import { useServerFn } from "@tanstack/react-start";
 import JSZip from "jszip";
 
+// Estimasi cooldown & rekomendasi variasi optimal untuk error 429.
+// Membaca header Retry-After bila tersedia; fallback 45 detik.
+function extractCooldownSeconds(err: unknown): number | undefined {
+  if (!(err instanceof GenerateImageError)) return undefined;
+  const last = err.attempts[err.attempts.length - 1];
+  const status = last?.status ?? err.status;
+  const isRate =
+    status === 429 || /rate limit|quota|too many/i.test(err.providerMessage || "");
+  if (!isRate) return undefined;
+  const fromHeader = last?.retryAfterSeconds;
+  if (typeof fromHeader === "number" && fromHeader > 0) return Math.min(fromHeader, 300);
+  // Coba parse dari body ("retry in 30s", "try again in 45 seconds", dst.)
+  const body = (last?.body || err.providerMessage || "").toString();
+  const m = body.match(/(?:retry|try again|wait)[^\d]{0,20}(\d{1,3})\s*(s|sec|second|detik)?/i);
+  if (m) {
+    const n = Number(m[1]);
+    if (Number.isFinite(n) && n > 0) return Math.min(n, 300);
+  }
+  return 45; // default konservatif
+}
+
+function recommendOptimalVariants(current: number): number {
+  if (current <= 1) return 1;
+  if (current >= 6) return 2;
+  if (current >= 3) return Math.max(1, Math.floor(current / 2));
+  return 1;
+}
+
+// Tombol Retry dengan hitung mundur cooldown. Retry di-disable sampai selesai.
+function CooldownRetryButton({
+  seconds,
+  onRetry,
+  className,
+}: {
+  seconds: number;
+  onRetry: () => void;
+  className?: string;
+}) {
+  const [remaining, setRemaining] = useState(seconds);
+  useEffect(() => {
+    if (remaining <= 0) return;
+    const t = setInterval(() => setRemaining((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [remaining]);
+  const ready = remaining <= 0;
+  return (
+    <button
+      type="button"
+      disabled={!ready}
+      className={`${className ?? ""} ${ready ? "" : "opacity-60 cursor-not-allowed"}`}
+      onClick={() => {
+        if (!ready) return;
+        toast.dismiss();
+        onRetry();
+      }}
+      title={ready ? "Coba lagi sekarang" : `Tunggu ${remaining}s sebelum retry`}
+    >
+      {ready ? "🔄 Retry sekarang" : `⏳ Retry dalam ${remaining}s`}
+    </button>
+  );
+}
+
 type ErrorChecklistItem = { icon: string; text: string; tone?: "primary" | "muted" };
 
-function buildErrorChecklist(status: number | undefined, providerMessage: string): ErrorChecklistItem[] {
+function buildErrorChecklist(
+  status: number | undefined,
+  providerMessage: string,
+  extras?: { cooldownSeconds?: number; recommendedVariants?: number; currentVariants?: number },
+): ErrorChecklistItem[] {
   const msg = (providerMessage || "").toLowerCase();
   // Auth / API key
   if (status === 401 || status === 403 || /unauthori[sz]ed|invalid.*key|api key/i.test(providerMessage)) {
@@ -47,9 +113,20 @@ function buildErrorChecklist(status: number | undefined, providerMessage: string
   }
   // Rate limit / quota
   if (status === 429 || /rate limit|quota|too many/i.test(providerMessage)) {
+    const cd = extras?.cooldownSeconds ?? 45;
+    const rec = extras?.recommendedVariants ?? 1;
+    const cur = extras?.currentVariants ?? 1;
+    const variantHint =
+      cur > rec
+        ? `Turunkan variasi dari ${cur} → ${rec} (rekomendasi optimal saat kena rate limit).`
+        : `Variasi sudah optimal (${cur}). Cukup tunggu cooldown.`;
     return [
-      { icon: "⏳", text: "Tunggu 30–60 detik lalu Retry — provider sedang membatasi rate.", tone: "primary" },
-      { icon: "✂️", text: "Kurangi jumlah variasi (mis. dari 4 → 1) untuk melewati kuota." },
+      {
+        icon: "⏳",
+        text: `Tunggu ~${cd} detik sebelum retry — provider sedang membatasi rate.`,
+        tone: "primary",
+      },
+      { icon: "✂️", text: variantHint },
       { icon: "💳", text: "Cek saldo/kuota kredit di dashboard provider." },
     ];
   }
@@ -135,7 +212,10 @@ function summarizeGenerateError(err: unknown): string {
   return err instanceof Error ? err.message : String(err ?? "Generate belum berhasil");
 }
 
-function formatGenerateError(err: unknown): {
+function formatGenerateError(
+  err: unknown,
+  extras?: { cooldownSeconds?: number; recommendedVariants?: number; currentVariants?: number },
+): {
   title: string;
   description: React.ReactNode;
   summary: string;
@@ -143,7 +223,7 @@ function formatGenerateError(err: unknown): {
   const summary = summarizeGenerateError(err);
   if (err instanceof GenerateImageError) {
     const statusLabel = err.status ? `HTTP ${err.status}` : "network";
-    const items = buildErrorChecklist(err.status, err.providerMessage);
+    const items = buildErrorChecklist(err.status, err.providerMessage, extras);
     return {
       title: `Generate belum berhasil (${statusLabel})`,
       description: renderErrorChecklist(items, err.providerMessage),
@@ -151,7 +231,7 @@ function formatGenerateError(err: unknown): {
     };
   }
   const msg = err instanceof Error ? err.message : String(err ?? "Generate belum berhasil");
-  const items = buildErrorChecklist(undefined, msg);
+  const items = buildErrorChecklist(undefined, msg, extras);
   return {
     title: "Generate belum berhasil",
     description: renderErrorChecklist(items, msg),
@@ -183,18 +263,27 @@ type ErrorToastActions = {
   onRetry?: () => void;
   onReduceVariants?: () => void;
   currentVariantCount?: number;
+  cooldownSeconds?: number;
+  recommendedVariants?: number;
 };
 
 function renderErrorActions(actions: ErrorToastActions) {
   const canReduce = (actions.currentVariantCount ?? 1) > 1 && !!actions.onReduceVariants;
   const btn =
     "inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/5 px-2 py-1 text-[11px] font-medium hover:bg-white/10 transition";
+  const retryClass = `${btn} border-red-400/40 bg-red-500/10 hover:bg-red-500/20`;
   return (
     <div className="mt-2 flex flex-wrap gap-1.5">
-      {actions.onRetry ? (
+      {actions.onRetry && actions.cooldownSeconds && actions.cooldownSeconds > 0 ? (
+        <CooldownRetryButton
+          seconds={actions.cooldownSeconds}
+          onRetry={actions.onRetry}
+          className={retryClass}
+        />
+      ) : actions.onRetry ? (
         <button
           type="button"
-          className={`${btn} border-red-400/40 bg-red-500/10 hover:bg-red-500/20`}
+          className={retryClass}
           onClick={() => {
             toast.dismiss();
             actions.onRetry?.();
@@ -212,7 +301,7 @@ function renderErrorActions(actions: ErrorToastActions) {
             actions.onReduceVariants?.();
           }}
         >
-          ✂️ Kurangi variasi
+          ✂️ Kurangi ke {actions.recommendedVariants ?? 1}
         </button>
       ) : null}
       <a
@@ -238,13 +327,25 @@ function showGenerateFailureToast(
   actions: ErrorToastActions,
   overrideTitle?: string,
 ) {
-  const info = formatGenerateError(err);
+  const cooldown = actions.cooldownSeconds ?? extractCooldownSeconds(err);
+  const recommended =
+    actions.recommendedVariants ?? recommendOptimalVariants(actions.currentVariantCount ?? 1);
+  const info = formatGenerateError(err, {
+    cooldownSeconds: cooldown,
+    recommendedVariants: recommended,
+    currentVariants: actions.currentVariantCount ?? 1,
+  });
+  const enrichedActions: ErrorToastActions = {
+    ...actions,
+    cooldownSeconds: cooldown,
+    recommendedVariants: recommended,
+  };
   toast.error(overrideTitle ?? info.title, {
     duration: 12000,
     description: (
       <div>
         {info.description}
-        {renderErrorActions(actions)}
+        {renderErrorActions(enrichedActions)}
       </div>
     ),
   });
@@ -1482,9 +1583,10 @@ function Workspace() {
                 void handleRegenerate(i);
               },
               onReduceVariants: () => {
-                setGenerateCount(1);
+                const rec = recommendOptimalVariants(totalJobs);
+                setGenerateCount(rec);
                 setAllRatios(false);
-                toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+                toast.message(`Variasi diset ke ${rec}. Tekan Generate ulang.`);
               },
               currentVariantCount: totalJobs,
             },
@@ -1516,9 +1618,10 @@ function Workspace() {
               void handleGenerate();
             },
             onReduceVariants: () => {
-              setGenerateCount(1);
+              const rec = recommendOptimalVariants(totalJobs);
+              setGenerateCount(rec);
               setAllRatios(false);
-              toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+              toast.message(`Variasi diset ke ${rec}. Tekan Generate ulang.`);
             },
             currentVariantCount: totalJobs,
           },
@@ -1531,9 +1634,10 @@ function Workspace() {
           void handleGenerate();
         },
         onReduceVariants: () => {
-          setGenerateCount(1);
+          const rec = recommendOptimalVariants(generateCount);
+          setGenerateCount(rec);
           setAllRatios(false);
-          toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+          toast.message(`Variasi diset ke ${rec}. Tekan Generate ulang.`);
         },
         currentVariantCount: generateCount,
       });
@@ -1713,9 +1817,10 @@ function Workspace() {
             void handleRegenerate(i);
           },
           onReduceVariants: () => {
-            setGenerateCount(1);
+            const rec = recommendOptimalVariants(variants.length);
+            setGenerateCount(rec);
             setAllRatios(false);
-            toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+            toast.message(`Variasi diset ke ${rec}. Tekan Generate ulang.`);
           },
           currentVariantCount: variants.length,
         },

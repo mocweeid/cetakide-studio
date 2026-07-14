@@ -911,6 +911,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           message: string;
           body?: string;
           requestPayload?: Record<string, unknown>;
+          retryAfterSeconds?: number;
         }> = [];
 
         // Auto-adjustment state: bertambah ketika YG mengembalikan 400/422/429.
@@ -1007,6 +1008,11 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 message: `${providerLabel} request failed`,
                 body: truncate(raw),
                 requestPayload: effectivePayload,
+                retryAfterSeconds: (() => {
+                  const h = response.headers.get("retry-after");
+                  const n = Number(h);
+                  return Number.isFinite(n) && n > 0 ? Math.min(n, 300) : undefined;
+                })(),
               });
               log("warn", "attempt_http_error", {
                 requestId,
