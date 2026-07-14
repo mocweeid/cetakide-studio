@@ -1763,6 +1763,20 @@ function Workspace() {
                 )}
               </p>
             )}
+            {yogaStatus && (
+              <p className={yogaStatus.ok ? "text-emerald-300" : "text-rose-300"}>
+                <span className="text-white/40">[yogadev]</span>{" "}
+                {yogaStatus.ok
+                  ? "✓ reachable"
+                  : yogaStatus.reachable
+                    ? "✗ error"
+                    : "✗ unreachable"}{" "}
+                — {yogaStatus.detail}
+                {typeof yogaStatus.latency === "number" && (
+                  <span className="text-white/40"> ({yogaStatus.latency}ms)</span>
+                )}
+              </p>
+            )}
             {lastFailure && (
               <div className="mt-3 rounded-md border border-rose-500/30 bg-rose-500/5">
                 <div className="flex items-center justify-between gap-2 border-b border-rose-500/20 px-3 py-1.5">
