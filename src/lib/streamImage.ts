@@ -114,6 +114,7 @@ export async function streamImage(
     imageUrl?: string;
     provider?: string;
     message?: string;
+    requestId?: string;
     details?: { targetUrl?: string; attempts?: unknown; provider?: string; fallback?: unknown };
   };
   try {
@@ -149,8 +150,9 @@ export async function streamImage(
     const status = last?.status ?? res.status;
     const suggestion = suggestionFor(status, `${json.message || ""} ${providerMessage}`);
     const details = formatYogaDetails(json.details);
+    const reqTag = json.requestId ? ` · req=${json.requestId.slice(0, 8)}` : "";
     throw new GenerateImageError({
-      message: `${json.message || `YogaDev belum berhasil (HTTP ${status})`}${details}`,
+      message: `${json.message || `YogaDev belum berhasil (HTTP ${status})`}${reqTag}${details}`,
       status,
       providerMessage,
       suggestion,
@@ -162,7 +164,11 @@ export async function streamImage(
   }
 
   const provider = json.provider || "YogaDev";
-  onStatus?.({ provider, message: "YogaDev mengembalikan gambar", jobId });
+  onStatus?.({
+    provider,
+    message: `YogaDev mengembalikan gambar${json.requestId ? ` (req=${json.requestId.slice(0, 8)})` : ""}`,
+    jobId,
+  });
   flushSync(() => onFrame(json.imageUrl!, true));
   return { provider };
 }
