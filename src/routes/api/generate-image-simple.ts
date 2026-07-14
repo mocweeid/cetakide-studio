@@ -488,6 +488,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           contentType?: string;
           message: string;
           body?: string;
+          requestPayload?: Record<string, unknown>;
         }> = [];
 
         for (const attempt of attempts) {
@@ -517,7 +518,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
               );
             } catch (err) {
               const message = (err as Error)?.message || "Image provider network error";
-              errors.push({ attempt: retryLabel, message });
+              errors.push({ attempt: retryLabel, message, requestPayload: attempt.payload });
               // network / timeout → transient, backoff and retry
               if (!isLastRetry) {
                 const delay = BASE_DELAY_MS * 2 ** retry + Math.floor(Math.random() * 250);
@@ -536,6 +537,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 contentType,
                 message: `${providerLabel} request failed`,
                 body: truncate(raw),
+                requestPayload: attempt.payload,
               });
 
               const lowerRaw = raw.toLowerCase();
@@ -585,6 +587,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 contentType,
                 message: e.message || "Gagal memparse response YG",
                 body: e.lastPayload ?? "",
+                requestPayload: attempt.payload,
               });
               // parse failure → try next attempt shape, no more retries here
               break;
