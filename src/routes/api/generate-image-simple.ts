@@ -441,73 +441,108 @@ export const Route = createFileRoute("/api/generate-image-simple")({
         }> = [];
 
         for (const attempt of attempts) {
-          let response: Response;
-          try {
-            response = await fetchWithTimeout(
-              targetUrl,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${apiKey}`,
-                  Accept: attempt.accept,
+          const MAX_RETRIES = 3;
+          const BASE_DELAY_MS = 800;
+          let credentialFatal = false;
+          let attemptSucceeded = false;
+
+          for (let retry = 0; retry < MAX_RETRIES; retry++) {
+            const isLastRetry = retry === MAX_RETRIES - 1;
+            const retryLabel =
+              retry === 0 ? attempt.label : `${attempt.label} (retry ${retry}/${MAX_RETRIES - 1})`;
+            let response: Response;
+            try {
+              response = await fetchWithTimeout(
+                targetUrl,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${apiKey}`,
+                    Accept: attempt.accept,
+                  },
+                  body: JSON.stringify(attempt.payload),
                 },
-                body: JSON.stringify(attempt.payload),
-              },
-              180_000,
-            );
-          } catch (err) {
-            errors.push({
-              attempt: attempt.label,
-              message: (err as Error)?.message || "Image provider network error",
-            });
-            continue;
-          }
-
-          const contentType = response.headers.get("content-type") ?? "";
-          if (!response.ok) {
-            const raw = await response.text().catch(() => "");
-            errors.push({
-              attempt: attempt.label,
-              status: response.status,
-              contentType,
-              message: `${providerLabel} request failed`,
-              body: truncate(raw),
-            });
-
-            const lowerRaw = raw.toLowerCase();
-            if (
-              response.status === 401 ||
-              response.status === 403 ||
-              lowerRaw.includes("invalid api key") ||
-              lowerRaw.includes("unauthorized") ||
-              lowerRaw.includes("no credentials for provider")
-            ) {
+                180_000,
+              );
+            } catch (err) {
+              const message = (err as Error)?.message || "Image provider network error";
+              errors.push({ attempt: retryLabel, message });
+              // network / timeout → transient, backoff and retry
+              if (!isLastRetry) {
+                const delay = BASE_DELAY_MS * 2 ** retry + Math.floor(Math.random() * 250);
+                await new Promise((r) => setTimeout(r, delay));
+                continue;
+              }
               break;
             }
-            continue;
+
+            const contentType = response.headers.get("content-type") ?? "";
+            if (!response.ok) {
+              const raw = await response.text().catch(() => "");
+              errors.push({
+                attempt: retryLabel,
+                status: response.status,
+                contentType,
+                message: `${providerLabel} request failed`,
+                body: truncate(raw),
+              });
+
+              const lowerRaw = raw.toLowerCase();
+              const isAuthFatal =
+                response.status === 401 ||
+                response.status === 403 ||
+                lowerRaw.includes("invalid api key") ||
+                lowerRaw.includes("unauthorized") ||
+                lowerRaw.includes("no credentials for provider");
+              if (isAuthFatal) {
+                credentialFatal = true;
+                break;
+              }
+
+              const isTransient =
+                response.status === 408 ||
+                response.status === 425 ||
+                response.status === 429 ||
+                response.status >= 500;
+              if (isTransient && !isLastRetry) {
+                const retryAfter = Number(response.headers.get("retry-after")) * 1000;
+                const delay =
+                  Number.isFinite(retryAfter) && retryAfter > 0
+                    ? retryAfter
+                    : BASE_DELAY_MS * 2 ** retry + Math.floor(Math.random() * 250);
+                await new Promise((r) => setTimeout(r, delay));
+                continue;
+              }
+              break;
+            }
+
+            try {
+              const img = await parseYogaResponse(response);
+              if (!img) throw new Error("YG response tidak berisi gambar");
+              const imageUrl = img.b64_json ? `data:image/png;base64,${img.b64_json}` : img.url!;
+              return jsonResponse({
+                success: true,
+                imageUrl,
+                provider: `${providerLabel} · ${retryLabel}`,
+                jobId: body.jobId,
+              });
+            } catch (err) {
+              const e = err as ProviderError;
+              errors.push({
+                attempt: retryLabel,
+                status: response.status,
+                contentType,
+                message: e.message || "Gagal memparse response YG",
+                body: e.lastPayload ?? "",
+              });
+              // parse failure → try next attempt shape, no more retries here
+              break;
+            }
           }
 
-          try {
-            const img = await parseYogaResponse(response);
-            if (!img) throw new Error("YG response tidak berisi gambar");
-            const imageUrl = img.b64_json ? `data:image/png;base64,${img.b64_json}` : img.url!;
-            return jsonResponse({
-              success: true,
-              imageUrl,
-              provider: `${providerLabel} · ${attempt.label}`,
-              jobId: body.jobId,
-            });
-          } catch (err) {
-            const e = err as ProviderError;
-            errors.push({
-              attempt: attempt.label,
-              status: response.status,
-              contentType,
-              message: e.message || "Gagal memparse response YG",
-              body: e.lastPayload ?? "",
-            });
-          }
+          if (credentialFatal) break;
+          if (attemptSucceeded) break;
         }
 
         const last = errors.at(-1);
