@@ -666,6 +666,23 @@ function Workspace() {
     }
     if (!user) return;
 
+    // Pre-flight: pastikan YogaDev bisa dihubungi sebelum motong saldo & mulai generate
+    pushDebug({ level: "info", message: "Health check YogaDev sebelum generate…" });
+    setDebugOpen(true);
+    const health = await runYogaHealthCheck(true);
+    if (!health.ok) {
+      toast.error("YogaDev belum siap — generate dibatalkan", {
+        description: health.detail,
+        duration: 10000,
+      });
+      pushDebug({
+        level: "error",
+        message: `Generate dibatalkan: YogaDev ${health.reachable ? "error" : "unreachable"} — ${health.detail}`,
+      });
+      return;
+    }
+    pushDebug({ level: "success", message: `YogaDev siap (${health.latency ?? "?"}ms) — lanjut generate` });
+
     // Build target ratios (multi-ratio 1-klik or single)
     const targetRatios: string[] = allRatios
       ? PLATFORMS[platform].ratios.map((r) => r.key)
