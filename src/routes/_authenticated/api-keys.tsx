@@ -1,284 +1,201 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell, useAppUser } from "@/components/app-shell";
-import { Key, Plus, Copy, Eye, EyeOff, Trash2, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Key, Plus, Trash2, CheckCircle2, XCircle, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/api-keys")({
   head: () => ({
-    meta: [{ title: "API Keys — Cetak Ide" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "API Keys OpenAI — Cetak Ide" }, { name: "robots", content: "noindex" }],
   }),
   component: ApiKeysPage,
 });
 
-function generateKey() {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let key = "ck_live_";
-  for (let i = 0; i < 48; i++) key += chars[Math.floor(Math.random() * chars.length)];
-  return key;
-}
+type Row = {
+  id: string;
+  label: string | null;
+  provider: string;
+  model: string;
+  api_key: string;
+  is_active: boolean;
+  last_status: string | null;
+  last_used_at: string | null;
+  failure_count: number;
+  created_at: string;
+};
 
-const INIT_KEYS = [
-  {
-    id: "1",
-    name: "Production Key",
-    key: "ck_live_9sK2mXpQ4nRwVjTbLhD7eAuF3cGiYoZ8",
-    created: "2026-01-15",
-    lastUsed: "2 jam lalu",
-    status: "aktif",
-    permissions: ["generate", "read"],
-  },
-  {
-    id: "2",
-    name: "Test Key",
-    key: "ck_test_7fRmPxNw2vQjYbKhD5eAuL4cGsZoX1Mk",
-    created: "2026-03-10",
-    lastUsed: "5 hari lalu",
-    status: "aktif",
-    permissions: ["generate", "read", "write"],
-  },
-  {
-    id: "3",
-    name: "Webhook Integration",
-    key: "ck_live_3aZxMpKw8nRjVbThD2eAuF6cGsYoQ7Lm",
-    created: "2026-05-20",
-    lastUsed: "Tidak pernah",
-    status: "nonaktif",
-    permissions: ["read"],
-  },
-];
+function mask(k: string) {
+  if (!k) return "";
+  if (k.length <= 12) return "•".repeat(k.length);
+  return `${k.slice(0, 6)}${"•".repeat(Math.max(4, k.length - 10))}${k.slice(-4)}`;
+}
 
 function ApiKeysPage() {
   const { user } = useAppUser();
-  const [keys, setKeys] = useState(INIT_KEYS);
-  const [showForm, setShowForm] = useState(false);
-  const [revealId, setRevealId] = useState<string | null>(null);
-  const [newKeyName, setNewKeyName] = useState("");
-  const [newKeyPerms, setNewKeyPerms] = useState<string[]>(["generate", "read"]);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [label, setLabel] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [model, setModel] = useState("gpt-image-1");
 
-  function togglePerm(perm: string) {
-    setNewKeyPerms((prev) =>
-      prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm],
-    );
+  async function load() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("ai_providers")
+      .select("id,label,provider,model,api_key,is_active,last_status,last_used_at,failure_count,created_at")
+      .ilike("provider", "openai")
+      .order("created_at", { ascending: false });
+    if (error) toast.error(error.message);
+    setRows((data as Row[]) ?? []);
+    setLoading(false);
   }
+  useEffect(() => { void load(); }, []);
 
-  function createKey() {
-    if (!newKeyName.trim()) {
-      toast.error("Masukkan nama API key!");
+  async function addKey() {
+    if (!apiKey.trim().startsWith("sk-")) {
+      toast.error("API key OpenAI biasanya diawali sk-...");
       return;
     }
-    const newKey = {
-      id: String(Date.now()),
-      name: newKeyName,
-      key: generateKey(),
-      created: new Date().toISOString().split("T")[0],
-      lastUsed: "Tidak pernah",
-      status: "aktif",
-      permissions: newKeyPerms,
-    };
-    setKeys((prev) => [newKey, ...prev]);
-    setNewKeyName("");
-    setShowForm(false);
-    setRevealId(newKey.id);
-    toast.success("API Key baru berhasil dibuat!");
+    setSaving(true);
+    const { error } = await supabase.from("ai_providers").insert({
+      user_id: user!.userId,
+      provider: "openai",
+      model: model || "gpt-image-1",
+      api_key: apiKey.trim(),
+      label: label.trim() || "OpenAI",
+      is_active: true,
+      priority: 10,
+    });
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("API key OpenAI tersimpan. Sekarang bisa generate gambar!");
+    setApiKey(""); setLabel("");
+    void load();
   }
 
-  function copyKey(key: string) {
-    navigator.clipboard.writeText(key);
-    toast.success("API Key disalin ke clipboard!");
+  async function toggle(row: Row) {
+    const { error } = await supabase
+      .from("ai_providers")
+      .update({ is_active: !row.is_active })
+      .eq("id", row.id);
+    if (error) return toast.error(error.message);
+    void load();
   }
 
-  function deleteKey(id: string) {
-    setKeys((prev) => prev.filter((k) => k.id !== id));
-    toast.success("API Key dihapus.");
+  async function remove(row: Row) {
+    if (!confirm(`Hapus key "${row.label ?? "OpenAI"}"?`)) return;
+    const { error } = await supabase.from("ai_providers").delete().eq("id", row.id);
+    if (error) return toast.error(error.message);
+    toast.success("Key dihapus");
+    void load();
   }
-
-  function toggleStatus(id: string) {
-    setKeys((prev) =>
-      prev.map((k) =>
-        k.id === id ? { ...k, status: k.status === "aktif" ? "nonaktif" : "aktif" } : k,
-      ),
-    );
-    toast.success("Status API Key diperbarui.");
-  }
-
-  const PERMS = [
-    { id: "generate", label: "Generate Visual", desc: "Buat visual baru via API" },
-    { id: "read", label: "Read Data", desc: "Baca data project & aset" },
-    { id: "write", label: "Write Data", desc: "Ubah data project & aset" },
-    { id: "billing", label: "Billing Info", desc: "Akses info tagihan (hanya baca)" },
-  ];
 
   return (
-    <AppShell title="API Keys" subtitle="Kelola kunci API untuk integrasi eksternal" user={user}>
+    <AppShell title="API Keys OpenAI" subtitle="Hubungkan API key OpenAI pribadi Anda untuk generate gambar" user={user}>
       <div className="space-y-4">
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: "Total API Keys", value: keys.length.toString() },
-            { label: "Aktif", value: keys.filter((k) => k.status === "aktif").length.toString() },
-            {
-              label: "Nonaktif",
-              value: keys.filter((k) => k.status === "nonaktif").length.toString(),
-            },
-          ].map(({ label, value }) => (
-            <div
-              key={label}
-              className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4 text-center backdrop-blur-md"
+        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm text-white/80">
+          <p className="mb-2 font-semibold text-primary">Wajib: pasang API key OpenAI dulu</p>
+          <p className="text-xs leading-relaxed">
+            Semua request generate gambar di Workspace dikirim langsung ke OpenAI memakai key Anda —
+            tidak ada biaya dari Cetak Ide. Dapatkan key gratis di{" "}
+            <a
+              className="inline-flex items-center gap-1 text-primary underline"
+              href="https://platform.openai.com/api-keys"
+              target="_blank"
+              rel="noreferrer"
             >
-              <p className="font-display text-xl sm:text-2xl font-bold text-primary">{value}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{label}</p>
-            </div>
-          ))}
+              platform.openai.com/api-keys <ExternalLink className="h-3 w-3" />
+            </a>
+            . Aktifkan billing dan model <code>gpt-image-1</code> di akun OpenAI Anda.
+          </p>
         </div>
 
-        {/* Header & Button */}
-        <div className="flex items-center justify-between">
-          <h3 className="font-display text-sm font-semibold">Daftar API Keys</h3>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-md">
+          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+            <Plus className="h-4 w-4" /> Tambah API Key OpenAI
+          </h4>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="Label (mis. Akun Utama)"
+              className="rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm placeholder:text-white/30 focus:border-primary/50 focus:outline-none"
+            />
+            <input
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder="Model (gpt-image-1)"
+              className="rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm placeholder:text-white/30 focus:border-primary/50 focus:outline-none"
+            />
+            <input
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="sk-..."
+              type="password"
+              className="sm:col-span-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-sm placeholder:text-white/30 focus:border-primary/50 focus:outline-none"
+            />
+          </div>
           <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black transition hover:brightness-110"
+            onClick={addKey}
+            disabled={saving}
+            className="mt-3 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-60"
             style={{ background: "linear-gradient(135deg, #EAB308, #CA8A04)" }}
           >
-            <Plus className="h-4 w-4" /> Buat API Key
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Simpan Key
           </button>
         </div>
 
-        {/* Create Form */}
-        {showForm && (
-          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 sm:p-5 backdrop-blur-md">
-            <h4 className="mb-4 text-sm font-semibold">Buat API Key Baru</h4>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-xs font-medium text-muted-foreground">
-                  Nama Key
-                </label>
-                <input
-                  value={newKeyName}
-                  onChange={(e) => setNewKeyName(e.target.value)}
-                  placeholder="Misal: Mobile App Key, Webhook Key..."
-                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm placeholder:text-white/30 focus:border-primary/50 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-xs font-medium text-muted-foreground">
-                  Izin (Permissions)
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {PERMS.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => togglePerm(p.id)}
-                      className={`rounded-xl border px-3 py-2 text-left text-[10px] transition ${newKeyPerms.includes(p.id) ? "border-primary/60 bg-primary/10" : "border-white/10 hover:border-white/30"}`}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <div
-                          className={`h-3 w-3 rounded border ${newKeyPerms.includes(p.id) ? "border-primary bg-primary" : "border-white/30"}`}
-                        />
-                        <span className="font-medium">{p.label}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 flex gap-3">
-              <button
-                onClick={() => setShowForm(false)}
-                className="flex-1 rounded-xl border border-white/10 py-2.5 text-sm text-white/60 hover:bg-white/10"
-              >
-                Batal
-              </button>
-              <button
-                onClick={createKey}
-                className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-black"
-                style={{ background: "linear-gradient(135deg, #EAB308, #CA8A04)" }}
-              >
-                Buat API Key
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Keys List */}
         <div className="space-y-3">
-          {keys.map((k) => (
-            <div
-              key={k.id}
-              className={`rounded-2xl border backdrop-blur-md p-4 sm:p-5 ${k.status === "aktif" ? "border-white/10 bg-white/[0.04]" : "border-white/5 bg-white/[0.02]"}`}
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex-1 min-w-0">
+          <h3 className="font-display text-sm font-semibold">Key Aktif</h3>
+          {loading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-white/40" /></div>
+          ) : rows.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-white/40">
+              Belum ada API key. Tambahkan di atas untuk mulai generate gambar.
+            </div>
+          ) : rows.map((k) => (
+            <div key={k.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-md">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 flex-1">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <p className="font-display text-sm font-bold text-white">{k.name}</p>
+                    <p className="font-display text-sm font-bold">{k.label || "OpenAI"}</p>
+                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/60">{k.model}</span>
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${k.status === "aktif" ? "bg-green-500/15 text-green-400" : "bg-white/10 text-white/40"}`}
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        k.is_active ? "bg-green-500/15 text-green-400" : "bg-white/10 text-white/40"
+                      }`}
                     >
-                      {k.status === "aktif" ? (
-                        <CheckCircle2 className="h-3 w-3" />
-                      ) : (
-                        <XCircle className="h-3 w-3" />
-                      )}
-                      {k.status === "aktif" ? "Aktif" : "Nonaktif"}
+                      {k.is_active ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                      {k.is_active ? "Aktif" : "Nonaktif"}
                     </span>
+                    {k.last_status && (
+                      <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/60">
+                        Status: {k.last_status}
+                      </span>
+                    )}
                   </div>
-
-                  {/* Key Value */}
                   <div className="flex items-center gap-2 rounded-xl bg-black/30 px-3 py-2 font-mono text-xs">
-                    <Key className="h-3.5 w-3.5 shrink-0 text-primary" />
-                    <span className="flex-1 truncate text-white/70">
-                      {revealId === k.id
-                        ? k.key
-                        : k.key.slice(0, 20) + "●●●●●●●●●●●●●●●●●●●●●●●●●●"}
-                    </span>
-                    <button
-                      onClick={() => setRevealId(revealId === k.id ? null : k.id)}
-                      className="shrink-0 text-muted-foreground hover:text-white"
-                    >
-                      {revealId === k.id ? (
-                        <EyeOff className="h-3.5 w-3.5" />
-                      ) : (
-                        <Eye className="h-3.5 w-3.5" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => copyKey(k.key)}
-                      className="shrink-0 text-muted-foreground hover:text-white"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                    </button>
+                    <Key className="h-3.5 w-3.5 text-primary" />
+                    <span className="truncate text-white/70">{mask(k.api_key)}</span>
                   </div>
-
-                  {/* Metadata */}
-                  <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" /> Dibuat:{" "}
-                      {new Date(k.created).toLocaleDateString("id-ID")}
-                    </span>
-                    <span>Terakhir digunakan: {k.lastUsed}</span>
-                    <span className="flex flex-wrap gap-1">
-                      {k.permissions.map((p) => (
-                        <span
-                          key={p}
-                          className="rounded-full bg-white/10 px-1.5 py-0.5 text-white/60"
-                        >
-                          {p}
-                        </span>
-                      ))}
-                    </span>
-                  </div>
+                  {k.last_used_at && (
+                    <p className="mt-2 text-[10px] text-white/40">
+                      Terakhir dipakai: {new Date(k.last_used_at).toLocaleString("id-ID")}
+                    </p>
+                  )}
                 </div>
-
-                {/* Actions */}
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-2">
                   <button
-                    onClick={() => toggleStatus(k.id)}
-                    className="rounded-xl border border-white/10 px-3 py-2 text-xs text-muted-foreground hover:bg-white/10 hover:text-white"
+                    onClick={() => toggle(k)}
+                    className="rounded-xl border border-white/10 px-3 py-2 text-xs text-white/60 hover:bg-white/10 hover:text-white"
                   >
-                    {k.status === "aktif" ? "Nonaktifkan" : "Aktifkan"}
+                    {k.is_active ? "Nonaktifkan" : "Aktifkan"}
                   </button>
                   <button
-                    onClick={() => deleteKey(k.id)}
+                    onClick={() => remove(k)}
                     className="rounded-xl border border-white/10 p-2 text-white/40 hover:bg-red-500/10 hover:text-red-400"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -287,23 +204,6 @@ function ApiKeysPage() {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Usage Docs */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5 backdrop-blur-md">
-          <h3 className="mb-3 font-display text-sm font-semibold">Contoh Penggunaan API</h3>
-          <div className="overflow-x-auto rounded-xl bg-black/50 p-4">
-            <pre className="text-[11px] text-green-400 whitespace-pre">
-              {`curl -X POST https://api.cetakide.com/v1/generate \\
-  -H "Authorization: Bearer ck_live_YOUR_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "prompt": "Banner sneakers premium hitam",
-    "platform": "instagram",
-    "ratio": "1:1"
-  }'`}
-            </pre>
-          </div>
         </div>
       </div>
     </AppShell>
