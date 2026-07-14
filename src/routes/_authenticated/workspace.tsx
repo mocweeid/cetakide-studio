@@ -128,13 +128,26 @@ function renderErrorChecklist(items: ErrorChecklistItem[], providerMessage?: str
   );
 }
 
-function formatGenerateError(err: unknown): { title: string; description: React.ReactNode } {
+function summarizeGenerateError(err: unknown): string {
+  if (err instanceof GenerateImageError) {
+    return `${err.providerMessage} — ${err.suggestion}`.slice(0, 300);
+  }
+  return err instanceof Error ? err.message : String(err ?? "Generate belum berhasil");
+}
+
+function formatGenerateError(err: unknown): {
+  title: string;
+  description: React.ReactNode;
+  summary: string;
+} {
+  const summary = summarizeGenerateError(err);
   if (err instanceof GenerateImageError) {
     const statusLabel = err.status ? `HTTP ${err.status}` : "network";
     const items = buildErrorChecklist(err.status, err.providerMessage);
     return {
       title: `Generate belum berhasil (${statusLabel})`,
       description: renderErrorChecklist(items, err.providerMessage),
+      summary,
     };
   }
   const msg = err instanceof Error ? err.message : String(err ?? "Generate belum berhasil");
@@ -142,6 +155,7 @@ function formatGenerateError(err: unknown): { title: string; description: React.
   return {
     title: "Generate belum berhasil",
     description: renderErrorChecklist(items, msg),
+    summary,
   };
 }
 
