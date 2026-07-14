@@ -789,7 +789,10 @@ function Workspace() {
   }> {
     if (!silent) setCheckingYoga(true);
     try {
-      const res = await fetch("/api/check-yoga", { method: "GET" });
+      const res = await fetch(`/api/check-yoga?force=1&ts=${Date.now()}`, {
+        method: "GET",
+        cache: "no-store",
+      });
       const j = (await res.json()) as {
         ok: boolean;
         reachable?: boolean;
