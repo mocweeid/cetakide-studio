@@ -653,6 +653,9 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           sizeParam: typeof body.size === "string" ? body.size : null,
         });
 
+        const retryCfg = loadRetryConfig();
+        log("info", "retry_config", { requestId, jobId, ...retryCfg });
+
         // Circuit breaker gate: jika YogaDev sedang OPEN, lewati semua attempt YG
         // dan langsung mencoba fallback (atau kembalikan 503 dengan pesan jelas).
         const gate = breakerAllowRequest(requestId, jobId);
@@ -743,8 +746,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
         }> = [];
 
         for (const attempt of attempts) {
-          const MAX_RETRIES = 3;
-          const BASE_DELAY_MS = 800;
+          const MAX_RETRIES = retryCfg.maxAttempts;
           let credentialFatal = false;
           let attemptSucceeded = false;
 
@@ -775,7 +777,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                   },
                   body: JSON.stringify(attempt.payload),
                 },
-                180_000,
+                retryCfg.requestTimeoutMs,
               );
             } catch (err) {
               const message = (err as Error)?.message || "Image provider network error";
@@ -791,9 +793,9 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 message,
                 durationMs,
               });
-              // network / timeout → transient, backoff and retry
-              if (!isLastRetry) {
-                const delay = BASE_DELAY_MS * 2 ** retry + Math.floor(Math.random() * 250);
+              // network / timeout → transient, backoff and retry (opt-in via env)
+              if (!isLastRetry && retryCfg.retryOnNetworkError) {
+                const delay = computeBackoff(retry, retryCfg);
                 log("info", "retry_scheduled", {
                   requestId,
                   jobId,
@@ -856,17 +858,13 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 break;
               }
 
-              const isTransient =
-                response.status === 408 ||
-                response.status === 425 ||
-                response.status === 429 ||
-                response.status >= 500;
+              const isTransient = retryCfg.statusCodes.includes(response.status);
               if (isTransient && !isLastRetry) {
                 const retryAfter = Number(response.headers.get("retry-after")) * 1000;
                 const delay =
                   Number.isFinite(retryAfter) && retryAfter > 0
-                    ? retryAfter
-                    : BASE_DELAY_MS * 2 ** retry + Math.floor(Math.random() * 250);
+                    ? Math.min(retryAfter, retryCfg.maxDelayMs)
+                    : computeBackoff(retry, retryCfg);
                 log("info", "retry_scheduled", {
                   requestId,
                   jobId,
