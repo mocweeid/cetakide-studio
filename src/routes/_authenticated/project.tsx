@@ -139,6 +139,37 @@ function ProjectPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [lightbox, setLightbox] = useState<Project | null>(null);
 
+  async function downloadPoster(project: Project) {
+    if (!project.image_url) return;
+    const safeName =
+      (project.kebutuhan || "poster")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 60) || "poster";
+    const ext = (project.image_url.split("?")[0].split(".").pop() || "jpg").slice(0, 5);
+    const filename = `cetakide-${safeName}-${project.id.slice(0, 6)}.${ext}`;
+    const tid = toast.loading("Mengunduh poster…");
+    try {
+      const res = await fetch(project.image_url, { mode: "cors" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success("Poster berhasil diunduh.", { id: tid });
+    } catch (err) {
+      // Fallback: open in new tab so user can save manually
+      window.open(project.image_url, "_blank", "noopener");
+      toast.error("Unduhan langsung diblokir — file dibuka di tab baru.", { id: tid });
+    }
+  }
+
   useEffect(() => {
     if (!lightbox) return;
     const onKey = (e: KeyboardEvent) => {
@@ -293,14 +324,14 @@ function ProjectPage() {
                   {/* Hover Overlay */}
                   <div className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100 p-2.5">
                     <div className="flex justify-end gap-1">
-                      {project.image_url && (
-                        <a
-                          href={project.image_url}
-                          download
+                      {project.image_url && project.status === "sukses" && (
+                        <button
+                          onClick={() => downloadPoster(project)}
+                          title="Unduh poster"
                           className="rounded-lg bg-white/20 p-1.5 text-white hover:bg-white/30"
                         >
                           <Download className="h-3.5 w-3.5" />
-                        </a>
+                        </button>
                       )}
                       <button
                         onClick={() => deleteProject(project.id)}
@@ -367,14 +398,15 @@ function ProjectPage() {
               <span>{lightbox.platform}</span>
               <span className="text-white/40">·</span>
               <span>{lightbox.aspect_ratio}</span>
-              <a
-                href={lightbox.image_url}
-                download
-                onClick={(e) => e.stopPropagation()}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  downloadPoster(lightbox);
+                }}
                 className="ml-2 inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 font-semibold text-white hover:bg-white/25"
               >
                 <Download className="h-3 w-3" /> Unduh
-              </a>
+              </button>
             </div>
           </div>
         </div>
