@@ -598,6 +598,52 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           sizeParam: typeof body.size === "string" ? body.size : null,
         });
 
+        // Circuit breaker gate: jika YogaDev sedang OPEN, lewati semua attempt YG
+        // dan langsung mencoba fallback (atau kembalikan 503 dengan pesan jelas).
+        const gate = breakerAllowRequest(requestId, jobId);
+        if (!gate.allowed) {
+          const remaining = breakerRemainingMs();
+          log("warn", "breaker_short_circuit", {
+            requestId,
+            jobId,
+            userId,
+            ...breakerSnapshot(),
+          });
+          const fallbackStartedAt = Date.now();
+          const fallback = await tryLovableGatewayFallback(prompt);
+          if (fallback.ok) {
+            log("info", "fallback_success", {
+              requestId,
+              jobId,
+              provider: fallback.provider,
+              via: "breaker_open",
+              durationMs: Date.now() - fallbackStartedAt,
+            });
+            return jsonResponse({
+              success: true,
+              imageUrl: fallback.imageUrl,
+              provider: fallback.provider,
+              jobId,
+              requestId,
+              fallbackUsed: true,
+              primaryProvider: providerLabel,
+              breaker: breakerSnapshot(),
+              notice: `YogaDev sedang gangguan berulang — pakai fallback (${fallback.provider}). Retry YogaDev otomatis dilanjut dalam ${Math.ceil(remaining / 1000)}d.`,
+            });
+          }
+          return jsonResponse(
+            {
+              success: false,
+              message: `YogaDev sedang gangguan berulang. Sistem menjeda retry selama ${Math.ceil(remaining / 1000)} detik agar tidak memperburuk. Coba lagi setelah cooldown atau hubungi admin.`,
+              requestId,
+              breaker: breakerSnapshot(),
+              details: { provider: providerLabel, fallback },
+            },
+            503,
+          );
+        }
+        const breakerProbe = gate.probe;
+
         const basePayload = {
           model,
           prompt,
@@ -798,12 +844,15 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 totalMs,
                 imageKind: img.b64_json ? "base64" : "url",
               });
+              breakerRecordSuccess(requestId, jobId);
               return jsonResponse({
                 success: true,
                 imageUrl,
                 provider: `${providerLabel} · ${retryLabel}`,
                 jobId,
                 requestId,
+                breaker: breakerSnapshot(),
+                probeRecovered: breakerProbe || undefined,
               });
             } catch (err) {
               const e = err as ProviderError;
@@ -859,6 +908,11 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           }),
           totalMs: Date.now() - requestStartedAt,
         });
+        breakerRecordFailure(
+          `${last?.status ?? "?"} ${last?.message ?? "no image"}`.slice(0, 200),
+          requestId,
+          jobId,
+        );
         const fallbackStartedAt = Date.now();
         const fallback = await tryLovableGatewayFallback(prompt);
         if (fallback.ok) {
@@ -878,6 +932,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
             fallbackUsed: true,
             primaryProvider: providerLabel,
             primaryErrors: errors,
+            breaker: breakerSnapshot(),
           });
         }
         log("error", "request_failed", {
@@ -895,13 +950,21 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           totalMs: Date.now() - requestStartedAt,
         });
 
+        const bs = breakerSnapshot();
+        const breakerNote =
+          bs.state === "OPEN"
+            ? ` Circuit breaker AKTIF: retry YogaDev dijeda ${Math.ceil(bs.remainingMs / 1000)}d.`
+            : bs.state === "HALF_OPEN"
+              ? " Circuit breaker HALF-OPEN: probe berikutnya menentukan reset."
+              : ` (${bs.recentFailures}/${bs.threshold} kegagalan dalam ${Math.round(bs.windowMs / 1000)}d — breaker akan aktif setelah ${bs.threshold} kegagalan.)`;
         return jsonResponse(
           {
             success: false,
             message: credentialError
               ? "YogaDev menolak request: akun/key YogaDev belum punya kredensial provider image upstream. Minta YogaDev mengaktifkan cx/gpt-5.5-image untuk key ini."
-              : last?.message || `${providerLabel} belum mengembalikan gambar`,
+              : `${last?.message || `${providerLabel} belum mengembalikan gambar`}.${breakerNote}`,
             requestId,
+            breaker: bs,
             details: {
               provider: providerLabel,
               targetUrl,
