@@ -2335,6 +2335,30 @@ function Workspace() {
                 clear
               </button>
               <button
+                onClick={() => exportDebugLogs("txt")}
+                disabled={debugLogs.length === 0}
+                title="Ekspor log terminal ke file .txt"
+                className="rounded-md border border-sky-400/30 bg-sky-500/10 px-2 py-1 font-mono text-[11px] font-semibold text-sky-200 hover:bg-sky-500/20 disabled:opacity-40"
+              >
+                export .txt
+              </button>
+              <button
+                onClick={() => exportDebugLogs("json")}
+                disabled={debugLogs.length === 0}
+                title="Ekspor log terminal ke file .json (untuk admin)"
+                className="rounded-md border border-violet-400/30 bg-violet-500/10 px-2 py-1 font-mono text-[11px] font-semibold text-violet-200 hover:bg-violet-500/20 disabled:opacity-40"
+              >
+                export .json
+              </button>
+              <button
+                onClick={copyDebugLogs}
+                disabled={debugLogs.length === 0}
+                title="Salin semua log ke clipboard"
+                className="rounded-md border border-white/15 bg-white/5 px-2 py-1 font-mono text-[11px] text-white/70 hover:bg-white/10 disabled:opacity-40"
+              >
+                copy
+              </button>
+              <button
                 onClick={() => setDebugOpen(false)}
                 className="rounded-md p-1 text-white/60 hover:text-white"
                 aria-label="Tutup"
