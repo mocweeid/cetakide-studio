@@ -365,6 +365,14 @@ function ProjectPage() {
                 key={project.id}
                 className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]"
               >
+                {/* Accent stripe by status */}
+                <div
+                  className={`absolute left-0 top-0 z-10 h-full w-1 ${STATUS_META[normalizeStatus(project.status)].accent}`}
+                />
+                {/* Persistent status badge (always visible) */}
+                <div className="absolute left-2 top-2 z-10">
+                  <StatusBadge status={project.status} />
+                </div>
                 {/* Image */}
                 <div className="relative aspect-square overflow-hidden">
                   {project.image_url ? (
@@ -398,9 +406,7 @@ function ProjectPage() {
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                    <div>
-                      <StatusBadge status={project.status} />
-                    </div>
+                    <div />
                   </div>
                 </div>
                 {/* Info */}
