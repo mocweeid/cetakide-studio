@@ -958,22 +958,44 @@ function Workspace() {
     }
     if (!user) return;
 
-    // Pre-flight: pastikan YogaDev bisa dihubungi sebelum motong saldo & mulai generate
-    pushDebug({ level: "info", message: "Health check YogaDev sebelum generate…" });
     setDebugOpen(true);
-    const health = await runYogaHealthCheck(true);
-    if (!health.ok) {
-      toast.error("YogaDev belum siap — generate dibatalkan", {
-        description: health.detail,
-        duration: 10000,
-      });
+    if (skipPreflight) {
+      // Emergency mode: pre-flight dilewati. Konfirmasi ulang sebelum motong saldo.
       pushDebug({
         level: "error",
-        message: `Generate dibatalkan: YogaDev ${health.reachable ? "error" : "unreachable"} — ${health.detail}`,
+        message: "⚠ Mode darurat: pre-flight YogaDev DILEWATI. Menunggu konfirmasi user…",
       });
-      return;
+      const proceed = window.confirm(
+        "MODE DARURAT AKTIF\n\n" +
+          "Pre-flight YogaDev DILEWATI. Saldo akan DIPOTONG walau YogaDev bisa jadi sedang down.\n\n" +
+          "Lanjut generate sekarang?",
+      );
+      if (!proceed) {
+        toast.info("Generate dibatalkan", { description: "Mode darurat aktif — user membatalkan." });
+        pushDebug({ level: "info", message: "Generate dibatalkan oleh user (mode darurat)." });
+        return;
+      }
+      pushDebug({
+        level: "error",
+        message: "⚠ User setuju — melanjutkan tanpa pre-flight. Saldo tetap dipotong.",
+      });
+    } else {
+      // Pre-flight: pastikan YogaDev bisa dihubungi sebelum motong saldo & mulai generate
+      pushDebug({ level: "info", message: "Health check YogaDev sebelum generate…" });
+      const health = await runYogaHealthCheck(true);
+      if (!health.ok) {
+        toast.error("YogaDev belum siap — generate dibatalkan", {
+          description: `${health.detail} · Aktifkan Mode Darurat di terminal jika ingin tetap mencoba.`,
+          duration: 10000,
+        });
+        pushDebug({
+          level: "error",
+          message: `Generate dibatalkan: YogaDev ${health.reachable ? "error" : "unreachable"} — ${health.detail}`,
+        });
+        return;
+      }
+      pushDebug({ level: "success", message: `YogaDev siap (${health.latency ?? "?"}ms) — lanjut generate` });
     }
-    pushDebug({ level: "success", message: `YogaDev siap (${health.latency ?? "?"}ms) — lanjut generate` });
     pushDebug({
       level: "info",
       message: `Mulai pipeline: ${allRatios ? "multi-rasio" : "single"} · ${generateCount > 1 && !allRatios ? generateCount + " variasi" : ""} · platform=${platform} · ratio=${ratio}`.replace(/\s+·\s+·/g, " ·"),
