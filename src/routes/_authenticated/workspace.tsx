@@ -1706,16 +1706,21 @@ function Workspace() {
           .eq("id", projectId);
       }
       const info = formatGenerateError(err);
-      toast.error(`Regenerate variasi ${i + 1} — ${info.title}`, {
-        description: info.description,
-        duration: 10000,
-        action: {
-          label: "Retry",
-          onClick: () => {
+      showGenerateFailureToast(
+        err,
+        {
+          onRetry: () => {
             void handleRegenerate(i);
           },
+          onReduceVariants: () => {
+            setGenerateCount(1);
+            setAllRatios(false);
+            toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+          },
+          currentVariantCount: variants.length,
         },
-      });
+        `Regenerate variasi ${i + 1} — ${info.title}`,
+      );
       captureFailure(err, `Regenerate variasi ${i + 1}`);
       pushDebug({
         level: "error",
