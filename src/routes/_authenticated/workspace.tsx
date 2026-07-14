@@ -495,6 +495,11 @@ function Workspace() {
         has_target_model?: boolean;
         sample_models?: string[];
         error?: string;
+        cache?: {
+          source?: "cache" | "live";
+          age_ms?: number;
+          expires_in_ms?: number;
+        };
       };
       let result: {
         ok: boolean;
@@ -522,11 +527,38 @@ function Workspace() {
         });
       }
       setYogaStatus(result);
+      setYogaDetail({
+        baseUrl: j.baseUrl,
+        target_model: j.model,
+        has_target_model: j.has_target_model,
+        model_count: j.model_count,
+        sample_models: j.sample_models,
+        cache_source: j.cache?.source,
+        cache_age_ms: j.cache?.age_ms,
+        cache_expires_in_ms: j.cache?.expires_in_ms,
+        status: j.status,
+      });
+      setYogaPingHistory((prev) =>
+        [
+          {
+            ts: new Date().toISOString(),
+            ok: result.ok,
+            latency: j.latency_ms,
+            source: j.cache?.source,
+            status: j.status,
+            note: result.ok ? undefined : result.detail,
+          },
+          ...prev,
+        ].slice(0, 12),
+      );
       return result;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       const result = { ok: false, detail: msg, reachable: false };
       setYogaStatus(result);
+      setYogaPingHistory((prev) =>
+        [{ ts: new Date().toISOString(), ok: false, note: msg }, ...prev].slice(0, 12),
+      );
       pushDebug({ level: "error", message: `YogaDev health exception: ${msg}` });
       return result;
     } finally {
