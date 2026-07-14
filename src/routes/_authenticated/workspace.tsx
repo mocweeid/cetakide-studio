@@ -731,6 +731,11 @@ function Workspace() {
           typeof crypto !== "undefined" && "randomUUID" in crypto
             ? crypto.randomUUID()
             : `job_${Date.now()}_${i}`;
+        pushDebug({
+          level: "info",
+          message: `→ variasi ${i + 1}/${totalJobs} · ratio=${jobRatio} · size=${size} · jobId=${jobId.slice(0, 8)}`,
+          jobId,
+        });
         // 1) Catat proyek dengan status "proses" dulu
         const { data: inserted, error: insertErr } = await supabase
           .from("projects")
@@ -755,9 +760,23 @@ function Workspace() {
           .single();
         if (insertErr) throw insertErr;
         const projectId = inserted!.id;
+        pushDebug({
+          level: "info",
+          message: `  ↳ project row dibuat (id=${projectId.slice(0, 8)}) · POST /api/generate-image-simple`,
+          jobId,
+        });
         await refresh();
 
         // 2) Jalankan generate; update ke sukses / gagal sesuai hasil
+        const startedAt = Date.now();
+        const heartbeat = setInterval(() => {
+          const secs = Math.round((Date.now() - startedAt) / 1000);
+          pushDebug({
+            level: "info",
+            message: `  … menunggu YogaDev (${secs}s) · variasi ${i + 1}/${totalJobs}`,
+            jobId,
+          });
+        }, 5000);
         try {
           let finalUrl = "";
           const { provider } = await streamImage(
@@ -782,12 +801,14 @@ function Workspace() {
                 jobId: status.jobId || jobId,
               }),
           );
+          clearInterval(heartbeat);
           if (!finalUrl) throw new Error("Tidak ada gambar final.");
           usedKeys.add(provider);
           newResults.push(finalUrl);
+          const took = Math.round((Date.now() - startedAt) / 1000);
           pushDebug({
             level: "success",
-            message: `Variasi ${i + 1} sukses (${jobRatio})`,
+            message: `✓ variasi ${i + 1}/${totalJobs} sukses dalam ${took}s (${jobRatio}, provider=${provider})`,
             provider,
             jobId,
           });
@@ -796,6 +817,8 @@ function Workspace() {
             .update({ image_url: finalUrl, status: "sukses", provider })
             .eq("id", projectId);
         } catch (genErr) {
+          clearInterval(heartbeat);
+          const took = Math.round((Date.now() - startedAt) / 1000);
           failedCount++;
           const msg = genErr instanceof Error ? genErr.message : "Generate belum berhasil";
           const info = formatGenerateError(genErr);
@@ -810,7 +833,7 @@ function Workspace() {
             .eq("id", projectId);
           pushDebug({
             level: "error",
-            message: `Variasi ${i + 1} belum berhasil — ${info.title}: ${info.description.replace(/\n/g, " ")}`,
+            message: `✗ variasi ${i + 1}/${totalJobs} belum berhasil setelah ${took}s — ${info.title}: ${info.description.replace(/\n/g, " ")}`,
             jobId,
           });
           toast.error(`Variasi ${i + 1} — ${info.title}`, {
