@@ -1101,7 +1101,7 @@ function Workspace() {
             .eq("id", projectId);
           pushDebug({
             level: "error",
-            message: `✗ variasi ${i + 1}/${totalJobs} belum berhasil setelah ${took}s — ${info.title}: ${info.description.replace(/\n/g, " ")}`,
+            message: `✗ variasi ${i + 1}/${totalJobs} belum berhasil setelah ${took}s — ${info.title}: ${info.summary}`,
             jobId,
           });
           toast.error(`Variasi ${i + 1} — ${info.title}`, {
@@ -1315,7 +1315,7 @@ function Workspace() {
       captureFailure(err, `Regenerate variasi ${i + 1}`);
       pushDebug({
         level: "error",
-        message: `Regenerate variasi ${i + 1} belum berhasil — ${info.title}: ${info.description.replace(/\n/g, " ")}`,
+        message: `Regenerate variasi ${i + 1} belum berhasil — ${info.title}: ${info.summary}`,
         jobId,
       });
     }
