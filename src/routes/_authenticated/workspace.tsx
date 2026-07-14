@@ -680,6 +680,8 @@ function Workspace() {
     onStreamFrame: (dataUrl: string, isFinal: boolean) => void;
     onStatus: (s: { provider?: string; message?: string; jobId?: string }) => void;
   }): Promise<{ provider: string; finalUrl: string }> {
+    // return shape extended below (fallbackUsed etc are attached via any)
+    // keep declared type for compat; callers cast when reading extras.
     let lastErr: unknown = null;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       setVariants((prev) => {
@@ -726,7 +728,13 @@ function Workspace() {
             jobId: params.jobId,
           });
         }
-        return { provider: result.provider, finalUrl };
+        return {
+          provider: result.provider,
+          finalUrl,
+          fallbackUsed: !!result.fallbackUsed,
+          primaryProvider: result.primaryProvider,
+          requestId: result.requestId,
+        } as { provider: string; finalUrl: string; fallbackUsed?: boolean; primaryProvider?: string; requestId?: string };
       } catch (err) {
         lastErr = err;
         const msg = err instanceof Error ? err.message : String(err);
