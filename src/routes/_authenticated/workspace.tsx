@@ -458,7 +458,15 @@ function Workspace() {
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<string[]>([]);
   type Variant =
-    | { status: "proses"; prompt?: string; ratio?: string }
+    | {
+        status: "proses";
+        prompt?: string;
+        ratio?: string;
+        attempt?: number;
+        maxAttempts?: number;
+        retryIn?: number;
+        lastError?: string;
+      }
     | { status: "streaming"; imageUrl: string; prompt?: string; ratio?: string }
     | { status: "sukses"; imageUrl: string; prompt?: string; ratio?: string }
     | { status: "gagal"; error: string; prompt?: string; ratio?: string };
@@ -659,6 +667,89 @@ function Workspace() {
     toast.success("Referensi custom ditambahkan.");
   }
 
+  // Client-side auto-retry dengan indikator visual (percobaan + countdown)
+  const MAX_ATTEMPTS = 3;
+  const RETRY_BACKOFF_SECONDS = [3, 6, 10];
+
+  async function attemptWithRetry(params: {
+    index: number;
+    prompt: string;
+    size: string;
+    ratio: string;
+    jobId: string;
+    onStreamFrame: (dataUrl: string, isFinal: boolean) => void;
+    onStatus: (s: { provider?: string; message?: string; jobId?: string }) => void;
+  }): Promise<{ provider: string; finalUrl: string }> {
+    let lastErr: unknown = null;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      setVariants((prev) => {
+        const next = [...prev];
+        next[params.index] = {
+          status: "proses",
+          prompt: params.prompt,
+          ratio: params.ratio,
+          attempt,
+          maxAttempts: MAX_ATTEMPTS,
+        };
+        return next;
+      });
+      pushDebug({
+        level: "info",
+        message: `  ⟳ percobaan ${attempt}/${MAX_ATTEMPTS} · variasi ${params.index + 1}`,
+        jobId: params.jobId,
+      });
+      try {
+        let finalUrl = "";
+        const { provider } = await streamImage(
+          params.prompt,
+          params.size,
+          (dataUrl, isFinal) => {
+            params.onStreamFrame(dataUrl, isFinal);
+            if (isFinal) finalUrl = dataUrl;
+          },
+          params.jobId,
+          params.onStatus,
+        );
+        if (!finalUrl) throw new Error("Tidak ada gambar final.");
+        return { provider, finalUrl };
+      } catch (err) {
+        lastErr = err;
+        const msg = err instanceof Error ? err.message : String(err);
+        if (attempt === MAX_ATTEMPTS) {
+          pushDebug({
+            level: "error",
+            message: `  ✗ percobaan ${attempt}/${MAX_ATTEMPTS} gagal — retry habis`,
+            jobId: params.jobId,
+          });
+          break;
+        }
+        const wait = RETRY_BACKOFF_SECONDS[attempt - 1] ?? 8;
+        pushDebug({
+          level: "info",
+          message: `  ✗ percobaan ${attempt} gagal — retry dalam ${wait}s (${msg.slice(0, 100)})`,
+          jobId: params.jobId,
+        });
+        for (let s = wait; s > 0; s--) {
+          setVariants((prev) => {
+            const next = [...prev];
+            next[params.index] = {
+              status: "proses",
+              prompt: params.prompt,
+              ratio: params.ratio,
+              attempt,
+              maxAttempts: MAX_ATTEMPTS,
+              retryIn: s,
+              lastError: msg.slice(0, 140),
+            };
+            return next;
+          });
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      }
+    }
+    throw lastErr instanceof Error ? lastErr : new Error("Generate belum berhasil setelah retry.");
+  }
+
   async function handleGenerate() {
     if (!form.prompt.trim()) {
       toast.error("Isi prompt dulu.");
@@ -778,11 +869,13 @@ function Workspace() {
           });
         }, 5000);
         try {
-          let finalUrl = "";
-          const { provider } = await streamImage(
-            finalBasePrompt,
+          const { provider, finalUrl } = await attemptWithRetry({
+            index: i,
+            prompt: finalBasePrompt,
             size,
-            (dataUrl, isFinal) => {
+            ratio: jobRatio,
+            jobId,
+            onStreamFrame: (dataUrl, isFinal) => {
               setVariants((prev) => {
                 const next = [...prev];
                 next[i] = isFinal
@@ -790,17 +883,15 @@ function Workspace() {
                   : { status: "streaming", imageUrl: dataUrl, prompt: finalBasePrompt, ratio: jobRatio };
                 return next;
               });
-              if (isFinal) finalUrl = dataUrl;
             },
-            jobId,
-            (status) =>
+            onStatus: (status) =>
               pushDebug({
                 level: "info",
                 message: status.message || "Provider memproses gambar",
                 provider: status.provider,
                 jobId: status.jobId || jobId,
               }),
-          );
+          });
           clearInterval(heartbeat);
           if (!finalUrl) throw new Error("Tidak ada gambar final.");
           usedKeys.add(provider);
@@ -936,11 +1027,13 @@ function Workspace() {
           .single();
         projectId = inserted?.id ?? null;
       }
-      let finalUrl = "";
-      const { provider } = await streamImage(
+      const { provider, finalUrl } = await attemptWithRetry({
+        index: i,
         prompt,
         size,
-        (dataUrl, isFinal) => {
+        ratio: jobRatio,
+        jobId,
+        onStreamFrame: (dataUrl, isFinal) => {
           setVariants((prev) => {
             const next = [...prev];
             next[i] = isFinal
@@ -948,17 +1041,15 @@ function Workspace() {
               : { status: "streaming", imageUrl: dataUrl, prompt, ratio: jobRatio };
             return next;
           });
-          if (isFinal) finalUrl = dataUrl;
         },
-        jobId,
-        (status) =>
+        onStatus: (status) =>
           pushDebug({
             level: "info",
             message: status.message || "Provider memproses gambar",
             provider: status.provider,
             jobId: status.jobId || jobId,
           }),
-      );
+      });
       if (!finalUrl) throw new Error("Tidak ada gambar final.");
       clearInterval(heartbeat);
       if (projectId) {
@@ -1157,9 +1248,47 @@ function Workspace() {
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
                               <Loader2 className="h-7 w-7 animate-spin text-primary" />
                               <p className="text-xs text-white/70">Variasi {i + 1} · sedang diproses…</p>
-                              <span className="rounded-full bg-yellow-500/20 border border-yellow-500/40 px-2 py-0.5 text-[10px] font-semibold text-yellow-300">
-                                proses
-                              </span>
+                              {v.attempt && v.maxAttempts ? (
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold border ${
+                                    v.retryIn
+                                      ? "bg-amber-500/20 border-amber-400/50 text-amber-200"
+                                      : "bg-yellow-500/20 border-yellow-500/40 text-yellow-300"
+                                  }`}
+                                >
+                                  Percobaan {v.attempt}/{v.maxAttempts}
+                                </span>
+                              ) : (
+                                <span className="rounded-full bg-yellow-500/20 border border-yellow-500/40 px-2 py-0.5 text-[10px] font-semibold text-yellow-300">
+                                  proses
+                                </span>
+                              )}
+                              {v.retryIn ? (
+                                <div className="mt-1 flex flex-col items-center gap-1 px-4">
+                                  <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-500/10 border border-amber-400/40 px-2 py-1 text-[11px] font-mono text-amber-200">
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    coba lagi dalam {v.retryIn}s…
+                                  </span>
+                                  <div className="w-32 h-1 rounded-full bg-white/10 overflow-hidden">
+                                    <div
+                                      className="h-full bg-amber-400 transition-all duration-1000 ease-linear"
+                                      style={{
+                                        width: `${
+                                          100 -
+                                          (v.retryIn /
+                                            (RETRY_BACKOFF_SECONDS[(v.attempt ?? 1) - 1] ?? 8)) *
+                                            100
+                                        }%`,
+                                      }}
+                                    />
+                                  </div>
+                                  {v.lastError && (
+                                    <p className="text-[10px] text-red-200/70 text-center line-clamp-2 max-w-[90%]">
+                                      {v.lastError}
+                                    </p>
+                                  )}
+                                </div>
+                              ) : null}
                             </div>
                           </>
                         )}
