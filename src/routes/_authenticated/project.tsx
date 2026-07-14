@@ -15,8 +15,35 @@ import {
   Clock,
   AlertTriangle,
   Loader2,
+  Cpu,
+  Sparkles,
   X,
 } from "lucide-react";
+
+function formatRelativeTime(iso: string): string {
+  const d = new Date(iso).getTime();
+  if (Number.isNaN(d)) return "";
+  const diff = Date.now() - d;
+  const s = Math.round(diff / 1000);
+  if (s < 60) return `${s}d lalu`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m lalu`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}j lalu`;
+  const days = Math.round(h / 24);
+  if (days < 7) return `${days}h lalu`;
+  return new Date(iso).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" });
+}
+
+function providerLabel(p?: string | null): { name: string; model: string } {
+  const raw = (p || "").toLowerCase();
+  if (!raw) return { name: "—", model: "" };
+  if (raw.includes("yoga")) return { name: "YogaDev", model: "gpt-5.5-image" };
+  if (raw.includes("openai") || raw.includes("dall")) return { name: "OpenAI", model: "DALL·E 3" };
+  if (raw.includes("gemini") || raw.includes("google")) return { name: "Gemini", model: "imagen" };
+  if (raw.includes("lovable") || raw.includes("gateway")) return { name: "Lovable AI", model: "gateway" };
+  return { name: p as string, model: "" };
+}
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/project")({
@@ -34,6 +61,10 @@ type Project = {
   aspect_ratio: string;
   status: string;
   created_at: string;
+  provider?: string | null;
+  primary_provider?: string | null;
+  fallback_used?: boolean | null;
+  request_id?: string | null;
 };
 
 const MOCK_PROJECTS: Project[] = [
@@ -424,11 +455,48 @@ function ProjectPage() {
                     <span className="text-[9px] text-muted-foreground">{project.platform}</span>
                     <span className="text-[9px] text-muted-foreground">{project.aspect_ratio}</span>
                   </div>
-                  <p className="mt-0.5 text-[9px] text-muted-foreground">
-                    {new Date(project.created_at).toLocaleDateString("id-ID", {
-                      day: "2-digit",
-                      month: "short",
-                    })}
+                  {/* Metadata: provider · model · waktu */}
+                  <div className="mt-2 flex flex-wrap items-center gap-1">
+                    {(() => {
+                      const { name, model } = providerLabel(project.provider);
+                      return (
+                        <>
+                          <span
+                            className="inline-flex items-center gap-1 rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[9px] font-medium text-white/70 ring-1 ring-white/10"
+                            title={`Provider: ${name}`}
+                          >
+                            <Cpu className="h-2.5 w-2.5" /> {name}
+                          </span>
+                          {model && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary ring-1 ring-primary/20"
+                              title={`Model: ${model}`}
+                            >
+                              <Sparkles className="h-2.5 w-2.5" /> {model}
+                            </span>
+                          )}
+                          {project.fallback_used && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-medium text-amber-300 ring-1 ring-amber-400/20"
+                              title="Fallback provider dipakai"
+                            >
+                              fallback
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <p
+                    className="mt-1 flex items-center gap-1 text-[9px] text-muted-foreground"
+                    title={new Date(project.created_at).toLocaleString("id-ID")}
+                  >
+                    <Clock className="h-2.5 w-2.5" /> {formatRelativeTime(project.created_at)}
+                    {project.request_id && (
+                      <span className="ml-auto truncate font-mono text-[8px] text-white/30">
+                        #{project.request_id.slice(0, 6)}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
