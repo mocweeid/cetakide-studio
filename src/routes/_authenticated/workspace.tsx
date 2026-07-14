@@ -400,7 +400,7 @@ function Workspace() {
       /* ignore */
     }
     pushDebug({
-      level: next ? "warn" : "info",
+      level: next ? "error" : "info",
       message: next
         ? "⚠ Mode darurat AKTIF — pre-flight YogaDev dilewati untuk generate berikutnya."
         : "Mode darurat dimatikan — pre-flight YogaDev kembali aktif.",
