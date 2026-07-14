@@ -1657,6 +1657,106 @@ function Workspace() {
                 )}
               </p>
             )}
+            {lastFailure && (
+              <div className="mt-3 rounded-md border border-rose-500/30 bg-rose-500/5">
+                <div className="flex items-center justify-between gap-2 border-b border-rose-500/20 px-3 py-1.5">
+                  <div className="flex items-center gap-2 text-[11px] text-rose-200">
+                    <Bug className="h-3.5 w-3.5" />
+                    <span className="font-semibold">RAW YogaDev — {lastFailure.variant}</span>
+                    <span className="text-white/40">HTTP {lastFailure.status || "n/a"}</span>
+                    <span className="text-white/30">
+                      {new Date(lastFailure.ts).toLocaleTimeString("en-GB", { hour12: false })}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          JSON.stringify(
+                            { request: lastFailure.request, response: lastFailure.response, attempts: lastFailure.attempts },
+                            null,
+                            2,
+                          ),
+                        );
+                        toast.success("Detail debug disalin.");
+                      }}
+                      className="rounded border border-white/15 px-2 py-0.5 text-[10px] text-white/70 hover:bg-white/10"
+                    >
+                      copy
+                    </button>
+                    <button
+                      onClick={() => setRawOpen((v) => !v)}
+                      className="rounded border border-white/15 px-2 py-0.5 text-[10px] text-white/70 hover:bg-white/10"
+                    >
+                      {rawOpen ? "hide" : "show"}
+                    </button>
+                    <button
+                      onClick={() => setLastFailure(null)}
+                      className="rounded border border-white/15 px-2 py-0.5 text-[10px] text-white/70 hover:bg-white/10"
+                    >
+                      clear
+                    </button>
+                  </div>
+                </div>
+                {rawOpen && (
+                  <div className="space-y-2 px-3 py-2 text-[11px]">
+                    <p className="text-amber-200">💡 {lastFailure.suggestion}</p>
+                    {lastFailure.targetUrl && (
+                      <p className="text-white/50">
+                        <span className="text-white/40">endpoint:</span> {lastFailure.targetUrl}
+                      </p>
+                    )}
+                    <div>
+                      <p className="mb-1 text-white/50">→ request (dari Workspace)</p>
+                      <pre className="max-h-32 overflow-auto rounded bg-black/40 p-2 text-emerald-200">
+                        {JSON.stringify(lastFailure.request, null, 2)}
+                      </pre>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-white/50">
+                        ← attempts ({lastFailure.attempts.length}) — payload dikirim ke YogaDev & body mentah
+                      </p>
+                      <div className="space-y-2">
+                        {lastFailure.attempts.map((a, i) => (
+                          <div key={i} className="rounded border border-white/10 bg-black/40 p-2">
+                            <p className="text-white/70">
+                              <span className="text-amber-200">#{i + 1}</span> {a.attempt}{" "}
+                              <span className="text-white/40">
+                                {a.status ? `HTTP ${a.status}` : "network"}
+                                {a.contentType ? ` · ${a.contentType}` : ""}
+                              </span>
+                            </p>
+                            {a.message && <p className="text-rose-200">{a.message}</p>}
+                            {a.requestPayload && (
+                              <details className="mt-1">
+                                <summary className="cursor-pointer text-white/50">payload dikirim</summary>
+                                <pre className="mt-1 max-h-32 overflow-auto text-sky-200">
+                                  {JSON.stringify(a.requestPayload, null, 2)}
+                                </pre>
+                              </details>
+                            )}
+                            {a.body && (
+                              <details className="mt-1" open>
+                                <summary className="cursor-pointer text-white/50">body respons mentah</summary>
+                                <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-all text-rose-100">
+                                  {a.body}
+                                </pre>
+                              </details>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <details>
+                      <summary className="cursor-pointer text-white/50">← respons endpoint (JSON penuh)</summary>
+                      <pre className="mt-1 max-h-48 overflow-auto rounded bg-black/40 p-2 text-white/80">
+                        {JSON.stringify(lastFailure.response, null, 2)}
+                      </pre>
+                    </details>
+                  </div>
+                )}
+              </div>
+            )}
             {debugLogs.length === 0 ? (
               <p className="mt-2 text-white/30">
                 <span className="animate-pulse">▍</span> idle · belum ada proses berjalan
