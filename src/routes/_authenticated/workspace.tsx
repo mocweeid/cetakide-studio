@@ -667,8 +667,90 @@ function Workspace() {
     toast.success("Referensi custom ditambahkan.");
   }
 
+  // Client-side auto-retry dengan indikator visual (percobaan + countdown)
+  const MAX_ATTEMPTS = 3;
+  const RETRY_BACKOFF_SECONDS = [3, 6, 10];
+
+  async function attemptWithRetry(params: {
+    index: number;
+    prompt: string;
+    size: string;
+    ratio: string;
+    jobId: string;
+    onStreamFrame: (dataUrl: string, isFinal: boolean) => void;
+    onStatus: (s: { provider?: string; message?: string; jobId?: string }) => void;
+  }): Promise<{ provider: string; finalUrl: string }> {
+    let lastErr: unknown = null;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      setVariants((prev) => {
+        const next = [...prev];
+        next[params.index] = {
+          status: "proses",
+          prompt: params.prompt,
+          ratio: params.ratio,
+          attempt,
+          maxAttempts: MAX_ATTEMPTS,
+        };
+        return next;
+      });
+      pushDebug({
+        level: "info",
+        message: `  ⟳ percobaan ${attempt}/${MAX_ATTEMPTS} · variasi ${params.index + 1}`,
+        jobId: params.jobId,
+      });
+      try {
+        let finalUrl = "";
+        const { provider } = await streamImage(
+          params.prompt,
+          params.size,
+          (dataUrl, isFinal) => {
+            params.onStreamFrame(dataUrl, isFinal);
+            if (isFinal) finalUrl = dataUrl;
+          },
+          params.jobId,
+          params.onStatus,
+        );
+        if (!finalUrl) throw new Error("Tidak ada gambar final.");
+        return { provider, finalUrl };
+      } catch (err) {
+        lastErr = err;
+        const msg = err instanceof Error ? err.message : String(err);
+        if (attempt === MAX_ATTEMPTS) {
+          pushDebug({
+            level: "error",
+            message: `  ✗ percobaan ${attempt}/${MAX_ATTEMPTS} gagal — retry habis`,
+            jobId: params.jobId,
+          });
+          break;
+        }
+        const wait = RETRY_BACKOFF_SECONDS[attempt - 1] ?? 8;
+        pushDebug({
+          level: "info",
+          message: `  ✗ percobaan ${attempt} gagal — retry dalam ${wait}s (${msg.slice(0, 100)})`,
+          jobId: params.jobId,
+        });
+        for (let s = wait; s > 0; s--) {
+          setVariants((prev) => {
+            const next = [...prev];
+            next[params.index] = {
+              status: "proses",
+              prompt: params.prompt,
+              ratio: params.ratio,
+              attempt,
+              maxAttempts: MAX_ATTEMPTS,
+              retryIn: s,
+              lastError: msg.slice(0, 140),
+            };
+            return next;
+          });
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      }
+    }
+    throw lastErr instanceof Error ? lastErr : new Error("Generate belum berhasil setelah retry.");
+  }
+
   async function handleGenerate() {
-    // will be defined below via closure — see attemptWithRetry
     if (!form.prompt.trim()) {
       toast.error("Isi prompt dulu.");
       return;
