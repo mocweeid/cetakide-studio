@@ -599,13 +599,33 @@ export const Route = createFileRoute("/api/generate-image-simple")({
         const credentialError = errors.find((e) =>
           `${e.message} ${e.body ?? ""}`.toLowerCase().includes("no credentials for provider"),
         );
+
+        // Semua attempt YG gagal → coba Lovable Gateway supaya user tidak terkunci
+        const fallback = await tryLovableGatewayFallback(prompt);
+        if (fallback.ok) {
+          return jsonResponse({
+            success: true,
+            imageUrl: fallback.imageUrl,
+            provider: fallback.provider,
+            jobId: body.jobId,
+            fallbackUsed: true,
+            primaryProvider: providerLabel,
+            primaryErrors: errors,
+          });
+        }
+
         return jsonResponse(
           {
             success: false,
             message: credentialError
               ? "YogaDev menolak request: akun/key YogaDev belum punya kredensial provider image upstream. Minta YogaDev mengaktifkan cx/gpt-5.5-image untuk key ini."
               : last?.message || `${providerLabel} belum mengembalikan gambar`,
-            details: { provider: providerLabel, targetUrl, attempts: errors },
+            details: {
+              provider: providerLabel,
+              targetUrl,
+              attempts: errors,
+              fallback,
+            },
           },
           502,
         );
