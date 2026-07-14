@@ -229,6 +229,13 @@ function Workspace() {
     detail: string;
     latency?: number;
   }>(null);
+  const [checkingYoga, setCheckingYoga] = useState(false);
+  const [yogaStatus, setYogaStatus] = useState<null | {
+    ok: boolean;
+    detail: string;
+    latency?: number;
+    reachable?: boolean;
+  }>(null);
   function pushDebug(entry: Omit<DebugEntry, "ts">) {
     setDebugLogs((prev) =>
       [{ ts: new Date().toISOString(), ...entry }, ...prev].slice(0, 30),
@@ -273,6 +280,75 @@ function Workspace() {
       toast.error("Cek OpenAI belum berhasil", { description: msg });
     } finally {
       setCheckingOpenai(false);
+    }
+  }
+
+  async function runYogaHealthCheck(silent = false): Promise<{
+    ok: boolean;
+    detail: string;
+    latency?: number;
+    reachable?: boolean;
+  }> {
+    if (!silent) setCheckingYoga(true);
+    try {
+      const res = await fetch("/api/check-yoga", { method: "GET" });
+      const j = (await res.json()) as {
+        ok: boolean;
+        reachable?: boolean;
+        status?: number;
+        latency_ms?: number;
+        baseUrl?: string;
+        model?: string;
+        model_count?: number;
+        has_target_model?: boolean;
+        sample_models?: string[];
+        error?: string;
+      };
+      let result: {
+        ok: boolean;
+        detail: string;
+        latency?: number;
+        reachable?: boolean;
+      };
+      if (j.ok) {
+        const detail = `YogaDev online · ${j.model_count ?? 0} model${
+          j.has_target_model ? ` · ${j.model} tersedia` : ` · ${j.model} TIDAK terdaftar`
+        } · ${j.latency_ms}ms`;
+        result = { ok: true, detail, latency: j.latency_ms, reachable: true };
+        pushDebug({ level: "success", message: `YogaDev health OK — ${detail}` });
+      } else {
+        const detail = j.error || (j.status ? `HTTP ${j.status}` : "Tidak bisa dihubungi");
+        result = {
+          ok: false,
+          detail,
+          latency: j.latency_ms,
+          reachable: !!j.reachable,
+        };
+        pushDebug({
+          level: "error",
+          message: `YogaDev health ${j.reachable ? "error" : "unreachable"} — ${detail}`,
+        });
+      }
+      setYogaStatus(result);
+      return result;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const result = { ok: false, detail: msg, reachable: false };
+      setYogaStatus(result);
+      pushDebug({ level: "error", message: `YogaDev health exception: ${msg}` });
+      return result;
+    } finally {
+      if (!silent) setCheckingYoga(false);
+    }
+  }
+
+  async function handleCheckYoga() {
+    const r = await runYogaHealthCheck(false);
+    setDebugOpen(true);
+    if (r.ok) {
+      toast.success("YogaDev siap", { description: r.detail });
+    } else {
+      toast.error("YogaDev belum siap", { description: r.detail, duration: 10000 });
     }
   }
 
@@ -589,6 +665,23 @@ function Workspace() {
       return;
     }
     if (!user) return;
+
+    // Pre-flight: pastikan YogaDev bisa dihubungi sebelum motong saldo & mulai generate
+    pushDebug({ level: "info", message: "Health check YogaDev sebelum generate…" });
+    setDebugOpen(true);
+    const health = await runYogaHealthCheck(true);
+    if (!health.ok) {
+      toast.error("YogaDev belum siap — generate dibatalkan", {
+        description: health.detail,
+        duration: 10000,
+      });
+      pushDebug({
+        level: "error",
+        message: `Generate dibatalkan: YogaDev ${health.reachable ? "error" : "unreachable"} — ${health.detail}`,
+      });
+      return;
+    }
+    pushDebug({ level: "success", message: `YogaDev siap (${health.latency ?? "?"}ms) — lanjut generate` });
 
     // Build target ratios (multi-ratio 1-klik or single)
     const targetRatios: string[] = allRatios
@@ -1626,6 +1719,19 @@ function Workspace() {
                 )}
               </button>
               <button
+                onClick={handleCheckYoga}
+                disabled={checkingYoga}
+                className="rounded-md border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 font-mono text-[11px] font-semibold text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-50"
+              >
+                {checkingYoga ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin" /> ping yoga…
+                  </span>
+                ) : (
+                  "$ ping yoga"
+                )}
+              </button>
+              <button
                 onClick={() => setDebugLogs([])}
                 className="rounded-md border border-white/10 px-2 py-1 font-mono text-[11px] text-white/60 hover:text-white"
               >
@@ -1654,6 +1760,20 @@ function Workspace() {
                 {openaiStatus.ok ? "✓ ok" : "✗ error"} — {openaiStatus.detail}
                 {typeof openaiStatus.latency === "number" && (
                   <span className="text-white/40"> ({openaiStatus.latency}ms)</span>
+                )}
+              </p>
+            )}
+            {yogaStatus && (
+              <p className={yogaStatus.ok ? "text-emerald-300" : "text-rose-300"}>
+                <span className="text-white/40">[yogadev]</span>{" "}
+                {yogaStatus.ok
+                  ? "✓ reachable"
+                  : yogaStatus.reachable
+                    ? "✗ error"
+                    : "✗ unreachable"}{" "}
+                — {yogaStatus.detail}
+                {typeof yogaStatus.latency === "number" && (
+                  <span className="text-white/40"> ({yogaStatus.latency}ms)</span>
                 )}
               </p>
             )}
