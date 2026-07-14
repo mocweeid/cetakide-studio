@@ -460,6 +460,56 @@ function computeBackoff(retry: number, cfg: ReturnType<typeof loadRetryConfig>):
   return capped + jitter;
 }
 
+// ------- auto-adjustment untuk error 400/422/429 -------
+// Progresif memendekkan prompt dan menyederhanakan payload agar YogaDev
+// menerima request pada retry berikutnya (mengurangi variasi/detail).
+//   level 0 → prompt asli, semua field opsional
+//   level 1 → prompt ≤ 1200 char, drop image_detail & background
+//   level 2 → prompt ≤ 600 char, drop output_format & quality
+//   level 3+ → prompt ≤ 280 char, hanya {model, prompt, n:1, size:"auto"}
+function shortenPromptForRetry(prompt: string, level: number): string {
+  if (level <= 0) return prompt;
+  const limits = [Infinity, 1200, 600, 280, 160];
+  const max = limits[Math.min(level, limits.length - 1)];
+  if (prompt.length <= max) return prompt;
+  // Ambil kalimat pertama sebisa mungkin, potong di batas kata terdekat.
+  const truncated = prompt.slice(0, max);
+  const lastStop = Math.max(
+    truncated.lastIndexOf(". "),
+    truncated.lastIndexOf("! "),
+    truncated.lastIndexOf("? "),
+    truncated.lastIndexOf(", "),
+    truncated.lastIndexOf(" "),
+  );
+  return (lastStop > max * 0.5 ? truncated.slice(0, lastStop) : truncated).trim();
+}
+
+function adjustPayloadForRetry(
+  original: Record<string, unknown>,
+  prompt: string,
+  level: number,
+): Record<string, unknown> {
+  const p = { ...original, prompt } as Record<string, unknown>;
+  if (level >= 1) {
+    delete p.image_detail;
+    delete p.background;
+  }
+  if (level >= 2) {
+    delete p.output_format;
+    delete p.quality;
+  }
+  if (level >= 3) {
+    // sisakan hanya field paling minimal supaya validator YG tidak menolak
+    const minimal: Record<string, unknown> = { model: p.model, prompt: p.prompt, n: 1 };
+    if (p.size !== undefined) minimal.size = p.size;
+    if (p.stream !== undefined) minimal.stream = p.stream;
+    return minimal;
+  }
+  // pastikan n selalu 1 (kurangi variasi)
+  if (typeof p.n !== "number" || (p.n as number) > 1) p.n = 1;
+  return p;
+}
+
 // ------- circuit breaker (in-memory, per Worker instance) -------
 
 type BreakerState = "CLOSED" | "OPEN" | "HALF_OPEN";
