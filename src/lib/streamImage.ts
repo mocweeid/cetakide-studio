@@ -23,13 +23,26 @@ export class GenerateImageError extends Error {
   status: number;
   providerMessage: string;
   suggestion: string;
-  attempts: Array<{ attempt: string; status?: number; message?: string; body?: string }>;
+  attempts: Array<{
+    attempt: string;
+    status?: number;
+    contentType?: string;
+    message?: string;
+    body?: string;
+    requestPayload?: Record<string, unknown>;
+  }>;
+  rawResponse: unknown;
+  rawRequest: Record<string, unknown>;
+  targetUrl?: string;
   constructor(opts: {
     message: string;
     status: number;
     providerMessage: string;
     suggestion: string;
-    attempts: Array<{ attempt: string; status?: number; message?: string; body?: string }>;
+    attempts: GenerateImageError["attempts"];
+    rawResponse: unknown;
+    rawRequest: Record<string, unknown>;
+    targetUrl?: string;
   }) {
     super(opts.message);
     this.name = "GenerateImageError";
@@ -37,6 +50,9 @@ export class GenerateImageError extends Error {
     this.providerMessage = opts.providerMessage;
     this.suggestion = opts.suggestion;
     this.attempts = opts.attempts;
+    this.rawResponse = opts.rawResponse;
+    this.rawRequest = opts.rawRequest;
+    this.targetUrl = opts.targetUrl;
   }
 }
 
@@ -98,7 +114,7 @@ export async function streamImage(
     imageUrl?: string;
     provider?: string;
     message?: string;
-    details?: unknown;
+    details?: { targetUrl?: string; attempts?: unknown; provider?: string; fallback?: unknown };
   };
   try {
     json = (await res.json()) as typeof json;
@@ -107,14 +123,23 @@ export async function streamImage(
   }
 
   if (!res.ok || !json.success || !json.imageUrl) {
-    const rawAttempts = (json.details as { attempts?: unknown } | undefined)?.attempts;
+    const rawAttempts = json.details?.attempts;
     const attempts = Array.isArray(rawAttempts)
-      ? (rawAttempts as Array<{ attempt?: string; status?: number; message?: string; body?: string }>).map(
+      ? (rawAttempts as Array<{
+          attempt?: string;
+          status?: number;
+          contentType?: string;
+          message?: string;
+          body?: string;
+          requestPayload?: Record<string, unknown>;
+        }>).map(
           (a) => ({
             attempt: a.attempt || "YogaDev",
             status: a.status,
+            contentType: a.contentType,
             message: a.message,
             body: a.body,
+            requestPayload: a.requestPayload,
           }),
         )
       : [];
@@ -130,6 +155,9 @@ export async function streamImage(
       providerMessage,
       suggestion,
       attempts,
+      rawResponse: json,
+      rawRequest: { prompt, size, jobId },
+      targetUrl: json.details?.targetUrl,
     });
   }
 
