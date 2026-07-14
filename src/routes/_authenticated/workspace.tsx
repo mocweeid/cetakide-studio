@@ -480,6 +480,8 @@ function Workspace() {
     detail: string;
     latency?: number;
     reachable?: boolean;
+    hasTargetModel?: boolean;
+    targetModel?: string;
   }> {
     if (!silent) setCheckingYoga(true);
     try {
@@ -506,12 +508,21 @@ function Workspace() {
         detail: string;
         latency?: number;
         reachable?: boolean;
+        hasTargetModel?: boolean;
+        targetModel?: string;
       };
       if (j.ok) {
         const detail = `YogaDev online · ${j.model_count ?? 0} model${
           j.has_target_model ? ` · ${j.model} tersedia` : ` · ${j.model} TIDAK terdaftar`
         } · ${j.latency_ms}ms`;
-        result = { ok: true, detail, latency: j.latency_ms, reachable: true };
+        result = {
+          ok: true,
+          detail,
+          latency: j.latency_ms,
+          reachable: true,
+          hasTargetModel: j.has_target_model,
+          targetModel: j.model,
+        };
         pushDebug({ level: "success", message: `YogaDev health OK — ${detail}` });
       } else {
         const detail = j.error || (j.status ? `HTTP ${j.status}` : "Tidak bisa dihubungi");
