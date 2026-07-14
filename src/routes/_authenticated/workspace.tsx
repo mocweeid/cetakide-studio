@@ -914,6 +914,8 @@ function Workspace() {
     jobId: string;
     onStreamFrame: (dataUrl: string, isFinal: boolean) => void;
     onStatus: (s: { provider?: string; message?: string; jobId?: string }) => void;
+    forceFallback?: boolean;
+    forceFallbackReason?: string;
   }): Promise<{ provider: string; finalUrl: string }> {
     // return shape extended below (fallbackUsed etc are attached via any)
     // keep declared type for compat; callers cast when reading extras.
@@ -946,6 +948,9 @@ function Workspace() {
           },
           params.jobId,
           params.onStatus,
+          params.forceFallback
+            ? { forceFallback: true, forceFallbackReason: params.forceFallbackReason }
+            : undefined,
         );
         if (!finalUrl) throw new Error("Tidak ada gambar final.");
         if (result.fallbackUsed) {
