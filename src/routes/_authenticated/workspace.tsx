@@ -2048,11 +2048,61 @@ function Workspace() {
                 {rawOpen && (
                   <div className="space-y-2 px-3 py-2 text-[11px]">
                     <p className="text-amber-200">💡 {lastFailure.suggestion}</p>
-                    {lastFailure.targetUrl && (
-                      <p className="text-white/50">
-                        <span className="text-white/40">endpoint:</span> {lastFailure.targetUrl}
+                    <div className="grid grid-cols-1 gap-1 rounded border border-white/10 bg-black/40 p-2 sm:grid-cols-2">
+                      <p className="text-white/60">
+                        <span className="text-white/40">status:</span>{" "}
+                        <span
+                          className={
+                            lastFailure.status >= 500
+                              ? "text-rose-300"
+                              : lastFailure.status >= 400
+                                ? "text-amber-300"
+                                : "text-white/70"
+                          }
+                        >
+                          HTTP {lastFailure.status || "n/a"}
+                        </span>
                       </p>
-                    )}
+                      <p className="text-white/60">
+                        <span className="text-white/40">provider:</span>{" "}
+                        <span className="text-sky-300">
+                          {(() => {
+                            const r = lastFailure.response as { provider?: string; primaryProvider?: string; fallbackUsed?: boolean } | null;
+                            if (r?.fallbackUsed) return `${r.primaryProvider || "YogaDev"} → fallback ${r.provider || "Lovable"}`;
+                            return r?.provider || r?.primaryProvider || "YogaDev";
+                          })()}
+                        </span>
+                      </p>
+                      <p className="col-span-full text-white/60">
+                        <span className="text-white/40">POST</span>{" "}
+                        <span className="text-emerald-200">
+                          {lastFailure.targetUrl || "/api/generate-image-simple"}
+                        </span>
+                      </p>
+                      <p className="col-span-full text-white/60">
+                        <span className="text-white/40">payload:</span>{" "}
+                        <span className="text-white/80">
+                          {(() => {
+                            const r = lastFailure.request as { prompt?: string; size?: string; jobId?: string };
+                            const p = (r?.prompt || "").slice(0, 80);
+                            return `prompt="${p}${(r?.prompt?.length || 0) > 80 ? "…" : ""}" · size=${r?.size || "-"} · jobId=${(r?.jobId || "-").slice(0, 12)}`;
+                          })()}
+                        </span>
+                      </p>
+                      <p className="col-span-full text-white/60">
+                        <span className="text-white/40">respons snippet:</span>{" "}
+                        <span className="text-rose-100">
+                          {(() => {
+                            const last = lastFailure.attempts[lastFailure.attempts.length - 1];
+                            const snippet =
+                              last?.body?.slice(0, 240) ||
+                              lastFailure.providerMessage?.slice(0, 240) ||
+                              JSON.stringify(lastFailure.response).slice(0, 240);
+                            return snippet || "(kosong)";
+                          })()}
+                        </span>
+                      </p>
+                    </div>
                     <div>
                       <p className="mb-1 text-white/50">→ request (dari Workspace)</p>
                       <pre className="max-h-32 overflow-auto rounded bg-black/40 p-2 text-emerald-200">
