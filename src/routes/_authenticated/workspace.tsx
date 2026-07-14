@@ -569,7 +569,7 @@ function Workspace() {
     provider?: string;
     jobId?: string;
   };
-  const [debugOpen, setDebugOpen] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(true);
   const [debugLogs, setDebugLogs] = useState<DebugEntry[]>([]);
   type RawFailure = {
     ts: string;
