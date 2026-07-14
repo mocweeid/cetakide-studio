@@ -7,6 +7,10 @@ function json(status: number, payload: unknown): Response {
   });
 }
 
+// Build tag — bumped to force Worker rebuild & re-bind runtime env after
+// CUSTOM_AI_API_KEY was added/rotated in Lovable Cloud secrets.
+const BUILD_TAG = "check-yoga@2026-07-14T07:16";
+
 function truncate(s: string, n = 240): string {
   return s.length > n ? s.slice(0, n) + "…" : s;
 }
