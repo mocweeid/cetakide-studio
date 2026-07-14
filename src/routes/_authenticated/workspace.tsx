@@ -29,7 +29,7 @@ import {
 import { PRESET_THEMES, getThemeStyles, ThemeSkeletonPreview, getPresetExample } from "./preset-theme";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { autofillFieldServer } from "@/lib/autofillField.functions";
-import { streamImage } from "@/lib/streamImage";
+import { streamImage, GenerateImageError } from "@/lib/streamImage";
 import { useServerFn } from "@tanstack/react-start";
 import JSZip from "jszip";
 
