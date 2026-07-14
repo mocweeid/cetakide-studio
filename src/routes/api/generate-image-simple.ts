@@ -911,6 +911,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           message: string;
           body?: string;
           requestPayload?: Record<string, unknown>;
+          retryAfterSeconds?: number;
         }> = [];
 
         // Auto-adjustment state: bertambah ketika YG mengembalikan 400/422/429.
