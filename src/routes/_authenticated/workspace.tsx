@@ -682,6 +682,10 @@ function Workspace() {
       return;
     }
     pushDebug({ level: "success", message: `YogaDev siap (${health.latency ?? "?"}ms) — lanjut generate` });
+    pushDebug({
+      level: "info",
+      message: `Mulai pipeline: ${allRatios ? "multi-rasio" : "single"} · ${generateCount > 1 && !allRatios ? generateCount + " variasi" : ""} · platform=${platform} · ratio=${ratio}`.replace(/\s+·\s+·/g, " ·"),
+    });
 
     // Build target ratios (multi-ratio 1-klik or single)
     const targetRatios: string[] = allRatios
