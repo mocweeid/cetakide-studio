@@ -1152,6 +1152,25 @@ function Workspace() {
     if (!user) return;
 
     setDebugOpen(true);
+    // Simpan konfigurasi ini sebagai quick-pick untuk regenerate mendatang.
+    rememberCurrentConfig();
+    // Auto-enhance prompt sebelum generate jika toggle aktif.
+    if (autoEnhance && !enhancing) {
+      try {
+        pushDebug({ level: "info", message: "✨ Auto-enhance prompt aktif — menyempurnakan…" });
+        const { enhanced } = await enhancePrompt({
+          data: { prompt: form.prompt, platform, ratio },
+        });
+        setForm((f) => ({ ...f, prompt: enhanced }));
+        form.prompt = enhanced; // sinkron untuk pipeline berikut di call ini
+        pushDebug({ level: "success", message: "✨ Prompt disempurnakan otomatis." });
+      } catch (err) {
+        pushDebug({
+          level: "error",
+          message: `Auto-enhance gagal: ${err instanceof Error ? err.message : String(err)} — lanjut pakai prompt asli.`,
+        });
+      }
+    }
     // Pre-flight boleh menyimpulkan bahwa YogaDev reachable tapi model target
     // (cx/gpt-5.5-image) tidak terdaftar. Kalau begitu: skip YogaDev untuk
     // semua variasi & langsung pakai fallback tanpa menunggu user klik retry.
