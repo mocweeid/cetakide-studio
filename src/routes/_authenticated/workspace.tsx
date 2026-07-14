@@ -869,11 +869,13 @@ function Workspace() {
           });
         }, 5000);
         try {
-          let finalUrl = "";
-          const { provider } = await streamImage(
-            finalBasePrompt,
+          const { provider, finalUrl } = await attemptWithRetry({
+            index: i,
+            prompt: finalBasePrompt,
             size,
-            (dataUrl, isFinal) => {
+            ratio: jobRatio,
+            jobId,
+            onStreamFrame: (dataUrl, isFinal) => {
               setVariants((prev) => {
                 const next = [...prev];
                 next[i] = isFinal
@@ -881,17 +883,15 @@ function Workspace() {
                   : { status: "streaming", imageUrl: dataUrl, prompt: finalBasePrompt, ratio: jobRatio };
                 return next;
               });
-              if (isFinal) finalUrl = dataUrl;
             },
-            jobId,
-            (status) =>
+            onStatus: (status) =>
               pushDebug({
                 level: "info",
                 message: status.message || "Provider memproses gambar",
                 provider: status.provider,
                 jobId: status.jobId || jobId,
               }),
-          );
+          });
           clearInterval(heartbeat);
           if (!finalUrl) throw new Error("Tidak ada gambar final.");
           usedKeys.add(provider);
