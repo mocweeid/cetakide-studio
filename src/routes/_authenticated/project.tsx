@@ -15,8 +15,35 @@ import {
   Clock,
   AlertTriangle,
   Loader2,
+  Cpu,
+  Sparkles,
   X,
 } from "lucide-react";
+
+function formatRelativeTime(iso: string): string {
+  const d = new Date(iso).getTime();
+  if (Number.isNaN(d)) return "";
+  const diff = Date.now() - d;
+  const s = Math.round(diff / 1000);
+  if (s < 60) return `${s}d lalu`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m lalu`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}j lalu`;
+  const days = Math.round(h / 24);
+  if (days < 7) return `${days}h lalu`;
+  return new Date(iso).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" });
+}
+
+function providerLabel(p?: string | null): { name: string; model: string } {
+  const raw = (p || "").toLowerCase();
+  if (!raw) return { name: "—", model: "" };
+  if (raw.includes("yoga")) return { name: "YogaDev", model: "gpt-5.5-image" };
+  if (raw.includes("openai") || raw.includes("dall")) return { name: "OpenAI", model: "DALL·E 3" };
+  if (raw.includes("gemini") || raw.includes("google")) return { name: "Gemini", model: "imagen" };
+  if (raw.includes("lovable") || raw.includes("gateway")) return { name: "Lovable AI", model: "gateway" };
+  return { name: p as string, model: "" };
+}
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/project")({
