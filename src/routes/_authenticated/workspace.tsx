@@ -33,6 +33,68 @@ import { streamImage, GenerateImageError } from "@/lib/streamImage";
 import { useServerFn } from "@tanstack/react-start";
 import JSZip from "jszip";
 
+// Estimasi cooldown & rekomendasi variasi optimal untuk error 429.
+// Membaca header Retry-After bila tersedia; fallback 45 detik.
+function extractCooldownSeconds(err: unknown): number | undefined {
+  if (!(err instanceof GenerateImageError)) return undefined;
+  const last = err.attempts[err.attempts.length - 1];
+  const status = last?.status ?? err.status;
+  const isRate =
+    status === 429 || /rate limit|quota|too many/i.test(err.providerMessage || "");
+  if (!isRate) return undefined;
+  const fromHeader = last?.retryAfterSeconds;
+  if (typeof fromHeader === "number" && fromHeader > 0) return Math.min(fromHeader, 300);
+  // Coba parse dari body ("retry in 30s", "try again in 45 seconds", dst.)
+  const body = (last?.body || err.providerMessage || "").toString();
+  const m = body.match(/(?:retry|try again|wait)[^\d]{0,20}(\d{1,3})\s*(s|sec|second|detik)?/i);
+  if (m) {
+    const n = Number(m[1]);
+    if (Number.isFinite(n) && n > 0) return Math.min(n, 300);
+  }
+  return 45; // default konservatif
+}
+
+function recommendOptimalVariants(current: number): number {
+  if (current <= 1) return 1;
+  if (current >= 6) return 2;
+  if (current >= 3) return Math.max(1, Math.floor(current / 2));
+  return 1;
+}
+
+// Tombol Retry dengan hitung mundur cooldown. Retry di-disable sampai selesai.
+function CooldownRetryButton({
+  seconds,
+  onRetry,
+  className,
+}: {
+  seconds: number;
+  onRetry: () => void;
+  className?: string;
+}) {
+  const [remaining, setRemaining] = useState(seconds);
+  useEffect(() => {
+    if (remaining <= 0) return;
+    const t = setInterval(() => setRemaining((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [remaining]);
+  const ready = remaining <= 0;
+  return (
+    <button
+      type="button"
+      disabled={!ready}
+      className={`${className ?? ""} ${ready ? "" : "opacity-60 cursor-not-allowed"}`}
+      onClick={() => {
+        if (!ready) return;
+        toast.dismiss();
+        onRetry();
+      }}
+      title={ready ? "Coba lagi sekarang" : `Tunggu ${remaining}s sebelum retry`}
+    >
+      {ready ? "🔄 Retry sekarang" : `⏳ Retry dalam ${remaining}s`}
+    </button>
+  );
+}
+
 type ErrorChecklistItem = { icon: string; text: string; tone?: "primary" | "muted" };
 
 function buildErrorChecklist(status: number | undefined, providerMessage: string): ErrorChecklistItem[] {
