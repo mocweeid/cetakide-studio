@@ -458,7 +458,15 @@ function Workspace() {
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<string[]>([]);
   type Variant =
-    | { status: "proses"; prompt?: string; ratio?: string }
+    | {
+        status: "proses";
+        prompt?: string;
+        ratio?: string;
+        attempt?: number;
+        maxAttempts?: number;
+        retryIn?: number;
+        lastError?: string;
+      }
     | { status: "streaming"; imageUrl: string; prompt?: string; ratio?: string }
     | { status: "sukses"; imageUrl: string; prompt?: string; ratio?: string }
     | { status: "gagal"; error: string; prompt?: string; ratio?: string };
