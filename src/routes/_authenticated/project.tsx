@@ -319,15 +319,21 @@ function ProjectPage() {
             />
           </div>
           <div className="flex gap-2">
-            {["Semua", "Sukses", "Gagal", "Proses"].map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilterStatus(s)}
-                className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition ${filterStatus === s ? "border-primary bg-primary/20 text-primary" : "border-white/10 text-white/60 hover:border-white/30 hover:text-white"}`}
-              >
-                {s}
-              </button>
-            ))}
+            {(["Semua", "Sukses", "Partial", "Gagal", "Proses"] as const).map((s) => {
+              const active = filterStatus === s;
+              const key = s === "Semua" ? null : normalizeStatus(s);
+              const dot = key ? STATUS_META[key].dot : "bg-white/40";
+              return (
+                <button
+                  key={s}
+                  onClick={() => setFilterStatus(s)}
+                  className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active ? "border-primary bg-primary/20 text-primary" : "border-white/10 text-white/60 hover:border-white/30 hover:text-white"}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+                  {s}
+                </button>
+              );
+            })}
             <button
               onClick={() => navigate({ to: "/workspace" })}
               className="flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold text-black transition hover:brightness-110"
