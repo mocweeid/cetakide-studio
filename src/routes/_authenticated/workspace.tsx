@@ -945,6 +945,12 @@ function Workspace() {
           toast.error(`Variasi ${i + 1} — ${info.title}`, {
             description: info.description,
             duration: 10000,
+            action: {
+              label: "Retry",
+              onClick: () => {
+                void handleRegenerate(i);
+              },
+            },
           });
           captureFailure(genErr, `Variasi ${i + 1}`);
         }
@@ -965,11 +971,28 @@ function Workspace() {
           `${newResults.length} variasi sukses${failedCount > 0 ? `, ${failedCount} belum berhasil` : ""}!${keyInfo}${failInfo}`,
         );
       } else if (failedCount > 0) {
-        toast.error(`Semua ${failedCount} variasi belum berhasil di-generate.`);
+        toast.error(`Semua ${failedCount} variasi belum berhasil di-generate.`, {
+          duration: 10000,
+          action: {
+            label: "Retry semua",
+            onClick: () => {
+              void handleGenerate();
+            },
+          },
+        });
       }
     } catch (err) {
       const info = formatGenerateError(err);
-      toast.error(info.title, { description: info.description, duration: 10000 });
+      toast.error(info.title, {
+        description: info.description,
+        duration: 10000,
+        action: {
+          label: "Retry",
+          onClick: () => {
+            void handleGenerate();
+          },
+        },
+      });
     } finally {
       setGenerating(false);
     }
@@ -1099,6 +1122,12 @@ function Workspace() {
       toast.error(`Regenerate variasi ${i + 1} — ${info.title}`, {
         description: info.description,
         duration: 10000,
+        action: {
+          label: "Retry",
+          onClick: () => {
+            void handleRegenerate(i);
+          },
+        },
       });
       captureFailure(err, `Regenerate variasi ${i + 1}`);
       pushDebug({
