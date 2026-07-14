@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  AlertTriangle,
+  Loader2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -109,22 +111,78 @@ const MOCK_PROJECTS: Project[] = [
   },
 ];
 
-function StatusBadge({ status }: { status: string }) {
-  if (status === "sukses")
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-green-400">
-        <CheckCircle2 className="h-2.5 w-2.5" /> Sukses
-      </span>
-    );
-  if (status === "gagal")
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-red-400">
-        <XCircle className="h-2.5 w-2.5" /> Gagal
-      </span>
-    );
+type StatusKey = "sukses" | "gagal" | "partial" | "proses";
+
+const STATUS_META: Record<
+  StatusKey,
+  {
+    label: string;
+    icon: typeof CheckCircle2;
+    text: string;
+    bg: string;
+    ring: string;
+    dot: string;
+    accent: string;
+  }
+> = {
+  sukses: {
+    label: "Sukses",
+    icon: CheckCircle2,
+    text: "text-emerald-300",
+    bg: "bg-emerald-500/15",
+    ring: "ring-emerald-400/30",
+    dot: "bg-emerald-400",
+    accent: "bg-emerald-400",
+  },
+  gagal: {
+    label: "Gagal",
+    icon: XCircle,
+    text: "text-rose-300",
+    bg: "bg-rose-500/15",
+    ring: "ring-rose-400/30",
+    dot: "bg-rose-400",
+    accent: "bg-rose-400",
+  },
+  partial: {
+    label: "Partial",
+    icon: AlertTriangle,
+    text: "text-amber-300",
+    bg: "bg-amber-500/15",
+    ring: "ring-amber-400/30",
+    dot: "bg-amber-400",
+    accent: "bg-amber-400",
+  },
+  proses: {
+    label: "Proses",
+    icon: Loader2,
+    text: "text-sky-300",
+    bg: "bg-sky-500/15",
+    ring: "ring-sky-400/30",
+    dot: "bg-sky-400",
+    accent: "bg-sky-400",
+  },
+};
+
+function normalizeStatus(status: string): StatusKey {
+  const s = (status || "").toLowerCase();
+  if (s === "sukses" || s === "success") return "sukses";
+  if (s === "gagal" || s === "failed" || s === "error") return "gagal";
+  if (s === "partial" || s === "sebagian") return "partial";
+  return "proses";
+}
+
+function StatusBadge({ status, size = "sm" }: { status: string; size?: "sm" | "md" }) {
+  const key = normalizeStatus(status);
+  const meta = STATUS_META[key];
+  const Icon = meta.icon;
+  const pad = size === "md" ? "px-2.5 py-1 text-[11px]" : "px-2 py-0.5 text-[10px]";
+  const iconSize = size === "md" ? "h-3.5 w-3.5" : "h-3 w-3";
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-yellow-400">
-      <Clock className="h-2.5 w-2.5" /> Proses
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full font-semibold ring-1 backdrop-blur-sm ${pad} ${meta.bg} ${meta.text} ${meta.ring}`}
+    >
+      <Icon className={`${iconSize} ${key === "proses" ? "animate-spin" : ""}`} />
+      {meta.label}
     </span>
   );
 }
@@ -261,15 +319,21 @@ function ProjectPage() {
             />
           </div>
           <div className="flex gap-2">
-            {["Semua", "Sukses", "Gagal", "Proses"].map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilterStatus(s)}
-                className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition ${filterStatus === s ? "border-primary bg-primary/20 text-primary" : "border-white/10 text-white/60 hover:border-white/30 hover:text-white"}`}
-              >
-                {s}
-              </button>
-            ))}
+            {(["Semua", "Sukses", "Partial", "Gagal", "Proses"] as const).map((s) => {
+              const active = filterStatus === s;
+              const key = s === "Semua" ? null : normalizeStatus(s);
+              const dot = key ? STATUS_META[key].dot : "bg-white/40";
+              return (
+                <button
+                  key={s}
+                  onClick={() => setFilterStatus(s)}
+                  className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active ? "border-primary bg-primary/20 text-primary" : "border-white/10 text-white/60 hover:border-white/30 hover:text-white"}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+                  {s}
+                </button>
+              );
+            })}
             <button
               onClick={() => navigate({ to: "/workspace" })}
               className="flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold text-black transition hover:brightness-110"
@@ -307,6 +371,14 @@ function ProjectPage() {
                 key={project.id}
                 className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]"
               >
+                {/* Accent stripe by status */}
+                <div
+                  className={`absolute left-0 top-0 z-10 h-full w-1 ${STATUS_META[normalizeStatus(project.status)].accent}`}
+                />
+                {/* Persistent status badge (always visible) */}
+                <div className="absolute left-2 top-2 z-10">
+                  <StatusBadge status={project.status} />
+                </div>
                 {/* Image */}
                 <div className="relative aspect-square overflow-hidden">
                   {project.image_url ? (
@@ -340,9 +412,7 @@ function ProjectPage() {
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                    <div>
-                      <StatusBadge status={project.status} />
-                    </div>
+                    <div />
                   </div>
                 </div>
                 {/* Info */}
