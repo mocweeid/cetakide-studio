@@ -1067,7 +1067,7 @@ function Workspace() {
         const target = health.targetModel || "cx/gpt-5.5-image";
         autoFallbackReason = `Model ${target} tidak terdaftar di YogaDev /models`;
         pushDebug({
-          level: "warn" as never, // fallback ke info jika level tidak tersedia
+          level: "info",
           message: `⚠ Auto-fallback aktif — ${autoFallbackReason}. Semua variasi dialihkan ke Lovable Gateway.`,
         });
         toast.warning("Auto-fallback ke Lovable Gateway", {
