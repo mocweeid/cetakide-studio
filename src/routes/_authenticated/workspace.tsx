@@ -1377,6 +1377,42 @@ function Workspace() {
       pushDebug({ level: "info", message: "Health check YogaDev sebelum generate…" });
       const health = await runYogaHealthCheck(true);
       if (!health.ok) {
+        const looksLikeStaleSecretProbe = /CUSTOM_AI_API_KEY|secret|ter-bind|dikonfigurasi/i.test(
+          health.detail,
+        );
+        if (looksLikeStaleSecretProbe) {
+          pushDebug({
+            level: "info",
+            message: "Health check memberi status secret lama — retry fresh/no-cache sekali lagi sebelum membatalkan…",
+          });
+          await new Promise((resolve) => setTimeout(resolve, 900));
+          const retryHealth = await runYogaHealthCheck(true);
+          if (retryHealth.ok) {
+            pushDebug({
+              level: "success",
+              message: `YogaDev siap setelah retry health (${retryHealth.latency ?? "?"}ms) — lanjut generate`,
+            });
+            if (retryHealth.reachable && retryHealth.hasTargetModel === false) {
+              autoFallback = true;
+              const target = retryHealth.targetModel || "cx/gpt-5.5-image";
+              autoFallbackReason = `Model ${target} tidak terdaftar di YogaDev /models`;
+              pushDebug({
+                level: "info",
+                message: `⚠ Auto-fallback aktif — ${autoFallbackReason}. Semua variasi dialihkan ke Lovable Gateway.`,
+              });
+              toast.warning("Auto-fallback ke Lovable Gateway", {
+                description: `${autoFallbackReason}. Sistem tidak menunggu Retry — langsung pakai generator cadangan.`,
+                duration: 8000,
+              });
+            }
+          } else {
+            pushDebug({
+              level: "info",
+              message:
+                "Pre-flight masih membaca status secret lama — generate tetap dicoba langsung karena endpoint backend akan validasi secret saat request.",
+            });
+          }
+        } else {
         toast.error("YogaDev belum siap — generate dibatalkan", {
           description: `${health.detail} · Aktifkan Mode Darurat di terminal jika ingin tetap mencoba.`,
           duration: 10000,
@@ -1386,9 +1422,12 @@ function Workspace() {
           message: `Generate dibatalkan: YogaDev ${health.reachable ? "error" : "unreachable"} — ${health.detail}`,
         });
         return;
+        }
       }
-      pushDebug({ level: "success", message: `YogaDev siap (${health.latency ?? "?"}ms) — lanjut generate` });
-      if (health.reachable && health.hasTargetModel === false) {
+      if (health.ok) {
+        pushDebug({ level: "success", message: `YogaDev siap (${health.latency ?? "?"}ms) — lanjut generate` });
+      }
+      if (health.ok && health.reachable && health.hasTargetModel === false) {
         autoFallback = true;
         const target = health.targetModel || "cx/gpt-5.5-image";
         autoFallbackReason = `Model ${target} tidak terdaftar di YogaDev /models`;
