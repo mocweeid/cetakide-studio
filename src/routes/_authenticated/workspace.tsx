@@ -2219,6 +2219,23 @@ function Workspace() {
                     <><Sparkles className="h-3.5 w-3.5" /> Sempurnakan Prompt dengan AI</>
                   )}
                 </button>
+                <label
+                  className={`mt-2 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-[11px] font-medium transition ${
+                    autoEnhance
+                      ? "border-primary/50 bg-primary/10 text-primary"
+                      : "border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/5"
+                  }`}
+                  title="Otomatis sempurnakan prompt setiap kali Generate diklik"
+                >
+                  <input
+                    type="checkbox"
+                    checked={autoEnhance}
+                    onChange={(e) => setAutoEnhance(e.target.checked)}
+                    className="accent-primary"
+                  />
+                  <Sparkles className="h-3 w-3" />
+                  Enhancer otomatis sebelum Generate
+                </label>
               </div>
             </Field>
             <details className="group rounded-lg border border-white/10 bg-white/[0.03]">
