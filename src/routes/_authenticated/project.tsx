@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -136,6 +137,21 @@ function ProjectPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("Semua");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [lightbox, setLightbox] = useState<Project | null>(null);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightbox(null);
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [lightbox]);
 
   useEffect(() => {
     if (!user) return;
@@ -266,7 +282,8 @@ function ProjectPage() {
                     <img
                       src={project.image_url}
                       alt={project.kebutuhan}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      onClick={() => setLightbox(project)}
+                      className="h-full w-full cursor-zoom-in object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-white/5">
@@ -318,6 +335,50 @@ function ProjectPage() {
           </div>
         )}
       </div>
+      {lightbox && lightbox.image_url && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setLightbox(null)}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-in fade-in duration-150"
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightbox(null);
+            }}
+            aria-label="Tutup"
+            className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/20 backdrop-blur transition hover:bg-white/20"
+          >
+            <X className="h-4 w-4" /> Tutup
+          </button>
+          <div
+            className="relative flex max-h-full max-w-full flex-col items-center gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={lightbox.image_url}
+              alt={lightbox.kebutuhan}
+              className="max-h-[85vh] max-w-[92vw] rounded-xl object-contain shadow-2xl"
+            />
+            <div className="flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-xs text-white/80 ring-1 ring-white/10">
+              <span className="truncate max-w-[60vw]">{lightbox.kebutuhan}</span>
+              <span className="text-white/40">·</span>
+              <span>{lightbox.platform}</span>
+              <span className="text-white/40">·</span>
+              <span>{lightbox.aspect_ratio}</span>
+              <a
+                href={lightbox.image_url}
+                download
+                onClick={(e) => e.stopPropagation()}
+                className="ml-2 inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 font-semibold text-white hover:bg-white/25"
+              >
+                <Download className="h-3 w-3" /> Unduh
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
