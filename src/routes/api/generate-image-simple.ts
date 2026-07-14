@@ -405,6 +405,90 @@ type YogaAttempt = {
   payload: Record<string, unknown>;
 };
 
+// ------- circuit breaker (in-memory, per Worker instance) -------
+
+type BreakerState = "CLOSED" | "OPEN" | "HALF_OPEN";
+const BREAKER = {
+  state: "CLOSED" as BreakerState,
+  recentFailures: [] as number[], // timestamps (ms) of recent request-level failures
+  openedAt: 0,
+  cooldownMs: 60_000,
+  lastReason: "" as string,
+  probeInFlight: false,
+};
+const BREAKER_WINDOW_MS = 120_000; // 2 minutes
+const BREAKER_FAILURE_THRESHOLD = 4; // failed requests (not individual retries)
+const BREAKER_COOLDOWN_MS = 60_000; // pause YG for 60s
+
+function breakerRemainingMs(): number {
+  if (BREAKER.state !== "OPEN") return 0;
+  return Math.max(0, BREAKER.openedAt + BREAKER.cooldownMs - Date.now());
+}
+
+function breakerSnapshot() {
+  return {
+    state: BREAKER.state,
+    recentFailures: BREAKER.recentFailures.length,
+    threshold: BREAKER_FAILURE_THRESHOLD,
+    windowMs: BREAKER_WINDOW_MS,
+    cooldownMs: BREAKER.cooldownMs,
+    openedAt: BREAKER.openedAt || null,
+    remainingMs: breakerRemainingMs(),
+    lastReason: BREAKER.lastReason || null,
+  };
+}
+
+function breakerAllowRequest(requestId: string, jobId?: string): { allowed: boolean; probe: boolean } {
+  // Auto-transition OPEN → HALF_OPEN after cooldown
+  if (BREAKER.state === "OPEN" && breakerRemainingMs() === 0) {
+    BREAKER.state = "HALF_OPEN";
+    BREAKER.probeInFlight = false;
+    log("info", "breaker_half_open", { requestId, jobId, ...breakerSnapshot() });
+  }
+  if (BREAKER.state === "OPEN") {
+    return { allowed: false, probe: false };
+  }
+  if (BREAKER.state === "HALF_OPEN") {
+    if (BREAKER.probeInFlight) return { allowed: false, probe: false };
+    BREAKER.probeInFlight = true;
+    return { allowed: true, probe: true };
+  }
+  return { allowed: true, probe: false };
+}
+
+function breakerRecordSuccess(requestId: string, jobId?: string): void {
+  BREAKER.recentFailures = [];
+  const wasOpen = BREAKER.state !== "CLOSED";
+  BREAKER.state = "CLOSED";
+  BREAKER.openedAt = 0;
+  BREAKER.probeInFlight = false;
+  BREAKER.lastReason = "";
+  if (wasOpen) log("info", "breaker_closed", { requestId, jobId, ...breakerSnapshot() });
+}
+
+function breakerRecordFailure(reason: string, requestId: string, jobId?: string): void {
+  const now = Date.now();
+  BREAKER.recentFailures = BREAKER.recentFailures.filter((t) => now - t <= BREAKER_WINDOW_MS);
+  BREAKER.recentFailures.push(now);
+  BREAKER.lastReason = reason;
+
+  if (BREAKER.state === "HALF_OPEN") {
+    // probe failed → re-open with longer cooldown (up to 5 min)
+    BREAKER.state = "OPEN";
+    BREAKER.openedAt = now;
+    BREAKER.cooldownMs = Math.min(BREAKER.cooldownMs * 2, 300_000);
+    BREAKER.probeInFlight = false;
+    log("error", "breaker_reopened", { requestId, jobId, reason, ...breakerSnapshot() });
+    return;
+  }
+  if (BREAKER.recentFailures.length >= BREAKER_FAILURE_THRESHOLD && BREAKER.state === "CLOSED") {
+    BREAKER.state = "OPEN";
+    BREAKER.openedAt = now;
+    BREAKER.cooldownMs = BREAKER_COOLDOWN_MS;
+    log("error", "breaker_opened", { requestId, jobId, reason, ...breakerSnapshot() });
+  }
+}
+
 // ------- auth (mirror generate-image-stream) -------
 
 function createSupabaseFetch(supabaseKey: string): typeof fetch {
