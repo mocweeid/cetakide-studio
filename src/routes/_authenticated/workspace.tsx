@@ -2424,6 +2424,85 @@ function Workspace() {
               )}
               Cetak Ide Sekarang
             </button>
+            {recentConfigs.length > 0 && (
+              <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] p-2.5">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-white/60">
+                    Konfigurasi Cepat · Regenerate
+                  </span>
+                  <button
+                    onClick={() => setRecentConfigs([])}
+                    className="text-[10px] text-white/40 hover:text-white/70"
+                    title="Hapus semua konfigurasi tersimpan"
+                  >
+                    hapus semua
+                  </button>
+                </div>
+                <div className="space-y-1.5">
+                  {recentConfigs.map((c) => {
+                    const sig = configSignature(c);
+                    const isCurrent =
+                      sig ===
+                      configSignature({
+                        platform,
+                        ratio,
+                        generateCount,
+                        allRatios,
+                        autoEnhance,
+                      });
+                    return (
+                      <div
+                        key={sig + c.ts}
+                        className={`flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] transition ${
+                          isCurrent
+                            ? "border-primary/40 bg-primary/10"
+                            : "border-white/10 bg-white/[0.02] hover:bg-white/5"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => applyQuickConfig(c)}
+                          className="flex-1 truncate text-left font-mono text-white/80"
+                          title="Terapkan konfigurasi ini (tanpa generate)"
+                        >
+                          <span className="text-primary">{PLATFORMS[c.platform]?.label ?? c.platform}</span>
+                          <span className="text-white/40"> · </span>
+                          {c.allRatios ? (
+                            <span>semua rasio</span>
+                          ) : (
+                            <>
+                              <span>{c.ratio}</span>
+                              <span className="text-white/40"> · </span>
+                              <span>{c.generateCount}x</span>
+                            </>
+                          )}
+                          {c.autoEnhance && (
+                            <span className="ml-1 text-[9px] text-primary/80">✨</span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => applyAndGenerate(c)}
+                          disabled={generating || !form.prompt.trim()}
+                          className="rounded border border-primary/40 bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary hover:bg-primary/25 disabled:opacity-40"
+                          title="Terapkan lalu generate ulang"
+                        >
+                          ↻ regen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeQuickConfig(sig)}
+                          className="text-white/40 hover:text-white"
+                          title="Hapus dari daftar"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <p className="text-center text-[11px] text-muted-foreground">
               {user?.isDeveloper
                 ? "God Mode — gratis"
