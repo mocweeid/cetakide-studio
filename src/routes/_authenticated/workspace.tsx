@@ -283,6 +283,75 @@ function Workspace() {
     }
   }
 
+  async function runYogaHealthCheck(silent = false): Promise<{
+    ok: boolean;
+    detail: string;
+    latency?: number;
+    reachable?: boolean;
+  }> {
+    if (!silent) setCheckingYoga(true);
+    try {
+      const res = await fetch("/api/check-yoga", { method: "GET" });
+      const j = (await res.json()) as {
+        ok: boolean;
+        reachable?: boolean;
+        status?: number;
+        latency_ms?: number;
+        baseUrl?: string;
+        model?: string;
+        model_count?: number;
+        has_target_model?: boolean;
+        sample_models?: string[];
+        error?: string;
+      };
+      let result: {
+        ok: boolean;
+        detail: string;
+        latency?: number;
+        reachable?: boolean;
+      };
+      if (j.ok) {
+        const detail = `YogaDev online · ${j.model_count ?? 0} model${
+          j.has_target_model ? ` · ${j.model} tersedia` : ` · ${j.model} TIDAK terdaftar`
+        } · ${j.latency_ms}ms`;
+        result = { ok: true, detail, latency: j.latency_ms, reachable: true };
+        pushDebug({ level: "success", message: `YogaDev health OK — ${detail}` });
+      } else {
+        const detail = j.error || (j.status ? `HTTP ${j.status}` : "Tidak bisa dihubungi");
+        result = {
+          ok: false,
+          detail,
+          latency: j.latency_ms,
+          reachable: !!j.reachable,
+        };
+        pushDebug({
+          level: "error",
+          message: `YogaDev health ${j.reachable ? "error" : "unreachable"} — ${detail}`,
+        });
+      }
+      setYogaStatus(result);
+      return result;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const result = { ok: false, detail: msg, reachable: false };
+      setYogaStatus(result);
+      pushDebug({ level: "error", message: `YogaDev health exception: ${msg}` });
+      return result;
+    } finally {
+      if (!silent) setCheckingYoga(false);
+    }
+  }
+
+  async function handleCheckYoga() {
+    const r = await runYogaHealthCheck(false);
+    setDebugOpen(true);
+    if (r.ok) {
+      toast.success("YogaDev siap", { description: r.detail });
+    } else {
+      toast.error("YogaDev belum siap", { description: r.detail, duration: 10000 });
+    }
+  }
+
   useEffect(() => {
     if (!draftStorageKey) return;
     try {
