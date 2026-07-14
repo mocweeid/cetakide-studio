@@ -700,7 +700,7 @@ function Workspace() {
       });
       try {
         let finalUrl = "";
-        const { provider } = await streamImage(
+        const result = await streamImage(
           params.prompt,
           params.size,
           (dataUrl, isFinal) => {
@@ -711,7 +711,22 @@ function Workspace() {
           params.onStatus,
         );
         if (!finalUrl) throw new Error("Tidak ada gambar final.");
-        return { provider, finalUrl };
+        if (result.fallbackUsed) {
+          const reason =
+            result.breakerState === "OPEN"
+              ? "YogaDev sedang gangguan berulang (circuit breaker aktif)"
+              : `${result.primaryProvider || "YogaDev"} tidak merespons`;
+          toast.warning(`Fallback dipakai: ${result.provider}`, {
+            description: `${reason}. Gambar tetap dihasilkan lewat generator cadangan.`,
+            duration: 8000,
+          });
+          pushDebug({
+            level: "warn",
+            message: `  ⚠ fallback aktif → ${result.provider} · alasan: ${reason}`,
+            jobId: params.jobId,
+          });
+        }
+        return { provider: result.provider, finalUrl };
       } catch (err) {
         lastErr = err;
         const msg = err instanceof Error ? err.message : String(err);
