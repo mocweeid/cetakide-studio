@@ -195,6 +195,34 @@ function Workspace() {
   };
   const [debugOpen, setDebugOpen] = useState(false);
   const [debugLogs, setDebugLogs] = useState<DebugEntry[]>([]);
+  type RawFailure = {
+    ts: string;
+    variant: string;
+    status: number;
+    providerMessage: string;
+    suggestion: string;
+    targetUrl?: string;
+    request: Record<string, unknown>;
+    response: unknown;
+    attempts: GenerateImageError["attempts"];
+  };
+  const [lastFailure, setLastFailure] = useState<RawFailure | null>(null);
+  const [rawOpen, setRawOpen] = useState(true);
+  function captureFailure(err: unknown, variantLabel: string) {
+    if (!(err instanceof GenerateImageError)) return;
+    setLastFailure({
+      ts: new Date().toISOString(),
+      variant: variantLabel,
+      status: err.status,
+      providerMessage: err.providerMessage,
+      suggestion: err.suggestion,
+      targetUrl: err.targetUrl,
+      request: err.rawRequest,
+      response: err.rawResponse,
+      attempts: err.attempts,
+    });
+    setDebugOpen(true);
+  }
   const [checkingOpenai, setCheckingOpenai] = useState(false);
   const [openaiStatus, setOpenaiStatus] = useState<null | {
     ok: boolean;
