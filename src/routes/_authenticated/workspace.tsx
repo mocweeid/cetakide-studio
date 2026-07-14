@@ -1583,9 +1583,10 @@ function Workspace() {
                 void handleRegenerate(i);
               },
               onReduceVariants: () => {
-                setGenerateCount(1);
+                const rec = recommendOptimalVariants(totalJobs);
+                setGenerateCount(rec);
                 setAllRatios(false);
-                toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+                toast.message(`Variasi diset ke ${rec}. Tekan Generate ulang.`);
               },
               currentVariantCount: totalJobs,
             },
@@ -1617,9 +1618,10 @@ function Workspace() {
               void handleGenerate();
             },
             onReduceVariants: () => {
-              setGenerateCount(1);
+              const rec = recommendOptimalVariants(totalJobs);
+              setGenerateCount(rec);
               setAllRatios(false);
-              toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+              toast.message(`Variasi diset ke ${rec}. Tekan Generate ulang.`);
             },
             currentVariantCount: totalJobs,
           },
@@ -1632,9 +1634,10 @@ function Workspace() {
           void handleGenerate();
         },
         onReduceVariants: () => {
-          setGenerateCount(1);
+          const rec = recommendOptimalVariants(generateCount);
+          setGenerateCount(rec);
           setAllRatios(false);
-          toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+          toast.message(`Variasi diset ke ${rec}. Tekan Generate ulang.`);
         },
         currentVariantCount: generateCount,
       });
