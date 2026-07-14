@@ -289,6 +289,76 @@ function Workspace() {
   const [allRatios, setAllRatios] = useState(false);
   const selectedBrand = brandKits.find((b) => b.id === selectedBrandId) ?? null;
 
+  // ── Quick-config memory: konfigurasi terakhir + 5 recent unik untuk regenerate.
+  type QuickConfig = {
+    platform: keyof typeof PLATFORMS;
+    ratio: string;
+    generateCount: number;
+    allRatios: boolean;
+    autoEnhance: boolean;
+    ts: string;
+  };
+  const RECENT_CONFIGS_KEY = "cetakide.recentConfigs.v1";
+  const [autoEnhance, setAutoEnhance] = useState<boolean>(false);
+  const [recentConfigs, setRecentConfigs] = useState<QuickConfig[]>([]);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(RECENT_CONFIGS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { autoEnhance?: boolean; recent?: QuickConfig[] };
+        if (typeof parsed.autoEnhance === "boolean") setAutoEnhance(parsed.autoEnhance);
+        if (Array.isArray(parsed.recent)) setRecentConfigs(parsed.recent.slice(0, 5));
+      }
+    } catch {
+      /* ignore corrupt storage */
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        RECENT_CONFIGS_KEY,
+        JSON.stringify({ autoEnhance, recent: recentConfigs }),
+      );
+    } catch {
+      /* ignore quota */
+    }
+  }, [autoEnhance, recentConfigs]);
+  function configSignature(c: Omit<QuickConfig, "ts">) {
+    return `${c.platform}|${c.ratio}|${c.generateCount}|${c.allRatios ? 1 : 0}|${c.autoEnhance ? 1 : 0}`;
+  }
+  function rememberCurrentConfig() {
+    const current: QuickConfig = {
+      platform,
+      ratio,
+      generateCount,
+      allRatios,
+      autoEnhance,
+      ts: new Date().toISOString(),
+    };
+    const sig = configSignature(current);
+    setRecentConfigs((prev) => {
+      const filtered = prev.filter((c) => configSignature(c) !== sig);
+      return [current, ...filtered].slice(0, 5);
+    });
+  }
+  function applyQuickConfig(c: QuickConfig) {
+    setPlatform(c.platform);
+    // Set ratio setelah platform effect stabil.
+    setTimeout(() => setRatio(c.ratio), 0);
+    setGenerateCount(c.generateCount);
+    setAllRatios(c.allRatios);
+    setAutoEnhance(c.autoEnhance);
+  }
+  function removeQuickConfig(sig: string) {
+    setRecentConfigs((prev) => prev.filter((c) => configSignature(c) !== sig));
+  }
+  async function applyAndGenerate(c: QuickConfig) {
+    applyQuickConfig(c);
+    // Beri React satu tick untuk apply state sebelum handleGenerate membaca-nya.
+    await new Promise((r) => setTimeout(r, 30));
+    await handleGenerate();
+  }
+
   const [form, setForm] = useState({
     prompt: "",
     title: "",
