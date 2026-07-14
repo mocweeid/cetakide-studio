@@ -15,6 +15,50 @@ function truncate(s: string, n = 1000): string {
   return s.length > n ? s.slice(0, n) + "…" : s;
 }
 
+// ------- structured logging -------
+
+type LogLevel = "info" | "warn" | "error";
+function log(level: LogLevel, event: string, data: Record<string, unknown>): void {
+  try {
+    const line = JSON.stringify({
+      ts: new Date().toISOString(),
+      level,
+      scope: "gen-image",
+      event,
+      ...data,
+    });
+    if (level === "error") console.error(line);
+    else if (level === "warn") console.warn(line);
+    else console.log(line);
+  } catch {
+    console.log(`[gen-image] ${event}`, data);
+  }
+}
+
+function classifyErrorType(opts: {
+  status?: number;
+  message?: string;
+  body?: string;
+}): string {
+  const { status } = opts;
+  const text = `${opts.message ?? ""} ${opts.body ?? ""}`.toLowerCase();
+  if (text.includes("timeout") || text.includes("aborterror")) return "network_timeout";
+  if (status === undefined && (text.includes("fetch") || text.includes("network"))) return "network_error";
+  if (status === 401 || status === 403 || text.includes("unauthor") || text.includes("invalid api key"))
+    return "auth";
+  if (status === 402 || text.includes("insufficient") || text.includes("quota") || text.includes("no credentials"))
+    return "credentials_or_quota";
+  if (status === 429 || text.includes("rate limit")) return "rate_limit";
+  if (status === 408 || status === 504) return "upstream_timeout";
+  if (status && status >= 500) return "transient_5xx";
+  if (status === 400 || text.includes("bad request") || text.includes("invalid"))
+    return "bad_request";
+  if (text.includes("tidak berisi gambar") || text.includes("bukan json") || text.includes("parse"))
+    return "parse_error";
+  if (status && status >= 400) return `client_${status}`;
+  return "unknown";
+}
+
 function resolveYogaEndpoint(baseUrl: string): string {
   const clean = baseUrl.replace(/\/+$/, "");
   return /\/images\/generations$/i.test(clean) ? clean : `${clean}/images/generations`;
