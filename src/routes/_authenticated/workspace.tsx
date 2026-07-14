@@ -29,9 +29,21 @@ import {
 import { PRESET_THEMES, getThemeStyles, ThemeSkeletonPreview, getPresetExample } from "./preset-theme";
 import { enhancePromptServer } from "@/lib/enhancePrompt.functions";
 import { autofillFieldServer } from "@/lib/autofillField.functions";
-import { streamImage } from "@/lib/streamImage";
+import { streamImage, GenerateImageError } from "@/lib/streamImage";
 import { useServerFn } from "@tanstack/react-start";
 import JSZip from "jszip";
+
+function formatGenerateError(err: unknown): { title: string; description: string } {
+  if (err instanceof GenerateImageError) {
+    const statusLabel = err.status ? `HTTP ${err.status}` : "network";
+    return {
+      title: `Generate belum berhasil (${statusLabel})`,
+      description: `${err.providerMessage}\n💡 ${err.suggestion}`,
+    };
+  }
+  const msg = err instanceof Error ? err.message : String(err ?? "Generate belum berhasil");
+  return { title: "Generate belum berhasil", description: msg };
+}
 
 export const Route = createFileRoute("/_authenticated/workspace")({
   validateSearch: z.object({
@@ -661,6 +673,7 @@ function Workspace() {
         } catch (genErr) {
           failedCount++;
           const msg = genErr instanceof Error ? genErr.message : "Generate belum berhasil";
+          const info = formatGenerateError(genErr);
           setVariants((prev) => {
             const next = [...prev];
             next[i] = { status: "gagal", error: msg, prompt: finalBasePrompt, ratio: jobRatio };
@@ -672,10 +685,13 @@ function Workspace() {
             .eq("id", projectId);
           pushDebug({
             level: "error",
-            message: `Variasi ${i + 1} belum berhasil: ${msg}`,
+            message: `Variasi ${i + 1} belum berhasil — ${info.title}: ${info.description.replace(/\n/g, " ")}`,
             jobId,
           });
-          toast.error(`Variasi ${i + 1} belum berhasil`, { description: msg });
+          toast.error(`Variasi ${i + 1} — ${info.title}`, {
+            description: info.description,
+            duration: 10000,
+          });
         }
         await refresh();
       }
@@ -693,7 +709,8 @@ function Workspace() {
         toast.error(`Semua ${failedCount} variasi belum berhasil di-generate.`);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Generate belum berhasil");
+      const info = formatGenerateError(err);
+      toast.error(info.title, { description: info.description, duration: 10000 });
     } finally {
       setGenerating(false);
     }
@@ -802,10 +819,14 @@ function Workspace() {
           .update({ status: "gagal", error_message: msg.slice(0, 500) })
           .eq("id", projectId);
       }
-      toast.error(`Regenerate variasi ${i + 1} belum berhasil`, { description: msg });
+      const info = formatGenerateError(err);
+      toast.error(`Regenerate variasi ${i + 1} — ${info.title}`, {
+        description: info.description,
+        duration: 10000,
+      });
       pushDebug({
         level: "error",
-        message: `Regenerate variasi ${i + 1} belum berhasil: ${msg}`,
+        message: `Regenerate variasi ${i + 1} belum berhasil — ${info.title}: ${info.description.replace(/\n/g, " ")}`,
         jobId,
       });
     }
