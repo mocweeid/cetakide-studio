@@ -850,6 +850,10 @@ function Workspace() {
       const keyInfo =
         usedKeys.size > 0 ? ` · via ${Array.from(usedKeys).join(", ")}` : "";
       const failInfo = totalFailovers > 0 ? ` (${totalFailovers}× failover)` : "";
+      pushDebug({
+        level: newResults.length > 0 ? "success" : "error",
+        message: `Pipeline selesai — ${newResults.length}/${totalJobs} sukses${failedCount > 0 ? `, ${failedCount} gagal` : ""}${keyInfo}`,
+      });
       if (newResults.length > 0) {
         toast.success(
           `${newResults.length} variasi sukses${failedCount > 0 ? `, ${failedCount} belum berhasil` : ""}!${keyInfo}${failInfo}`,
