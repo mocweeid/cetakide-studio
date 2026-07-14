@@ -433,6 +433,67 @@ function Workspace() {
       [{ ts: new Date().toISOString(), ...entry }, ...prev].slice(0, 30),
     );
   }
+  function buildDebugExport(format: "txt" | "json") {
+    // Logs are stored newest-first — reverse for chronological export.
+    const ordered = [...debugLogs].reverse();
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const filename = `cetakide-workspace-log-${stamp}.${format}`;
+    if (format === "json") {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        userAgent:
+          typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
+        totalEvents: ordered.length,
+        skipPreflight,
+        events: ordered,
+      };
+      return { filename, mime: "application/json", body: JSON.stringify(payload, null, 2) };
+    }
+    const lines = ordered.map((e) => {
+      const provider = e.provider ? ` [${e.provider}]` : "";
+      const job = e.jobId ? ` (job=${e.jobId.slice(0, 8)})` : "";
+      return `[${e.ts}] ${e.level.toUpperCase().padEnd(7)}${provider}${job} ${e.message}`;
+    });
+    const header = [
+      `# Cetakide Workspace — Terminal Log`,
+      `# Exported: ${new Date().toISOString()}`,
+      `# Events: ${ordered.length} · skipPreflight=${skipPreflight}`,
+      ``,
+    ].join("\n");
+    return { filename, mime: "text/plain;charset=utf-8", body: header + lines.join("\n") };
+  }
+  function exportDebugLogs(format: "txt" | "json") {
+    if (debugLogs.length === 0) {
+      toast.info("Log kosong — belum ada event untuk diekspor.");
+      return;
+    }
+    const { filename, mime, body } = buildDebugExport(format);
+    const blob = new Blob([body], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast.success(`Log terminal diekspor: ${filename}`, {
+      description: "Kirim file ini ke admin untuk pemeriksaan lebih lanjut.",
+    });
+  }
+  async function copyDebugLogs() {
+    if (debugLogs.length === 0) {
+      toast.info("Log kosong — belum ada event untuk disalin.");
+      return;
+    }
+    const { body } = buildDebugExport("txt");
+    try {
+      await navigator.clipboard.writeText(body);
+      toast.success("Log terminal disalin ke clipboard.");
+    } catch {
+      toast.error("Gagal menyalin — browser memblokir clipboard.");
+    }
+  }
   async function handleCheckOpenai() {
     setCheckingOpenai(true);
     try {
