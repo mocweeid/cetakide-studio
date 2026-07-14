@@ -819,10 +819,14 @@ function Workspace() {
           .update({ status: "gagal", error_message: msg.slice(0, 500) })
           .eq("id", projectId);
       }
-      toast.error(`Regenerate variasi ${i + 1} belum berhasil`, { description: msg });
+      const info = formatGenerateError(err);
+      toast.error(`Regenerate variasi ${i + 1} — ${info.title}`, {
+        description: info.description,
+        duration: 10000,
+      });
       pushDebug({
         level: "error",
-        message: `Regenerate variasi ${i + 1} belum berhasil: ${msg}`,
+        message: `Regenerate variasi ${i + 1} belum berhasil — ${info.title}: ${info.description.replace(/\n/g, " ")}`,
         jobId,
       });
     }
