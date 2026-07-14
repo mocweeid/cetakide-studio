@@ -682,6 +682,10 @@ function Workspace() {
       return;
     }
     pushDebug({ level: "success", message: `YogaDev siap (${health.latency ?? "?"}ms) — lanjut generate` });
+    pushDebug({
+      level: "info",
+      message: `Mulai pipeline: ${allRatios ? "multi-rasio" : "single"} · ${generateCount > 1 && !allRatios ? generateCount + " variasi" : ""} · platform=${platform} · ratio=${ratio}`.replace(/\s+·\s+·/g, " ·"),
+    });
 
     // Build target ratios (multi-ratio 1-klik or single)
     const targetRatios: string[] = allRatios
@@ -727,6 +731,11 @@ function Workspace() {
           typeof crypto !== "undefined" && "randomUUID" in crypto
             ? crypto.randomUUID()
             : `job_${Date.now()}_${i}`;
+        pushDebug({
+          level: "info",
+          message: `→ variasi ${i + 1}/${totalJobs} · ratio=${jobRatio} · size=${size} · jobId=${jobId.slice(0, 8)}`,
+          jobId,
+        });
         // 1) Catat proyek dengan status "proses" dulu
         const { data: inserted, error: insertErr } = await supabase
           .from("projects")
@@ -751,9 +760,23 @@ function Workspace() {
           .single();
         if (insertErr) throw insertErr;
         const projectId = inserted!.id;
+        pushDebug({
+          level: "info",
+          message: `  ↳ project row dibuat (id=${projectId.slice(0, 8)}) · POST /api/generate-image-simple`,
+          jobId,
+        });
         await refresh();
 
         // 2) Jalankan generate; update ke sukses / gagal sesuai hasil
+        const startedAt = Date.now();
+        const heartbeat = setInterval(() => {
+          const secs = Math.round((Date.now() - startedAt) / 1000);
+          pushDebug({
+            level: "info",
+            message: `  … menunggu YogaDev (${secs}s) · variasi ${i + 1}/${totalJobs}`,
+            jobId,
+          });
+        }, 5000);
         try {
           let finalUrl = "";
           const { provider } = await streamImage(
@@ -778,12 +801,14 @@ function Workspace() {
                 jobId: status.jobId || jobId,
               }),
           );
+          clearInterval(heartbeat);
           if (!finalUrl) throw new Error("Tidak ada gambar final.");
           usedKeys.add(provider);
           newResults.push(finalUrl);
+          const took = Math.round((Date.now() - startedAt) / 1000);
           pushDebug({
             level: "success",
-            message: `Variasi ${i + 1} sukses (${jobRatio})`,
+            message: `✓ variasi ${i + 1}/${totalJobs} sukses dalam ${took}s (${jobRatio}, provider=${provider})`,
             provider,
             jobId,
           });
@@ -792,6 +817,8 @@ function Workspace() {
             .update({ image_url: finalUrl, status: "sukses", provider })
             .eq("id", projectId);
         } catch (genErr) {
+          clearInterval(heartbeat);
+          const took = Math.round((Date.now() - startedAt) / 1000);
           failedCount++;
           const msg = genErr instanceof Error ? genErr.message : "Generate belum berhasil";
           const info = formatGenerateError(genErr);
@@ -806,7 +833,7 @@ function Workspace() {
             .eq("id", projectId);
           pushDebug({
             level: "error",
-            message: `Variasi ${i + 1} belum berhasil — ${info.title}: ${info.description.replace(/\n/g, " ")}`,
+            message: `✗ variasi ${i + 1}/${totalJobs} belum berhasil setelah ${took}s — ${info.title}: ${info.description.replace(/\n/g, " ")}`,
             jobId,
           });
           toast.error(`Variasi ${i + 1} — ${info.title}`, {
@@ -823,6 +850,10 @@ function Workspace() {
       const keyInfo =
         usedKeys.size > 0 ? ` · via ${Array.from(usedKeys).join(", ")}` : "";
       const failInfo = totalFailovers > 0 ? ` (${totalFailovers}× failover)` : "";
+      pushDebug({
+        level: newResults.length > 0 ? "success" : "error",
+        message: `Pipeline selesai — ${newResults.length}/${totalJobs} sukses${failedCount > 0 ? `, ${failedCount} gagal` : ""}${keyInfo}`,
+      });
       if (newResults.length > 0) {
         toast.success(
           `${newResults.length} variasi sukses${failedCount > 0 ? `, ${failedCount} belum berhasil` : ""}!${keyInfo}${failInfo}`,
@@ -855,12 +886,27 @@ function Workspace() {
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `job_${Date.now()}_${i}`;
+    setDebugOpen(true);
+    pushDebug({
+      level: "info",
+      message: `↻ regenerate variasi ${i + 1} · ratio=${jobRatio} · jobId=${jobId.slice(0, 8)}`,
+      jobId,
+    });
     setVariants((prev) => {
       const next = [...prev];
       next[i] = { status: "proses", prompt, ratio: jobRatio };
       return next;
     });
     let projectId: string | null = null;
+    const startedAt = Date.now();
+    const heartbeat = setInterval(() => {
+      const secs = Math.round((Date.now() - startedAt) / 1000);
+      pushDebug({
+        level: "info",
+        message: `  … menunggu YogaDev (${secs}s) · regenerate variasi ${i + 1}`,
+        jobId,
+      });
+    }, 5000);
     try {
       const { data: ok } = await supabase.rpc("potong_saldo_generate");
       if (!ok) {
@@ -914,6 +960,7 @@ function Workspace() {
           }),
       );
       if (!finalUrl) throw new Error("Tidak ada gambar final.");
+      clearInterval(heartbeat);
       if (projectId) {
         await supabase
           .from("projects")
@@ -929,6 +976,7 @@ function Workspace() {
         jobId,
       });
     } catch (err) {
+      clearInterval(heartbeat);
       const msg = err instanceof Error ? err.message : "Regenerate belum berhasil";
       setVariants((prev) => {
         const next = [...prev];
@@ -1702,6 +1750,12 @@ function Workspace() {
               <span className="ml-3 font-mono text-[11px] text-white/60">
                 cetakide@workspace: ~/generate ·{" "}
                 <span className="text-white/40">{debugLogs.length} event</span>
+                {generating && (
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-300">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-rose-400" />
+                    REC · live
+                  </span>
+                )}
               </span>
             </div>
             <div className="flex items-center gap-2">
