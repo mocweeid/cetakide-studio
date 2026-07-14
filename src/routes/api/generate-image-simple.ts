@@ -754,7 +754,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           output_format: "png",
         } satisfies Record<string, unknown>;
 
-        const attempts: YogaAttempt[] = [
+        const allAttempts: YogaAttempt[] = [
           {
             label: "Payload resmi YogaDev (curl)",
             accept: "text/event-stream",
@@ -777,6 +777,23 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           },
         ];
 
+        const degradation = computeDegradation(
+          retryCfg.maxAttempts,
+          allAttempts.length,
+          breakerProbe,
+        );
+        const attempts = allAttempts.slice(0, degradation.maxShapes);
+        log("info", "yoga_budget", {
+          requestId,
+          jobId,
+          level: degradation.level,
+          recentFailures: degradation.recentFailures,
+          effectiveMaxRetries: degradation.maxRetries,
+          effectiveMaxShapes: degradation.maxShapes,
+          totalShapes: allAttempts.length,
+          cfgMaxAttempts: retryCfg.maxAttempts,
+        });
+
         const errors: Array<{
           attempt: string;
           status?: number;
@@ -787,7 +804,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
         }> = [];
 
         for (const attempt of attempts) {
-          const MAX_RETRIES = retryCfg.maxAttempts;
+          const MAX_RETRIES = degradation.maxRetries;
           let credentialFatal = false;
           let attemptSucceeded = false;
 
