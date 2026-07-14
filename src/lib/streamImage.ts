@@ -93,7 +93,14 @@ export async function streamImage(
   onFrame: (dataUrl: string, isFinal: boolean) => void,
   jobId?: string,
   onStatus?: (status: { provider?: string; message?: string; jobId?: string }) => void,
-): Promise<{ provider: string }> {
+): Promise<{
+  provider: string;
+  fallbackUsed?: boolean;
+  primaryProvider?: string;
+  notice?: string;
+  breakerState?: string;
+  requestId?: string;
+}> {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
   if (!token) throw new Error("Belum sign in.");
@@ -115,6 +122,11 @@ export async function streamImage(
     provider?: string;
     message?: string;
     requestId?: string;
+    fallbackUsed?: boolean;
+    primaryProvider?: string;
+    primaryErrors?: Array<{ status?: number; message?: string; body?: string }>;
+    notice?: string;
+    breaker?: { state?: string; remainingMs?: number; lastReason?: string };
     details?: { targetUrl?: string; attempts?: unknown; provider?: string; fallback?: unknown };
   };
   try {
@@ -164,11 +176,33 @@ export async function streamImage(
   }
 
   const provider = json.provider || "YogaDev";
-  onStatus?.({
-    provider,
-    message: `YogaDev mengembalikan gambar${json.requestId ? ` (req=${json.requestId.slice(0, 8)})` : ""}`,
-    jobId,
-  });
+  if (json.fallbackUsed) {
+    const lastPrimary = json.primaryErrors?.[json.primaryErrors.length - 1];
+    const reason =
+      json.breaker?.state === "OPEN"
+        ? `circuit breaker AKTIF (${json.breaker.lastReason || "gangguan berulang"})`
+        : lastPrimary?.status
+          ? `${json.primaryProvider || "YogaDev"} HTTP ${lastPrimary.status} — ${(lastPrimary.message || "gagal").slice(0, 80)}`
+          : `${json.primaryProvider || "YogaDev"} tidak merespons`;
+    onStatus?.({
+      provider,
+      message: `⚠ Fallback dipakai: ${provider} · alasan: ${reason}${json.requestId ? ` (req=${json.requestId.slice(0, 8)})` : ""}`,
+      jobId,
+    });
+  } else {
+    onStatus?.({
+      provider,
+      message: `${provider} mengembalikan gambar${json.requestId ? ` (req=${json.requestId.slice(0, 8)})` : ""}`,
+      jobId,
+    });
+  }
   flushSync(() => onFrame(json.imageUrl!, true));
-  return { provider };
+  return {
+    provider,
+    fallbackUsed: json.fallbackUsed,
+    primaryProvider: json.primaryProvider,
+    notice: json.notice,
+    breakerState: json.breaker?.state,
+    requestId: json.requestId,
+  };
 }
