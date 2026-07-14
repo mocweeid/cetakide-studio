@@ -455,11 +455,48 @@ function ProjectPage() {
                     <span className="text-[9px] text-muted-foreground">{project.platform}</span>
                     <span className="text-[9px] text-muted-foreground">{project.aspect_ratio}</span>
                   </div>
-                  <p className="mt-0.5 text-[9px] text-muted-foreground">
-                    {new Date(project.created_at).toLocaleDateString("id-ID", {
-                      day: "2-digit",
-                      month: "short",
-                    })}
+                  {/* Metadata: provider · model · waktu */}
+                  <div className="mt-2 flex flex-wrap items-center gap-1">
+                    {(() => {
+                      const { name, model } = providerLabel(project.provider);
+                      return (
+                        <>
+                          <span
+                            className="inline-flex items-center gap-1 rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[9px] font-medium text-white/70 ring-1 ring-white/10"
+                            title={`Provider: ${name}`}
+                          >
+                            <Cpu className="h-2.5 w-2.5" /> {name}
+                          </span>
+                          {model && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary ring-1 ring-primary/20"
+                              title={`Model: ${model}`}
+                            >
+                              <Sparkles className="h-2.5 w-2.5" /> {model}
+                            </span>
+                          )}
+                          {project.fallback_used && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-medium text-amber-300 ring-1 ring-amber-400/20"
+                              title="Fallback provider dipakai"
+                            >
+                              fallback
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <p
+                    className="mt-1 flex items-center gap-1 text-[9px] text-muted-foreground"
+                    title={new Date(project.created_at).toLocaleString("id-ID")}
+                  >
+                    <Clock className="h-2.5 w-2.5" /> {formatRelativeTime(project.created_at)}
+                    {project.request_id && (
+                      <span className="ml-auto truncate font-mono text-[8px] text-white/30">
+                        #{project.request_id.slice(0, 6)}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
