@@ -673,6 +673,7 @@ function Workspace() {
         } catch (genErr) {
           failedCount++;
           const msg = genErr instanceof Error ? genErr.message : "Generate belum berhasil";
+          const info = formatGenerateError(genErr);
           setVariants((prev) => {
             const next = [...prev];
             next[i] = { status: "gagal", error: msg, prompt: finalBasePrompt, ratio: jobRatio };
@@ -684,10 +685,13 @@ function Workspace() {
             .eq("id", projectId);
           pushDebug({
             level: "error",
-            message: `Variasi ${i + 1} belum berhasil: ${msg}`,
+            message: `Variasi ${i + 1} belum berhasil — ${info.title}: ${info.description.replace(/\n/g, " ")}`,
             jobId,
           });
-          toast.error(`Variasi ${i + 1} belum berhasil`, { description: msg });
+          toast.error(`Variasi ${i + 1} — ${info.title}`, {
+            description: info.description,
+            duration: 10000,
+          });
         }
         await refresh();
       }
@@ -705,7 +709,8 @@ function Workspace() {
         toast.error(`Semua ${failedCount} variasi belum berhasil di-generate.`);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Generate belum berhasil");
+      const info = formatGenerateError(err);
+      toast.error(info.title, { description: info.description, duration: 10000 });
     } finally {
       setGenerating(false);
     }
