@@ -1332,6 +1332,26 @@ function Workspace() {
       message: `↻ regenerate variasi ${i + 1} · ratio=${jobRatio} · jobId=${jobId.slice(0, 8)}`,
       jobId,
     });
+    // Silent pre-flight — kalau YogaDev reachable tapi model target hilang,
+    // langsung pakai fallback tanpa membuang-buang retry ke YogaDev.
+    let regenAutoFallback = false;
+    let regenAutoFallbackReason = "";
+    if (!skipPreflight) {
+      const health = await runYogaHealthCheck(true);
+      if (health.ok && health.reachable && health.hasTargetModel === false) {
+        regenAutoFallback = true;
+        regenAutoFallbackReason = `Model ${health.targetModel || "cx/gpt-5.5-image"} tidak terdaftar di YogaDev /models`;
+        pushDebug({
+          level: "info",
+          message: `⚠ Auto-fallback aktif — ${regenAutoFallbackReason}. Regenerate langsung ke Lovable Gateway.`,
+          jobId,
+        });
+        toast.warning("Auto-fallback ke Lovable Gateway", {
+          description: regenAutoFallbackReason,
+          duration: 6000,
+        });
+      }
+    }
     setVariants((prev) => {
       const next = [...prev];
       next[i] = { status: "proses", prompt, ratio: jobRatio };
@@ -1382,6 +1402,8 @@ function Workspace() {
         size,
         ratio: jobRatio,
         jobId,
+        forceFallback: regenAutoFallback,
+        forceFallbackReason: regenAutoFallbackReason,
         onStreamFrame: (dataUrl, isFinal) => {
           setVariants((prev) => {
             const next = [...prev];
