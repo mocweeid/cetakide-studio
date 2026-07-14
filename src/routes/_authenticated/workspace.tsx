@@ -721,7 +721,7 @@ function Workspace() {
             duration: 8000,
           });
           pushDebug({
-            level: "warn",
+            level: "info",
             message: `  ⚠ fallback aktif → ${result.provider} · alasan: ${reason}`,
             jobId: params.jobId,
           });
