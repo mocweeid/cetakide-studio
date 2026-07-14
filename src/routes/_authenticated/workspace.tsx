@@ -2316,6 +2316,123 @@ function Workspace() {
                 )}
               </p>
             )}
+            {(yogaDetail || yogaPingHistory.length > 0) && (
+              <div className="mt-2 rounded-md border border-white/10 bg-white/[0.02]">
+                <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-1.5 text-[11px] text-white/70">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-white/90">YogaDev diagnostics</span>
+                    {yogaDetail?.baseUrl && (
+                      <span className="text-white/40">{yogaDetail.baseUrl}</span>
+                    )}
+                  </div>
+                  {yogaDetail?.cache_source && (
+                    <span
+                      className={
+                        yogaDetail.cache_source === "live"
+                          ? "rounded bg-emerald-500/15 px-1.5 py-0.5 text-emerald-300"
+                          : "rounded bg-amber-500/15 px-1.5 py-0.5 text-amber-300"
+                      }
+                    >
+                      {yogaDetail.cache_source}
+                      {typeof yogaDetail.cache_age_ms === "number" && (
+                        <span className="ml-1 text-white/50">
+                          age {Math.round(yogaDetail.cache_age_ms / 1000)}s
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </div>
+                {yogaDetail && (
+                  <div className="grid grid-cols-1 gap-2 px-3 py-2 text-[11px] md:grid-cols-2">
+                    <div>
+                      <div className="mb-1 text-white/50">Target model</div>
+                      <div className="flex items-center gap-2">
+                        <code className="rounded bg-black/40 px-1.5 py-0.5 text-white/90">
+                          {yogaDetail.target_model || "cx/gpt-5.5-image"}
+                        </code>
+                        {yogaDetail.has_target_model ? (
+                          <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-emerald-300">
+                            ✓ tersedia
+                          </span>
+                        ) : (
+                          <span className="rounded bg-rose-500/15 px-1.5 py-0.5 text-rose-300">
+                            ✗ tidak terdaftar
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-1 text-white/50">
+                        Model ditemukan ({yogaDetail.model_count ?? 0})
+                      </div>
+                      {yogaDetail.sample_models && yogaDetail.sample_models.length > 0 ? (
+                        <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto">
+                          {yogaDetail.sample_models.map((m) => {
+                            const isTarget =
+                              m === (yogaDetail.target_model || "cx/gpt-5.5-image");
+                            return (
+                              <code
+                                key={m}
+                                className={
+                                  isTarget
+                                    ? "rounded bg-emerald-500/15 px-1.5 py-0.5 text-emerald-200"
+                                    : "rounded bg-white/5 px-1.5 py-0.5 text-white/70"
+                                }
+                              >
+                                {m}
+                              </code>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <span className="text-white/40">—</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {yogaPingHistory.length > 0 && (
+                  <div className="border-t border-white/10 px-3 py-2 text-[11px]">
+                    <div className="mb-1 text-white/50">Riwayat ping (terbaru → lama)</div>
+                    <div className="space-y-0.5 font-mono">
+                      {yogaPingHistory.map((p, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="w-20 text-white/40">
+                            {new Date(p.ts).toLocaleTimeString("en-GB", { hour12: false })}
+                          </span>
+                          <span
+                            className={
+                              p.ok ? "w-12 text-emerald-300" : "w-12 text-rose-300"
+                            }
+                          >
+                            {p.ok ? "✓ ok" : "✗ fail"}
+                          </span>
+                          <span className="w-16 text-white/80">
+                            {typeof p.latency === "number" ? `${p.latency}ms` : "—"}
+                          </span>
+                          {p.source && (
+                            <span
+                              className={
+                                p.source === "live"
+                                  ? "w-12 text-emerald-200/70"
+                                  : "w-12 text-amber-200/70"
+                              }
+                            >
+                              {p.source}
+                            </span>
+                          )}
+                          {typeof p.status === "number" && (
+                            <span className="w-16 text-white/50">HTTP {p.status}</span>
+                          )}
+                          {p.note && (
+                            <span className="truncate text-white/40">{p.note}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {lastFailure && (
               <div className="mt-3 rounded-md border border-rose-500/30 bg-rose-500/5">
                 <div className="flex items-center justify-between gap-2 border-b border-rose-500/20 px-3 py-1.5">
