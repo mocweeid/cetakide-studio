@@ -289,6 +289,76 @@ function Workspace() {
   const [allRatios, setAllRatios] = useState(false);
   const selectedBrand = brandKits.find((b) => b.id === selectedBrandId) ?? null;
 
+  // ── Quick-config memory: konfigurasi terakhir + 5 recent unik untuk regenerate.
+  type QuickConfig = {
+    platform: keyof typeof PLATFORMS;
+    ratio: string;
+    generateCount: number;
+    allRatios: boolean;
+    autoEnhance: boolean;
+    ts: string;
+  };
+  const RECENT_CONFIGS_KEY = "cetakide.recentConfigs.v1";
+  const [autoEnhance, setAutoEnhance] = useState<boolean>(false);
+  const [recentConfigs, setRecentConfigs] = useState<QuickConfig[]>([]);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(RECENT_CONFIGS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { autoEnhance?: boolean; recent?: QuickConfig[] };
+        if (typeof parsed.autoEnhance === "boolean") setAutoEnhance(parsed.autoEnhance);
+        if (Array.isArray(parsed.recent)) setRecentConfigs(parsed.recent.slice(0, 5));
+      }
+    } catch {
+      /* ignore corrupt storage */
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        RECENT_CONFIGS_KEY,
+        JSON.stringify({ autoEnhance, recent: recentConfigs }),
+      );
+    } catch {
+      /* ignore quota */
+    }
+  }, [autoEnhance, recentConfigs]);
+  function configSignature(c: Omit<QuickConfig, "ts">) {
+    return `${c.platform}|${c.ratio}|${c.generateCount}|${c.allRatios ? 1 : 0}|${c.autoEnhance ? 1 : 0}`;
+  }
+  function rememberCurrentConfig() {
+    const current: QuickConfig = {
+      platform,
+      ratio,
+      generateCount,
+      allRatios,
+      autoEnhance,
+      ts: new Date().toISOString(),
+    };
+    const sig = configSignature(current);
+    setRecentConfigs((prev) => {
+      const filtered = prev.filter((c) => configSignature(c) !== sig);
+      return [current, ...filtered].slice(0, 5);
+    });
+  }
+  function applyQuickConfig(c: QuickConfig) {
+    setPlatform(c.platform);
+    // Set ratio setelah platform effect stabil.
+    setTimeout(() => setRatio(c.ratio), 0);
+    setGenerateCount(c.generateCount);
+    setAllRatios(c.allRatios);
+    setAutoEnhance(c.autoEnhance);
+  }
+  function removeQuickConfig(sig: string) {
+    setRecentConfigs((prev) => prev.filter((c) => configSignature(c) !== sig));
+  }
+  async function applyAndGenerate(c: QuickConfig) {
+    applyQuickConfig(c);
+    // Beri React satu tick untuk apply state sebelum handleGenerate membaca-nya.
+    await new Promise((r) => setTimeout(r, 30));
+    await handleGenerate();
+  }
+
   const [form, setForm] = useState({
     prompt: "",
     title: "",
@@ -1082,6 +1152,25 @@ function Workspace() {
     if (!user) return;
 
     setDebugOpen(true);
+    // Simpan konfigurasi ini sebagai quick-pick untuk regenerate mendatang.
+    rememberCurrentConfig();
+    // Auto-enhance prompt sebelum generate jika toggle aktif.
+    if (autoEnhance && !enhancing) {
+      try {
+        pushDebug({ level: "info", message: "✨ Auto-enhance prompt aktif — menyempurnakan…" });
+        const { enhanced } = await enhancePrompt({
+          data: { prompt: form.prompt, platform, ratio },
+        });
+        setForm((f) => ({ ...f, prompt: enhanced }));
+        form.prompt = enhanced; // sinkron untuk pipeline berikut di call ini
+        pushDebug({ level: "success", message: "✨ Prompt disempurnakan otomatis." });
+      } catch (err) {
+        pushDebug({
+          level: "error",
+          message: `Auto-enhance gagal: ${err instanceof Error ? err.message : String(err)} — lanjut pakai prompt asli.`,
+        });
+      }
+    }
     // Pre-flight boleh menyimpulkan bahwa YogaDev reachable tapi model target
     // (cx/gpt-5.5-image) tidak terdaftar. Kalau begitu: skip YogaDev untuk
     // semua variasi & langsung pakai fallback tanpa menunggu user klik retry.
@@ -2130,6 +2219,23 @@ function Workspace() {
                     <><Sparkles className="h-3.5 w-3.5" /> Sempurnakan Prompt dengan AI</>
                   )}
                 </button>
+                <label
+                  className={`mt-2 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-[11px] font-medium transition ${
+                    autoEnhance
+                      ? "border-primary/50 bg-primary/10 text-primary"
+                      : "border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/5"
+                  }`}
+                  title="Otomatis sempurnakan prompt setiap kali Generate diklik"
+                >
+                  <input
+                    type="checkbox"
+                    checked={autoEnhance}
+                    onChange={(e) => setAutoEnhance(e.target.checked)}
+                    className="accent-primary"
+                  />
+                  <Sparkles className="h-3 w-3" />
+                  Enhancer otomatis sebelum Generate
+                </label>
               </div>
             </Field>
             <details className="group rounded-lg border border-white/10 bg-white/[0.03]">
@@ -2318,6 +2424,85 @@ function Workspace() {
               )}
               Cetak Ide Sekarang
             </button>
+            {recentConfigs.length > 0 && (
+              <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] p-2.5">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-white/60">
+                    Konfigurasi Cepat · Regenerate
+                  </span>
+                  <button
+                    onClick={() => setRecentConfigs([])}
+                    className="text-[10px] text-white/40 hover:text-white/70"
+                    title="Hapus semua konfigurasi tersimpan"
+                  >
+                    hapus semua
+                  </button>
+                </div>
+                <div className="space-y-1.5">
+                  {recentConfigs.map((c) => {
+                    const sig = configSignature(c);
+                    const isCurrent =
+                      sig ===
+                      configSignature({
+                        platform,
+                        ratio,
+                        generateCount,
+                        allRatios,
+                        autoEnhance,
+                      });
+                    return (
+                      <div
+                        key={sig + c.ts}
+                        className={`flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] transition ${
+                          isCurrent
+                            ? "border-primary/40 bg-primary/10"
+                            : "border-white/10 bg-white/[0.02] hover:bg-white/5"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => applyQuickConfig(c)}
+                          className="flex-1 truncate text-left font-mono text-white/80"
+                          title="Terapkan konfigurasi ini (tanpa generate)"
+                        >
+                          <span className="text-primary">{PLATFORMS[c.platform]?.label ?? c.platform}</span>
+                          <span className="text-white/40"> · </span>
+                          {c.allRatios ? (
+                            <span>semua rasio</span>
+                          ) : (
+                            <>
+                              <span>{c.ratio}</span>
+                              <span className="text-white/40"> · </span>
+                              <span>{c.generateCount}x</span>
+                            </>
+                          )}
+                          {c.autoEnhance && (
+                            <span className="ml-1 text-[9px] text-primary/80">✨</span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => applyAndGenerate(c)}
+                          disabled={generating || !form.prompt.trim()}
+                          className="rounded border border-primary/40 bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary hover:bg-primary/25 disabled:opacity-40"
+                          title="Terapkan lalu generate ulang"
+                        >
+                          ↻ regen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeQuickConfig(sig)}
+                          className="text-white/40 hover:text-white"
+                          title="Hapus dari daftar"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <p className="text-center text-[11px] text-muted-foreground">
               {user?.isDeveloper
                 ? "God Mode — gratis"
