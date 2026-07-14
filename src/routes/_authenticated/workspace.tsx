@@ -229,6 +229,13 @@ function Workspace() {
     detail: string;
     latency?: number;
   }>(null);
+  const [checkingYoga, setCheckingYoga] = useState(false);
+  const [yogaStatus, setYogaStatus] = useState<null | {
+    ok: boolean;
+    detail: string;
+    latency?: number;
+    reachable?: boolean;
+  }>(null);
   function pushDebug(entry: Omit<DebugEntry, "ts">) {
     setDebugLogs((prev) =>
       [{ ts: new Date().toISOString(), ...entry }, ...prev].slice(0, 30),

@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiGenerateImageStreamRouteImport } from './routes/api/generate-image-stream'
 import { Route as ApiGenerateImageSimpleRouteImport } from './routes/api/generate-image-simple'
+import { Route as ApiCheckYogaRouteImport } from './routes/api/check-yoga'
 import { Route as ApiCheckOpenaiRouteImport } from './routes/api/check-openai'
 import { Route as AuthenticatedWorkspaceRouteImport } from './routes/_authenticated/workspace'
 import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
@@ -81,6 +82,11 @@ const ApiGenerateImageStreamRoute = ApiGenerateImageStreamRouteImport.update({
 const ApiGenerateImageSimpleRoute = ApiGenerateImageSimpleRouteImport.update({
   id: '/api/generate-image-simple',
   path: '/api/generate-image-simple',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCheckYogaRoute = ApiCheckYogaRouteImport.update({
+  id: '/api/check-yoga',
+  path: '/api/check-yoga',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCheckOpenaiRoute = ApiCheckOpenaiRouteImport.update({
@@ -367,6 +373,7 @@ export interface FileRoutesByFullPath {
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
   '/api/check-openai': typeof ApiCheckOpenaiRoute
+  '/api/check-yoga': typeof ApiCheckYogaRoute
   '/api/generate-image-simple': typeof ApiGenerateImageSimpleRoute
   '/api/generate-image-stream': typeof ApiGenerateImageStreamRoute
 }
@@ -417,6 +424,7 @@ export interface FileRoutesByTo {
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/workspace': typeof AuthenticatedWorkspaceRoute
   '/api/check-openai': typeof ApiCheckOpenaiRoute
+  '/api/check-yoga': typeof ApiCheckYogaRoute
   '/api/generate-image-simple': typeof ApiGenerateImageSimpleRoute
   '/api/generate-image-stream': typeof ApiGenerateImageStreamRoute
 }
@@ -469,6 +477,7 @@ export interface FileRoutesById {
   '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
   '/_authenticated/workspace': typeof AuthenticatedWorkspaceRoute
   '/api/check-openai': typeof ApiCheckOpenaiRoute
+  '/api/check-yoga': typeof ApiCheckYogaRoute
   '/api/generate-image-simple': typeof ApiGenerateImageSimpleRoute
   '/api/generate-image-stream': typeof ApiGenerateImageStreamRoute
 }
@@ -521,6 +530,7 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/workspace'
     | '/api/check-openai'
+    | '/api/check-yoga'
     | '/api/generate-image-simple'
     | '/api/generate-image-stream'
   fileRoutesByTo: FileRoutesByTo
@@ -571,6 +581,7 @@ export interface FileRouteTypes {
     | '/webhooks'
     | '/workspace'
     | '/api/check-openai'
+    | '/api/check-yoga'
     | '/api/generate-image-simple'
     | '/api/generate-image-stream'
   id:
@@ -622,6 +633,7 @@ export interface FileRouteTypes {
     | '/_authenticated/webhooks'
     | '/_authenticated/workspace'
     | '/api/check-openai'
+    | '/api/check-yoga'
     | '/api/generate-image-simple'
     | '/api/generate-image-stream'
   fileRoutesById: FileRoutesById
@@ -631,6 +643,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiCheckOpenaiRoute: typeof ApiCheckOpenaiRoute
+  ApiCheckYogaRoute: typeof ApiCheckYogaRoute
   ApiGenerateImageSimpleRoute: typeof ApiGenerateImageSimpleRoute
   ApiGenerateImageStreamRoute: typeof ApiGenerateImageStreamRoute
 }
@@ -670,6 +683,13 @@ declare module '@tanstack/react-router' {
       path: '/api/generate-image-simple'
       fullPath: '/api/generate-image-simple'
       preLoaderRoute: typeof ApiGenerateImageSimpleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/check-yoga': {
+      id: '/api/check-yoga'
+      path: '/api/check-yoga'
+      fullPath: '/api/check-yoga'
+      preLoaderRoute: typeof ApiCheckYogaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/check-openai': {
@@ -1083,6 +1103,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiCheckOpenaiRoute: ApiCheckOpenaiRoute,
+  ApiCheckYogaRoute: ApiCheckYogaRoute,
   ApiGenerateImageSimpleRoute: ApiGenerateImageSimpleRoute,
   ApiGenerateImageStreamRoute: ApiGenerateImageStreamRoute,
 }
