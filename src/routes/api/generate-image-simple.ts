@@ -460,6 +460,56 @@ function computeBackoff(retry: number, cfg: ReturnType<typeof loadRetryConfig>):
   return capped + jitter;
 }
 
+// ------- auto-adjustment untuk error 400/422/429 -------
+// Progresif memendekkan prompt dan menyederhanakan payload agar YogaDev
+// menerima request pada retry berikutnya (mengurangi variasi/detail).
+//   level 0 → prompt asli, semua field opsional
+//   level 1 → prompt ≤ 1200 char, drop image_detail & background
+//   level 2 → prompt ≤ 600 char, drop output_format & quality
+//   level 3+ → prompt ≤ 280 char, hanya {model, prompt, n:1, size:"auto"}
+function shortenPromptForRetry(prompt: string, level: number): string {
+  if (level <= 0) return prompt;
+  const limits = [Infinity, 1200, 600, 280, 160];
+  const max = limits[Math.min(level, limits.length - 1)];
+  if (prompt.length <= max) return prompt;
+  // Ambil kalimat pertama sebisa mungkin, potong di batas kata terdekat.
+  const truncated = prompt.slice(0, max);
+  const lastStop = Math.max(
+    truncated.lastIndexOf(". "),
+    truncated.lastIndexOf("! "),
+    truncated.lastIndexOf("? "),
+    truncated.lastIndexOf(", "),
+    truncated.lastIndexOf(" "),
+  );
+  return (lastStop > max * 0.5 ? truncated.slice(0, lastStop) : truncated).trim();
+}
+
+function adjustPayloadForRetry(
+  original: Record<string, unknown>,
+  prompt: string,
+  level: number,
+): Record<string, unknown> {
+  const p = { ...original, prompt } as Record<string, unknown>;
+  if (level >= 1) {
+    delete p.image_detail;
+    delete p.background;
+  }
+  if (level >= 2) {
+    delete p.output_format;
+    delete p.quality;
+  }
+  if (level >= 3) {
+    // sisakan hanya field paling minimal supaya validator YG tidak menolak
+    const minimal: Record<string, unknown> = { model: p.model, prompt: p.prompt, n: 1 };
+    if (p.size !== undefined) minimal.size = p.size;
+    if (p.stream !== undefined) minimal.stream = p.stream;
+    return minimal;
+  }
+  // pastikan n selalu 1 (kurangi variasi)
+  if (typeof p.n !== "number" || (p.n as number) > 1) p.n = 1;
+  return p;
+}
+
 // ------- circuit breaker (in-memory, per Worker instance) -------
 
 type BreakerState = "CLOSED" | "OPEN" | "HALF_OPEN";
@@ -863,6 +913,11 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           requestPayload?: Record<string, unknown>;
         }> = [];
 
+        // Auto-adjustment state: bertambah ketika YG mengembalikan 400/422/429.
+        // Dipertahankan lintas attempt agar retry berikutnya makin ringkas.
+        let adjustLevel = 0;
+        let effectivePrompt = prompt;
+
         for (const attempt of attempts) {
           const MAX_RETRIES = degradation.maxRetries;
           let credentialFatal = false;
@@ -873,6 +928,11 @@ export const Route = createFileRoute("/api/generate-image-simple")({
             const retryLabel =
               retry === 0 ? attempt.label : `${attempt.label} (retry ${retry}/${MAX_RETRIES - 1})`;
             const tryStartedAt = Date.now();
+            const effectivePayload = adjustPayloadForRetry(
+              attempt.payload,
+              effectivePrompt,
+              adjustLevel,
+            );
             log("info", "attempt_start", {
               requestId,
               jobId,
@@ -881,6 +941,9 @@ export const Route = createFileRoute("/api/generate-image-simple")({
               maxRetries: MAX_RETRIES,
               accept: attempt.accept,
               targetUrl,
+              adjustLevel,
+              promptLen: effectivePrompt.length,
+              payloadKeys: Object.keys(effectivePayload),
             });
             let response: Response;
             try {
@@ -893,7 +956,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                     Authorization: `Bearer ${apiKey}`,
                     Accept: attempt.accept,
                   },
-                  body: JSON.stringify(attempt.payload),
+                  body: JSON.stringify(effectivePayload),
                 },
                 retryCfg.requestTimeoutMs,
               );
@@ -901,7 +964,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
               const message = (err as Error)?.message || "Image provider network error";
               const errorType = classifyErrorType({ message });
               const durationMs = Date.now() - tryStartedAt;
-              errors.push({ attempt: retryLabel, message, requestPayload: attempt.payload });
+              errors.push({ attempt: retryLabel, message, requestPayload: effectivePayload });
               log("warn", "attempt_network_error", {
                 requestId,
                 jobId,
@@ -943,7 +1006,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 contentType,
                 message: `${providerLabel} request failed`,
                 body: truncate(raw),
-                requestPayload: attempt.payload,
+                requestPayload: effectivePayload,
               });
               log("warn", "attempt_http_error", {
                 requestId,
@@ -955,6 +1018,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 errorType,
                 durationMs,
                 bodyPreview: truncate(raw, 300),
+                adjustLevelBefore: adjustLevel,
               });
 
               const lowerRaw = raw.toLowerCase();
@@ -974,6 +1038,37 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                   errorType,
                 });
                 break;
+              }
+
+              // 400/422/429 → picu auto-adjustment: pendekkan prompt & sederhanakan
+              // payload sebelum retry berikutnya. Untuk 400/422 kita paksa retry
+              // walau tidak masuk daftar transient default.
+              const isAdjustable =
+                response.status === 400 ||
+                response.status === 422 ||
+                response.status === 429;
+              if (isAdjustable && !isLastRetry) {
+                const prevLevel = adjustLevel;
+                adjustLevel = Math.min(adjustLevel + 1, 4);
+                effectivePrompt = shortenPromptForRetry(prompt, adjustLevel);
+                const retryAfter = Number(response.headers.get("retry-after")) * 1000;
+                const delay =
+                  Number.isFinite(retryAfter) && retryAfter > 0
+                    ? Math.min(retryAfter, retryCfg.maxDelayMs)
+                    : computeBackoff(retry, retryCfg);
+                log("info", "auto_adjust", {
+                  requestId,
+                  jobId,
+                  attempt: attempt.label,
+                  status: response.status,
+                  adjustLevelBefore: prevLevel,
+                  adjustLevelAfter: adjustLevel,
+                  newPromptLen: effectivePrompt.length,
+                  delayMs: delay,
+                  reason: errorType,
+                });
+                await new Promise((r) => setTimeout(r, delay));
+                continue;
               }
 
               const isTransient = retryCfg.statusCodes.includes(response.status);
@@ -1039,7 +1134,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 contentType,
                 message: e.message || "Gagal memparse response YG",
                 body: e.lastPayload ?? "",
-                requestPayload: attempt.payload,
+                requestPayload: effectivePayload,
               });
               log("warn", "attempt_parse_error", {
                 requestId,
