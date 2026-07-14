@@ -369,6 +369,51 @@ function Workspace() {
     latency?: number;
     reachable?: boolean;
   }>(null);
+  // Emergency mode: skip pre-flight YogaDev health check.
+  // Persisted per-browser at localStorage["cetakide.skipPreflight"].
+  const [skipPreflight, setSkipPreflight] = useState<boolean>(false);
+  useEffect(() => {
+    try {
+      setSkipPreflight(localStorage.getItem("cetakide.skipPreflight") === "1");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  function toggleSkipPreflight() {
+    const next = !skipPreflight;
+    if (next) {
+      const ok = window.confirm(
+        "AKTIFKAN MODE DARURAT?\n\n" +
+          "Pre-flight YogaDev akan DILEWATI. Ini berisiko:\n" +
+          "• Saldo tetap dipotong walau YogaDev sedang down.\n" +
+          "• Sistem akan langsung mencoba generate + retry + fallback.\n" +
+          "• Hanya gunakan saat pre-flight sendiri yang error, bukan YogaDev-nya.\n\n" +
+          "Yakin lanjut?",
+      );
+      if (!ok) return;
+    }
+    setSkipPreflight(next);
+    try {
+      if (next) localStorage.setItem("cetakide.skipPreflight", "1");
+      else localStorage.removeItem("cetakide.skipPreflight");
+    } catch {
+      /* ignore */
+    }
+    pushDebug({
+      level: next ? "error" : "info",
+      message: next
+        ? "⚠ Mode darurat AKTIF — pre-flight YogaDev dilewati untuk generate berikutnya."
+        : "Mode darurat dimatikan — pre-flight YogaDev kembali aktif.",
+    });
+    toast[next ? "warning" : "success"](
+      next ? "Mode darurat aktif" : "Mode darurat dimatikan",
+      {
+        description: next
+          ? "Pre-flight YogaDev dilewati. Saldo tetap dipotong saat generate."
+          : "Pre-flight YogaDev kembali dijalankan sebelum saldo dipotong.",
+      },
+    );
+  }
   function pushDebug(entry: Omit<DebugEntry, "ts">) {
     setDebugLogs((prev) =>
       [{ ts: new Date().toISOString(), ...entry }, ...prev].slice(0, 30),
@@ -913,22 +958,44 @@ function Workspace() {
     }
     if (!user) return;
 
-    // Pre-flight: pastikan YogaDev bisa dihubungi sebelum motong saldo & mulai generate
-    pushDebug({ level: "info", message: "Health check YogaDev sebelum generate…" });
     setDebugOpen(true);
-    const health = await runYogaHealthCheck(true);
-    if (!health.ok) {
-      toast.error("YogaDev belum siap — generate dibatalkan", {
-        description: health.detail,
-        duration: 10000,
-      });
+    if (skipPreflight) {
+      // Emergency mode: pre-flight dilewati. Konfirmasi ulang sebelum motong saldo.
       pushDebug({
         level: "error",
-        message: `Generate dibatalkan: YogaDev ${health.reachable ? "error" : "unreachable"} — ${health.detail}`,
+        message: "⚠ Mode darurat: pre-flight YogaDev DILEWATI. Menunggu konfirmasi user…",
       });
-      return;
+      const proceed = window.confirm(
+        "MODE DARURAT AKTIF\n\n" +
+          "Pre-flight YogaDev DILEWATI. Saldo akan DIPOTONG walau YogaDev bisa jadi sedang down.\n\n" +
+          "Lanjut generate sekarang?",
+      );
+      if (!proceed) {
+        toast.info("Generate dibatalkan", { description: "Mode darurat aktif — user membatalkan." });
+        pushDebug({ level: "info", message: "Generate dibatalkan oleh user (mode darurat)." });
+        return;
+      }
+      pushDebug({
+        level: "error",
+        message: "⚠ User setuju — melanjutkan tanpa pre-flight. Saldo tetap dipotong.",
+      });
+    } else {
+      // Pre-flight: pastikan YogaDev bisa dihubungi sebelum motong saldo & mulai generate
+      pushDebug({ level: "info", message: "Health check YogaDev sebelum generate…" });
+      const health = await runYogaHealthCheck(true);
+      if (!health.ok) {
+        toast.error("YogaDev belum siap — generate dibatalkan", {
+          description: `${health.detail} · Aktifkan Mode Darurat di terminal jika ingin tetap mencoba.`,
+          duration: 10000,
+        });
+        pushDebug({
+          level: "error",
+          message: `Generate dibatalkan: YogaDev ${health.reachable ? "error" : "unreachable"} — ${health.detail}`,
+        });
+        return;
+      }
+      pushDebug({ level: "success", message: `YogaDev siap (${health.latency ?? "?"}ms) — lanjut generate` });
     }
-    pushDebug({ level: "success", message: `YogaDev siap (${health.latency ?? "?"}ms) — lanjut generate` });
     pushDebug({
       level: "info",
       message: `Mulai pipeline: ${allRatios ? "multi-rasio" : "single"} · ${generateCount > 1 && !allRatios ? generateCount + " variasi" : ""} · platform=${platform} · ratio=${ratio}`.replace(/\s+·\s+·/g, " ·"),
@@ -2140,6 +2207,22 @@ function Workspace() {
                 ) : (
                   "$ ping yoga"
                 )}
+              </button>
+              <button
+                onClick={toggleSkipPreflight}
+                title={
+                  skipPreflight
+                    ? "Mode darurat AKTIF — pre-flight YogaDev dilewati. Klik untuk mematikan."
+                    : "Aktifkan mode darurat: lewati pre-flight YogaDev (berisiko, saldo tetap dipotong)."
+                }
+                className={
+                  "rounded-md border px-3 py-1 font-mono text-[11px] font-semibold transition " +
+                  (skipPreflight
+                    ? "border-rose-400/50 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25 animate-pulse"
+                    : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10")
+                }
+              >
+                {skipPreflight ? "⚠ skip preflight: ON" : "skip preflight: off"}
               </button>
               <button
                 onClick={() => setDebugLogs([])}
