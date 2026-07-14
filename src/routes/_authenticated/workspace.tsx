@@ -668,6 +668,7 @@ function Workspace() {
   }
 
   async function handleGenerate() {
+    // will be defined below via closure — see attemptWithRetry
     if (!form.prompt.trim()) {
       toast.error("Isi prompt dulu.");
       return;
