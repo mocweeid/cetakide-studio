@@ -1750,6 +1750,12 @@ function Workspace() {
               <span className="ml-3 font-mono text-[11px] text-white/60">
                 cetakide@workspace: ~/generate ·{" "}
                 <span className="text-white/40">{debugLogs.length} event</span>
+                {generating && (
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-300">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-rose-400" />
+                    REC · live
+                  </span>
+                )}
               </span>
             </div>
             <div className="flex items-center gap-2">
