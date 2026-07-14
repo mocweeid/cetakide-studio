@@ -178,6 +178,78 @@ function extractFailureMeta(err: unknown): {
   };
 }
 
+// ------- toast aksi cepat (Retry, Kurangi variasi, Top-up, Kontak admin) -------
+type ErrorToastActions = {
+  onRetry?: () => void;
+  onReduceVariants?: () => void;
+  currentVariantCount?: number;
+};
+
+function renderErrorActions(actions: ErrorToastActions) {
+  const canReduce = (actions.currentVariantCount ?? 1) > 1 && !!actions.onReduceVariants;
+  const btn =
+    "inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/5 px-2 py-1 text-[11px] font-medium hover:bg-white/10 transition";
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {actions.onRetry ? (
+        <button
+          type="button"
+          className={`${btn} border-red-400/40 bg-red-500/10 hover:bg-red-500/20`}
+          onClick={() => {
+            toast.dismiss();
+            actions.onRetry?.();
+          }}
+        >
+          🔄 Retry
+        </button>
+      ) : null}
+      {canReduce ? (
+        <button
+          type="button"
+          className={btn}
+          onClick={() => {
+            toast.dismiss();
+            actions.onReduceVariants?.();
+          }}
+        >
+          ✂️ Kurangi variasi
+        </button>
+      ) : null}
+      <a
+        href="/top-up"
+        className={btn}
+        onClick={() => toast.dismiss()}
+      >
+        💳 Top-up saldo
+      </a>
+      <a
+        href="/support"
+        className={btn}
+        onClick={() => toast.dismiss()}
+      >
+        📞 Kontak admin
+      </a>
+    </div>
+  );
+}
+
+function showGenerateFailureToast(
+  err: unknown,
+  actions: ErrorToastActions,
+  overrideTitle?: string,
+) {
+  const info = formatGenerateError(err);
+  toast.error(overrideTitle ?? info.title, {
+    duration: 12000,
+    description: (
+      <div>
+        {info.description}
+        {renderErrorActions(actions)}
+      </div>
+    ),
+  });
+}
+
 export const Route = createFileRoute("/_authenticated/workspace")({
   validateSearch: z.object({
     preset: z.string().optional(),
@@ -1403,16 +1475,21 @@ function Workspace() {
             message: `✗ variasi ${i + 1}/${totalJobs} belum berhasil setelah ${took}s — ${info.title}: ${info.summary}`,
             jobId,
           });
-          toast.error(`Variasi ${i + 1} — ${info.title}`, {
-            description: info.description,
-            duration: 10000,
-            action: {
-              label: "Retry",
-              onClick: () => {
+          showGenerateFailureToast(
+            genErr,
+            {
+              onRetry: () => {
                 void handleRegenerate(i);
               },
+              onReduceVariants: () => {
+                setGenerateCount(1);
+                setAllRatios(false);
+                toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+              },
+              currentVariantCount: totalJobs,
             },
-          });
+            `Variasi ${i + 1} — ${info.title}`,
+          );
           captureFailure(genErr, `Variasi ${i + 1}`);
         }
         await refresh();
@@ -1432,27 +1509,33 @@ function Workspace() {
           `${newResults.length} variasi sukses${failedCount > 0 ? `, ${failedCount} belum berhasil` : ""}!${keyInfo}${failInfo}`,
         );
       } else if (failedCount > 0) {
-        toast.error(`Semua ${failedCount} variasi belum berhasil di-generate.`, {
-          duration: 10000,
-          action: {
-            label: "Retry semua",
-            onClick: () => {
+        showGenerateFailureToast(
+          new Error(`Semua ${failedCount} variasi belum berhasil di-generate.`),
+          {
+            onRetry: () => {
               void handleGenerate();
             },
+            onReduceVariants: () => {
+              setGenerateCount(1);
+              setAllRatios(false);
+              toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+            },
+            currentVariantCount: totalJobs,
           },
-        });
+          `Semua ${failedCount} variasi belum berhasil`,
+        );
       }
     } catch (err) {
-      const info = formatGenerateError(err);
-      toast.error(info.title, {
-        description: info.description,
-        duration: 10000,
-        action: {
-          label: "Retry",
-          onClick: () => {
-            void handleGenerate();
-          },
+      showGenerateFailureToast(err, {
+        onRetry: () => {
+          void handleGenerate();
         },
+        onReduceVariants: () => {
+          setGenerateCount(1);
+          setAllRatios(false);
+          toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+        },
+        currentVariantCount: generateCount,
       });
     } finally {
       setGenerating(false);
@@ -1623,16 +1706,21 @@ function Workspace() {
           .eq("id", projectId);
       }
       const info = formatGenerateError(err);
-      toast.error(`Regenerate variasi ${i + 1} — ${info.title}`, {
-        description: info.description,
-        duration: 10000,
-        action: {
-          label: "Retry",
-          onClick: () => {
+      showGenerateFailureToast(
+        err,
+        {
+          onRetry: () => {
             void handleRegenerate(i);
           },
+          onReduceVariants: () => {
+            setGenerateCount(1);
+            setAllRatios(false);
+            toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+          },
+          currentVariantCount: variants.length,
         },
-      });
+        `Regenerate variasi ${i + 1} — ${info.title}`,
+      );
       captureFailure(err, `Regenerate variasi ${i + 1}`);
       pushDebug({
         level: "error",
