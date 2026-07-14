@@ -720,6 +720,7 @@ function Workspace() {
             description: info.description,
             duration: 10000,
           });
+          captureFailure(genErr, `Variasi ${i + 1}`);
         }
         await refresh();
       }
@@ -852,6 +853,7 @@ function Workspace() {
         description: info.description,
         duration: 10000,
       });
+      captureFailure(err, `Regenerate variasi ${i + 1}`);
       pushDebug({
         level: "error",
         message: `Regenerate variasi ${i + 1} belum berhasil — ${info.title}: ${info.description.replace(/\n/g, " ")}`,
