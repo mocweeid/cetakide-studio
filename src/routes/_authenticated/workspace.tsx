@@ -1027,11 +1027,13 @@ function Workspace() {
           .single();
         projectId = inserted?.id ?? null;
       }
-      let finalUrl = "";
-      const { provider } = await streamImage(
+      const { provider, finalUrl } = await attemptWithRetry({
+        index: i,
         prompt,
         size,
-        (dataUrl, isFinal) => {
+        ratio: jobRatio,
+        jobId,
+        onStreamFrame: (dataUrl, isFinal) => {
           setVariants((prev) => {
             const next = [...prev];
             next[i] = isFinal
@@ -1039,17 +1041,15 @@ function Workspace() {
               : { status: "streaming", imageUrl: dataUrl, prompt, ratio: jobRatio };
             return next;
           });
-          if (isFinal) finalUrl = dataUrl;
         },
-        jobId,
-        (status) =>
+        onStatus: (status) =>
           pushDebug({
             level: "info",
             message: status.message || "Provider memproses gambar",
             provider: status.provider,
             jobId: status.jobId || jobId,
           }),
-      );
+      });
       if (!finalUrl) throw new Error("Tidak ada gambar final.");
       clearInterval(heartbeat);
       if (projectId) {
