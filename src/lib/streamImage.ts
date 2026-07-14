@@ -19,6 +19,21 @@ type ImageEventPayload =
   | { type: "error"; jobId?: string; error: { message: string; type?: string; code?: string } }
   | { type: "provider_status"; provider?: string; message?: string; jobId?: string };
 
+function formatYogaDetails(details: unknown): string {
+  if (!details || typeof details !== "object") return "";
+  const attempts = (details as { attempts?: unknown }).attempts;
+  if (!Array.isArray(attempts)) return ` · ${JSON.stringify(details).slice(0, 300)}`;
+  const lines = attempts
+    .map((item, index) => {
+      const a = item as { attempt?: string; status?: number; message?: string; body?: string };
+      const status = a.status ? `HTTP ${a.status}` : "network";
+      const body = a.body ? ` — ${a.body}` : "";
+      return `${index + 1}) ${a.attempt || "YogaDev"}: ${status} ${a.message || "gagal"}${body}`;
+    })
+    .join(" | ");
+  return ` · ${lines.slice(0, 700)}`;
+}
+
 export async function streamImage(
   prompt: string,
   size: string,
@@ -55,7 +70,7 @@ export async function streamImage(
   }
 
   if (!res.ok || !json.success || !json.imageUrl) {
-    const details = json.details ? ` · ${JSON.stringify(json.details).slice(0, 300)}` : "";
+    const details = formatYogaDetails(json.details);
     throw new Error(`${json.message || `YogaDev belum berhasil (HTTP ${res.status})`}${details}`);
   }
 
