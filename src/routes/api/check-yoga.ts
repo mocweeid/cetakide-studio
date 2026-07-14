@@ -76,9 +76,11 @@ export const Route = createFileRoute("/api/check-yoga")({
           return json(200, {
             ok: false,
             reachable: false,
-            error: "CUSTOM_AI_API_KEY belum dikonfigurasi di backend.",
+            error:
+              "CUSTOM_AI_API_KEY belum ter-bind di Worker deployment (secret sudah tersimpan tapi Worker perlu redeploy). Refresh halaman lalu coba lagi.",
             baseUrl,
             model,
+            build: BUILD_TAG,
           });
         }
 
