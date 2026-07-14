@@ -1817,9 +1817,10 @@ function Workspace() {
             void handleRegenerate(i);
           },
           onReduceVariants: () => {
-            setGenerateCount(1);
+            const rec = recommendOptimalVariants(variants.length);
+            setGenerateCount(rec);
             setAllRatios(false);
-            toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+            toast.message(`Variasi diset ke ${rec}. Tekan Generate ulang.`);
           },
           currentVariantCount: variants.length,
         },
