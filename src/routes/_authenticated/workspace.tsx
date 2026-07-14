@@ -45,6 +45,25 @@ function formatGenerateError(err: unknown): { title: string; description: string
   return { title: "Generate belum berhasil", description: msg };
 }
 
+function extractFailureMeta(err: unknown): {
+  status?: number;
+  raw?: string;
+  requestId?: string;
+} {
+  if (!(err instanceof GenerateImageError)) return {};
+  const last = err.attempts[err.attempts.length - 1];
+  const raw =
+    last?.body ||
+    err.providerMessage ||
+    (err.rawResponse ? JSON.stringify(err.rawResponse) : undefined);
+  const reqMatch = err.message.match(/req=([a-z0-9-]+)/i);
+  return {
+    status: last?.status ?? err.status ?? undefined,
+    raw: raw ? String(raw).slice(0, 4000) : undefined,
+    requestId: reqMatch?.[1],
+  };
+}
+
 export const Route = createFileRoute("/_authenticated/workspace")({
   validateSearch: z.object({
     preset: z.string().optional(),
