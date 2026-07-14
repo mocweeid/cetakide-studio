@@ -646,12 +646,24 @@ export const Route = createFileRoute("/api/generate-image-simple")({
 
         let body: { prompt?: unknown; jobId?: unknown; size?: unknown };
         try {
-          body = (await request.json()) as { prompt?: unknown; jobId?: unknown; size?: unknown };
+          body = (await request.json()) as {
+            prompt?: unknown;
+            jobId?: unknown;
+            size?: unknown;
+            forceFallback?: unknown;
+            forceFallbackReason?: unknown;
+          };
         } catch {
           log("warn", "bad_body", { requestId, userId });
           return jsonResponse({ success: false, message: "Body JSON tidak valid" }, 400);
         }
         const jobId = typeof body.jobId === "string" ? body.jobId : undefined;
+        const forceFallback =
+          (body as { forceFallback?: unknown }).forceFallback === true;
+        const forceFallbackReason =
+          typeof (body as { forceFallbackReason?: unknown }).forceFallbackReason === "string"
+            ? ((body as { forceFallbackReason?: string }).forceFallbackReason as string)
+            : "client requested fallback";
 
         const promptRaw = body?.prompt;
         if (typeof promptRaw !== "string") {
@@ -692,7 +704,55 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           targetUrl,
           promptLen: prompt.length,
           sizeParam: typeof body.size === "string" ? body.size : null,
+          forceFallback,
         });
+
+        // Auto-fallback: caller (workspace pre-flight) tahu YogaDev tidak punya
+        // target model — lompati YogaDev sepenuhnya, langsung ke Lovable Gateway.
+        if (forceFallback) {
+          log("warn", "force_fallback_requested", {
+            requestId,
+            jobId,
+            userId,
+            reason: forceFallbackReason,
+          });
+          const fallbackStartedAt = Date.now();
+          const fallback = await tryLovableGatewayFallback(prompt);
+          if (fallback.ok) {
+            log("info", "fallback_success", {
+              requestId,
+              jobId,
+              provider: fallback.provider,
+              via: "force_fallback",
+              durationMs: Date.now() - fallbackStartedAt,
+            });
+            return jsonResponse({
+              success: true,
+              imageUrl: fallback.imageUrl,
+              provider: fallback.provider,
+              jobId,
+              requestId,
+              fallbackUsed: true,
+              primaryProvider: providerLabel,
+              notice: `Auto-fallback aktif — ${forceFallbackReason}. Menggunakan ${fallback.provider}.`,
+            });
+          }
+          log("error", "force_fallback_failed", {
+            requestId,
+            jobId,
+            provider: fallback.provider,
+            message: fallback.message,
+          });
+          return jsonResponse(
+            {
+              success: false,
+              message: `Auto-fallback gagal: ${fallback.message}`,
+              requestId,
+              details: { provider: providerLabel, fallback, reason: forceFallbackReason },
+            },
+            502,
+          );
+        }
 
         const retryCfg = loadRetryConfig();
         log("info", "retry_config", { requestId, jobId, ...retryCfg });

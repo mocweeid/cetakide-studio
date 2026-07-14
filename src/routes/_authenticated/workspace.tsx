@@ -480,6 +480,8 @@ function Workspace() {
     detail: string;
     latency?: number;
     reachable?: boolean;
+    hasTargetModel?: boolean;
+    targetModel?: string;
   }> {
     if (!silent) setCheckingYoga(true);
     try {
@@ -506,12 +508,21 @@ function Workspace() {
         detail: string;
         latency?: number;
         reachable?: boolean;
+        hasTargetModel?: boolean;
+        targetModel?: string;
       };
       if (j.ok) {
         const detail = `YogaDev online · ${j.model_count ?? 0} model${
           j.has_target_model ? ` · ${j.model} tersedia` : ` · ${j.model} TIDAK terdaftar`
         } · ${j.latency_ms}ms`;
-        result = { ok: true, detail, latency: j.latency_ms, reachable: true };
+        result = {
+          ok: true,
+          detail,
+          latency: j.latency_ms,
+          reachable: true,
+          hasTargetModel: j.has_target_model,
+          targetModel: j.model,
+        };
         pushDebug({ level: "success", message: `YogaDev health OK — ${detail}` });
       } else {
         const detail = j.error || (j.status ? `HTTP ${j.status}` : "Tidak bisa dihubungi");
@@ -903,6 +914,8 @@ function Workspace() {
     jobId: string;
     onStreamFrame: (dataUrl: string, isFinal: boolean) => void;
     onStatus: (s: { provider?: string; message?: string; jobId?: string }) => void;
+    forceFallback?: boolean;
+    forceFallbackReason?: string;
   }): Promise<{ provider: string; finalUrl: string }> {
     // return shape extended below (fallbackUsed etc are attached via any)
     // keep declared type for compat; callers cast when reading extras.
@@ -935,6 +948,9 @@ function Workspace() {
           },
           params.jobId,
           params.onStatus,
+          params.forceFallback
+            ? { forceFallback: true, forceFallbackReason: params.forceFallbackReason }
+            : undefined,
         );
         if (!finalUrl) throw new Error("Tidak ada gambar final.");
         if (result.fallbackUsed) {
@@ -1005,6 +1021,11 @@ function Workspace() {
     if (!user) return;
 
     setDebugOpen(true);
+    // Pre-flight boleh menyimpulkan bahwa YogaDev reachable tapi model target
+    // (cx/gpt-5.5-image) tidak terdaftar. Kalau begitu: skip YogaDev untuk
+    // semua variasi & langsung pakai fallback tanpa menunggu user klik retry.
+    let autoFallback = false;
+    let autoFallbackReason = "";
     if (skipPreflight) {
       // Emergency mode: pre-flight dilewati. Konfirmasi ulang sebelum motong saldo.
       pushDebug({
@@ -1041,6 +1062,19 @@ function Workspace() {
         return;
       }
       pushDebug({ level: "success", message: `YogaDev siap (${health.latency ?? "?"}ms) — lanjut generate` });
+      if (health.reachable && health.hasTargetModel === false) {
+        autoFallback = true;
+        const target = health.targetModel || "cx/gpt-5.5-image";
+        autoFallbackReason = `Model ${target} tidak terdaftar di YogaDev /models`;
+        pushDebug({
+          level: "info",
+          message: `⚠ Auto-fallback aktif — ${autoFallbackReason}. Semua variasi dialihkan ke Lovable Gateway.`,
+        });
+        toast.warning("Auto-fallback ke Lovable Gateway", {
+          description: `${autoFallbackReason}. Sistem tidak menunggu Retry — langsung pakai generator cadangan.`,
+          duration: 8000,
+        });
+      }
     }
     pushDebug({
       level: "info",
@@ -1144,6 +1178,8 @@ function Workspace() {
             size,
             ratio: jobRatio,
             jobId,
+            forceFallback: autoFallback,
+            forceFallbackReason: autoFallbackReason,
             onStreamFrame: (dataUrl, isFinal) => {
               setVariants((prev) => {
                 const next = [...prev];
@@ -1296,6 +1332,26 @@ function Workspace() {
       message: `↻ regenerate variasi ${i + 1} · ratio=${jobRatio} · jobId=${jobId.slice(0, 8)}`,
       jobId,
     });
+    // Silent pre-flight — kalau YogaDev reachable tapi model target hilang,
+    // langsung pakai fallback tanpa membuang-buang retry ke YogaDev.
+    let regenAutoFallback = false;
+    let regenAutoFallbackReason = "";
+    if (!skipPreflight) {
+      const health = await runYogaHealthCheck(true);
+      if (health.ok && health.reachable && health.hasTargetModel === false) {
+        regenAutoFallback = true;
+        regenAutoFallbackReason = `Model ${health.targetModel || "cx/gpt-5.5-image"} tidak terdaftar di YogaDev /models`;
+        pushDebug({
+          level: "info",
+          message: `⚠ Auto-fallback aktif — ${regenAutoFallbackReason}. Regenerate langsung ke Lovable Gateway.`,
+          jobId,
+        });
+        toast.warning("Auto-fallback ke Lovable Gateway", {
+          description: regenAutoFallbackReason,
+          duration: 6000,
+        });
+      }
+    }
     setVariants((prev) => {
       const next = [...prev];
       next[i] = { status: "proses", prompt, ratio: jobRatio };
@@ -1346,6 +1402,8 @@ function Workspace() {
         size,
         ratio: jobRatio,
         jobId,
+        forceFallback: regenAutoFallback,
+        forceFallbackReason: regenAutoFallbackReason,
         onStreamFrame: (dataUrl, isFinal) => {
           setVariants((prev) => {
             const next = [...prev];
