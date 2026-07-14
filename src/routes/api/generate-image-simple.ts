@@ -405,6 +405,61 @@ type YogaAttempt = {
   payload: Record<string, unknown>;
 };
 
+// ------- retry config (env-driven, dengan default aman) -------
+//
+// Semua nilai bisa disetel via .env / dashboard secrets tanpa mengubah kode:
+//   RETRY_MAX_ATTEMPTS       (default 3)      total percobaan per attempt shape
+//   RETRY_BASE_DELAY_MS      (default 800)    delay awal exponential backoff
+//   RETRY_MAX_DELAY_MS       (default 15000)  cap delay per retry
+//   RETRY_JITTER_MS          (default 250)    tambahan random 0..N ms
+//   RETRY_STATUS_CODES       (default "408,425,429,500,502,503,504")
+//                            daftar HTTP status yang boleh di-retry (koma)
+//   RETRY_ON_NETWORK_ERROR   (default "true") retry saat network/timeout
+//   RETRY_REQUEST_TIMEOUT_MS (default 180000) timeout per fetch YogaDev
+function parsePositiveInt(v: string | undefined, fallback: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+function parseNonNegativeInt(v: string | undefined, fallback: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
+}
+function parseBool(v: string | undefined, fallback: boolean): boolean {
+  if (v === undefined) return fallback;
+  const s = v.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(s)) return true;
+  if (["0", "false", "no", "off"].includes(s)) return false;
+  return fallback;
+}
+function parseStatusCodes(v: string | undefined, fallback: number[]): number[] {
+  if (!v) return fallback;
+  const parsed = v
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isFinite(n) && n >= 400 && n < 600);
+  return parsed.length ? Array.from(new Set(parsed)) : fallback;
+}
+function loadRetryConfig() {
+  return {
+    maxAttempts: parsePositiveInt(process.env.RETRY_MAX_ATTEMPTS, 3),
+    baseDelayMs: parseNonNegativeInt(process.env.RETRY_BASE_DELAY_MS, 800),
+    maxDelayMs: parsePositiveInt(process.env.RETRY_MAX_DELAY_MS, 15_000),
+    jitterMs: parseNonNegativeInt(process.env.RETRY_JITTER_MS, 250),
+    statusCodes: parseStatusCodes(
+      process.env.RETRY_STATUS_CODES,
+      [408, 425, 429, 500, 502, 503, 504],
+    ),
+    retryOnNetworkError: parseBool(process.env.RETRY_ON_NETWORK_ERROR, true),
+    requestTimeoutMs: parsePositiveInt(process.env.RETRY_REQUEST_TIMEOUT_MS, 180_000),
+  } as const;
+}
+function computeBackoff(retry: number, cfg: ReturnType<typeof loadRetryConfig>): number {
+  const exp = cfg.baseDelayMs * 2 ** retry;
+  const capped = Math.min(exp, cfg.maxDelayMs);
+  const jitter = cfg.jitterMs > 0 ? Math.floor(Math.random() * cfg.jitterMs) : 0;
+  return capped + jitter;
+}
+
 // ------- circuit breaker (in-memory, per Worker instance) -------
 
 type BreakerState = "CLOSED" | "OPEN" | "HALF_OPEN";
