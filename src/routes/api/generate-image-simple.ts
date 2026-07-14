@@ -15,6 +15,14 @@ function truncate(s: string, n = 1000): string {
   return s.length > n ? s.slice(0, n) + "…" : s;
 }
 
+type ProviderError = Error & { lastPayload?: string };
+
+function makeProviderError(message: string, lastPayload?: string): ProviderError {
+  const err = new Error(message) as ProviderError;
+  if (lastPayload) err.lastPayload = truncate(lastPayload);
+  return err;
+}
+
 async function fetchWithTimeout(
   url: string,
   init: RequestInit,
@@ -36,7 +44,86 @@ async function fetchWithTimeout(
 
 type ExtractedImage = { b64_json?: string; url?: string; raw: unknown } | null;
 
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function cleanBase64(value: string): string | null {
+  const dataUri = value.match(/data:image\/[a-z0-9.+-]+;base64,([a-z0-9+/=\s]+)/i);
+  const raw = (dataUri?.[1] ?? value).replace(/\s/g, "");
+  if (!/^[a-z0-9+/]+={0,2}$/i.test(raw) || raw.length < 120) return null;
+  return raw;
+}
+
+function imageFromString(value: string): ExtractedImage {
+  const trimmed = value.trim();
+  const b64 = cleanBase64(trimmed);
+  if (b64) return { b64_json: b64, raw: value };
+
+  const dataUriMatch = trimmed.match(/data:image\/[a-z0-9.+-]+;base64,([a-z0-9+/=\s]+)/i);
+  if (dataUriMatch?.[1]) return { b64_json: dataUriMatch[1].replace(/\s/g, ""), raw: value };
+
+  const urlMatch = trimmed.match(/https?:\/\/[^\s"'<>]+/i);
+  if (urlMatch?.[0]) return { url: urlMatch[0], raw: value };
+
+  const b64Match = trimmed.match(/[a-z0-9+/]{240,}={0,2}/i);
+  if (b64Match?.[0]) return { b64_json: b64Match[0], raw: value };
+
+  return null;
+}
+
+function extractImageDeep(payload: unknown, depth = 0, seen = new WeakSet<object>()): ExtractedImage {
+  if (payload == null || depth > 10) return null;
+  if (typeof payload === "string") return imageFromString(payload);
+  if (typeof payload !== "object") return null;
+  if (seen.has(payload)) return null;
+  seen.add(payload);
+
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const found = extractImageDeep(item, depth + 1, seen);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  const record = payload as Record<string, unknown>;
+  const priorityKeys = [
+    "b64_json",
+    "image_url",
+    "imageUrl",
+    "url",
+    "image",
+    "images",
+    "data",
+    "output",
+    "result",
+    "content",
+  ];
+
+  for (const key of priorityKeys) {
+    if (key in record) {
+      const found = extractImageDeep(record[key], depth + 1, seen);
+      if (found) return found;
+    }
+  }
+
+  for (const value of Object.values(record)) {
+    const found = extractImageDeep(value, depth + 1, seen);
+    if (found) return found;
+  }
+
+  return null;
+}
+
 function extractImage(payload: unknown): ExtractedImage {
+  const deep = extractImageDeep(payload);
+  if (deep) return deep;
   if (!payload || typeof payload !== "object") return null;
   const p = payload as Record<string, unknown> & {
     data?: Array<Record<string, unknown>>;
@@ -91,17 +178,59 @@ function extractImage(payload: unknown): ExtractedImage {
   return { b64_json: b64?.replace(/^data:image\/\w+;base64,/, ""), url, raw: payload };
 }
 
+function parseTextForImage(raw: string): ExtractedImage {
+  const direct = imageFromString(raw);
+  if (direct) return direct;
+
+  try {
+    const parsed = JSON.parse(raw);
+    const img = extractImage(parsed);
+    if (img) return img;
+  } catch {
+    /* not plain JSON */
+  }
+
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    const data = trimmed.startsWith("data:") ? trimmed.slice(5).trim() : trimmed;
+    if (!data || data === "[DONE]") continue;
+    const fromString = imageFromString(data);
+    if (fromString) return fromString;
+    if (data.startsWith("{") || data.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(data);
+        const img = extractImage(parsed);
+        if (img) return img;
+      } catch {
+        /* keep scanning */
+      }
+    }
+  }
+
+  return null;
+}
+
 async function parseSseImageResponse(response: Response): Promise<ExtractedImage> {
   if (!response.body) throw new Error("YG SSE body kosong");
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   let lastPayload: unknown = null;
+  let rawSnapshot = "";
 
   try {
     while (true) {
       const { value, done } = await reader.read();
-      if (value) buffer += decoder.decode(value, { stream: true });
+      if (value) {
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        rawSnapshot = truncate(rawSnapshot + chunk, 4000);
+        const chunkImage = parseTextForImage(chunk);
+        if (chunkImage) {
+          reader.cancel().catch(() => {});
+          return chunkImage;
+        }
+      }
       // process complete SSE blocks (separated by blank line)
       let idx: number;
       while ((idx = buffer.indexOf("\n\n")) !== -1 || (idx = buffer.indexOf("\r\n\r\n")) !== -1) {
@@ -124,7 +253,11 @@ async function parseSseImageResponse(response: Response): Promise<ExtractedImage
             return img;
           }
         } catch {
-          /* keep reading */
+          const img = parseTextForImage(data);
+          if (img) {
+            reader.cancel().catch(() => {});
+            return img;
+          }
         }
       }
       if (done) break;
@@ -133,40 +266,45 @@ async function parseSseImageResponse(response: Response): Promise<ExtractedImage
     reader.cancel().catch(() => {});
   }
 
-  const snapshot = lastPayload ? truncate(JSON.stringify(lastPayload)) : truncate(buffer);
-  const err = new Error("YG response tidak berisi gambar (SSE)") as Error & {
-    lastPayload?: string;
-  };
-  err.lastPayload = snapshot;
-  throw err;
+  const fallback = parseTextForImage(buffer || rawSnapshot);
+  if (fallback) return fallback;
+
+  const snapshot = lastPayload ? truncate(JSON.stringify(lastPayload)) : truncate(buffer || rawSnapshot);
+  throw makeProviderError("YG response tidak berisi gambar (SSE)", snapshot);
 }
 
 async function parseJsonImageResponse(response: Response): Promise<ExtractedImage> {
   const raw = await response.text();
+  const fromText = parseTextForImage(raw);
+  if (fromText) return fromText;
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    const err = new Error("YG response bukan JSON valid") as Error & { lastPayload?: string };
-    err.lastPayload = truncate(raw);
-    throw err;
+    throw makeProviderError("YG response bukan JSON valid", raw);
   }
   const img = extractImage(parsed);
   if (!img) {
-    const err = new Error("YG response tidak berisi gambar (JSON)") as Error & {
-      lastPayload?: string;
-    };
-    err.lastPayload = truncate(JSON.stringify(parsed));
-    throw err;
+    throw makeProviderError("YG response tidak berisi gambar (JSON)", JSON.stringify(parsed));
   }
   return img;
 }
 
 async function parseYogaResponse(response: Response): Promise<ExtractedImage> {
   const ct = (response.headers.get("content-type") ?? "").toLowerCase();
+  if (ct.startsWith("image/")) {
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    return { b64_json: bytesToBase64(bytes), raw: { contentType: ct } };
+  }
   if (ct.includes("text/event-stream")) return parseSseImageResponse(response);
   return parseJsonImageResponse(response);
 }
+
+type YogaAttempt = {
+  label: string;
+  accept: string;
+  payload: Record<string, unknown>;
+};
 
 // ------- auth (mirror generate-image-stream) -------
 
