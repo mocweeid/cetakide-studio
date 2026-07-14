@@ -33,6 +33,18 @@ import { streamImage, GenerateImageError } from "@/lib/streamImage";
 import { useServerFn } from "@tanstack/react-start";
 import JSZip from "jszip";
 
+function formatGenerateError(err: unknown): { title: string; description: string } {
+  if (err instanceof GenerateImageError) {
+    const statusLabel = err.status ? `HTTP ${err.status}` : "network";
+    return {
+      title: `Generate belum berhasil (${statusLabel})`,
+      description: `${err.providerMessage}\n💡 ${err.suggestion}`,
+    };
+  }
+  const msg = err instanceof Error ? err.message : String(err ?? "Generate belum berhasil");
+  return { title: "Generate belum berhasil", description: msg };
+}
+
 export const Route = createFileRoute("/_authenticated/workspace")({
   validateSearch: z.object({
     preset: z.string().optional(),
