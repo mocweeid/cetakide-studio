@@ -15,6 +15,11 @@ function truncate(s: string, n = 1000): string {
   return s.length > n ? s.slice(0, n) + "…" : s;
 }
 
+function resolveYogaEndpoint(baseUrl: string): string {
+  const clean = baseUrl.replace(/\/+$/, "");
+  return /\/images\/generations$/i.test(clean) ? clean : `${clean}/images/generations`;
+}
+
 type ProviderError = Error & { lastPayload?: string };
 
 function makeProviderError(message: string, lastPayload?: string): ProviderError {
@@ -385,7 +390,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
         const baseUrl = process.env.CUSTOM_AI_BASE_URL || "https://ai.yogathedev.com/v1";
         const model = process.env.CUSTOM_AI_MODEL || "cx/gpt-5.5-image";
         const providerLabel = `YogaDev ${model}`;
-        const targetUrl = `${baseUrl.replace(/\/$/, "")}/images/generations`;
+        const targetUrl = resolveYogaEndpoint(baseUrl);
         if (!apiKey) {
           return jsonResponse(
             { success: false, message: "CUSTOM_AI_API_KEY belum dikonfigurasi di backend" },
@@ -405,6 +410,11 @@ export const Route = createFileRoute("/api/generate-image-simple")({
         } satisfies Record<string, unknown>;
 
         const attempts: YogaAttempt[] = [
+          {
+            label: "Payload resmi YogaDev (curl)",
+            accept: "text/event-stream",
+            payload: { model, prompt, n: 1, size: "auto", quality: "auto" },
+          },
           {
             label: "SSE resmi YogaDev",
             accept: "text/event-stream",
