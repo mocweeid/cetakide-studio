@@ -886,12 +886,27 @@ function Workspace() {
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `job_${Date.now()}_${i}`;
+    setDebugOpen(true);
+    pushDebug({
+      level: "info",
+      message: `↻ regenerate variasi ${i + 1} · ratio=${jobRatio} · jobId=${jobId.slice(0, 8)}`,
+      jobId,
+    });
     setVariants((prev) => {
       const next = [...prev];
       next[i] = { status: "proses", prompt, ratio: jobRatio };
       return next;
     });
     let projectId: string | null = null;
+    const startedAt = Date.now();
+    const heartbeat = setInterval(() => {
+      const secs = Math.round((Date.now() - startedAt) / 1000);
+      pushDebug({
+        level: "info",
+        message: `  … menunggu YogaDev (${secs}s) · regenerate variasi ${i + 1}`,
+        jobId,
+      });
+    }, 5000);
     try {
       const { data: ok } = await supabase.rpc("potong_saldo_generate");
       if (!ok) {
@@ -945,6 +960,7 @@ function Workspace() {
           }),
       );
       if (!finalUrl) throw new Error("Tidak ada gambar final.");
+      clearInterval(heartbeat);
       if (projectId) {
         await supabase
           .from("projects")
@@ -960,6 +976,7 @@ function Workspace() {
         jobId,
       });
     } catch (err) {
+      clearInterval(heartbeat);
       const msg = err instanceof Error ? err.message : "Regenerate belum berhasil";
       setVariants((prev) => {
         const next = [...prev];
