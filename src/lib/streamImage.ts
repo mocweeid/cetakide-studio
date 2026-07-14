@@ -93,6 +93,7 @@ export async function streamImage(
   onFrame: (dataUrl: string, isFinal: boolean) => void,
   jobId?: string,
   onStatus?: (status: { provider?: string; message?: string; jobId?: string }) => void,
+  options?: { forceFallback?: boolean; forceFallbackReason?: string },
 ): Promise<{
   provider: string;
   fallbackUsed?: boolean;
@@ -105,7 +106,15 @@ export async function streamImage(
   const token = sessionData.session?.access_token;
   if (!token) throw new Error("Belum sign in.");
 
-  onStatus?.({ provider: "YogaDev", message: "Mengirim permintaan ke YogaDev", jobId });
+  if (options?.forceFallback) {
+    onStatus?.({
+      provider: "Lovable Gateway",
+      message: `Auto-fallback aktif — ${options.forceFallbackReason || "YogaDev dilewati"}`,
+      jobId,
+    });
+  } else {
+    onStatus?.({ provider: "YogaDev", message: "Mengirim permintaan ke YogaDev", jobId });
+  }
 
   const res = await fetch("/api/generate-image-simple", {
     method: "POST",
@@ -113,7 +122,17 @@ export async function streamImage(
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ prompt, size, jobId }),
+    body: JSON.stringify({
+      prompt,
+      size,
+      jobId,
+      ...(options?.forceFallback
+        ? {
+            forceFallback: true,
+            forceFallbackReason: options.forceFallbackReason || "client requested fallback",
+          }
+        : {}),
+    }),
   });
 
   let json: {
