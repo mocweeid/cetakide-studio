@@ -305,6 +305,56 @@ async function parseYogaResponse(response: Response): Promise<ExtractedImage> {
   return parseJsonImageResponse(response);
 }
 
+// ------- fallback: Lovable AI Gateway -------
+
+type FallbackResult =
+  | { ok: true; imageUrl: string; provider: string }
+  | { ok: false; provider: string; message: string; body?: string };
+
+async function tryLovableGatewayFallback(prompt: string): Promise<FallbackResult> {
+  const key = process.env.LOVABLE_API_KEY;
+  const provider = "Lovable Gateway openai/gpt-image-1-mini";
+  if (!key) {
+    return { ok: false, provider, message: "LOVABLE_API_KEY tidak tersedia untuk fallback" };
+  }
+  try {
+    const res = await fetchWithTimeout(
+      "https://ai.gateway.lovable.dev/v1/images/generations",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-image-1-mini",
+          prompt,
+          n: 1,
+          size: "auto",
+          quality: "low",
+        }),
+      },
+      120_000,
+    );
+    if (!res.ok) {
+      const raw = await res.text().catch(() => "");
+      return {
+        ok: false,
+        provider,
+        message: `Lovable Gateway status ${res.status}`,
+        body: truncate(raw),
+      };
+    }
+    const img = await parseYogaResponse(res);
+    if (!img) return { ok: false, provider, message: "Lovable Gateway tanpa gambar" };
+    const imageUrl = img.b64_json ? `data:image/png;base64,${img.b64_json}` : img.url!;
+    return { ok: true, imageUrl, provider };
+  } catch (err) {
+    return { ok: false, provider, message: (err as Error)?.message || "Lovable Gateway error" };
+  }
+}
+
 type YogaAttempt = {
   label: string;
   accept: string;
@@ -549,13 +599,33 @@ export const Route = createFileRoute("/api/generate-image-simple")({
         const credentialError = errors.find((e) =>
           `${e.message} ${e.body ?? ""}`.toLowerCase().includes("no credentials for provider"),
         );
+
+        // Semua attempt YG gagal → coba Lovable Gateway supaya user tidak terkunci
+        const fallback = await tryLovableGatewayFallback(prompt);
+        if (fallback.ok) {
+          return jsonResponse({
+            success: true,
+            imageUrl: fallback.imageUrl,
+            provider: fallback.provider,
+            jobId: body.jobId,
+            fallbackUsed: true,
+            primaryProvider: providerLabel,
+            primaryErrors: errors,
+          });
+        }
+
         return jsonResponse(
           {
             success: false,
             message: credentialError
               ? "YogaDev menolak request: akun/key YogaDev belum punya kredensial provider image upstream. Minta YogaDev mengaktifkan cx/gpt-5.5-image untuk key ini."
               : last?.message || `${providerLabel} belum mengembalikan gambar`,
-            details: { provider: providerLabel, targetUrl, attempts: errors },
+            details: {
+              provider: providerLabel,
+              targetUrl,
+              attempts: errors,
+              fallback,
+            },
           },
           502,
         );
