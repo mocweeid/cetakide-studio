@@ -1719,6 +1719,19 @@ function Workspace() {
                 )}
               </button>
               <button
+                onClick={handleCheckYoga}
+                disabled={checkingYoga}
+                className="rounded-md border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 font-mono text-[11px] font-semibold text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-50"
+              >
+                {checkingYoga ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin" /> ping yoga…
+                  </span>
+                ) : (
+                  "$ ping yoga"
+                )}
+              </button>
+              <button
                 onClick={() => setDebugLogs([])}
                 className="rounded-md border border-white/10 px-2 py-1 font-mono text-[11px] text-white/60 hover:text-white"
               >
