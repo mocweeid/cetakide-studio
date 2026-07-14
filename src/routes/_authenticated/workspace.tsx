@@ -2209,6 +2209,22 @@ function Workspace() {
                 )}
               </button>
               <button
+                onClick={toggleSkipPreflight}
+                title={
+                  skipPreflight
+                    ? "Mode darurat AKTIF — pre-flight YogaDev dilewati. Klik untuk mematikan."
+                    : "Aktifkan mode darurat: lewati pre-flight YogaDev (berisiko, saldo tetap dipotong)."
+                }
+                className={
+                  "rounded-md border px-3 py-1 font-mono text-[11px] font-semibold transition " +
+                  (skipPreflight
+                    ? "border-rose-400/50 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25 animate-pulse"
+                    : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10")
+                }
+              >
+                {skipPreflight ? "⚠ skip preflight: ON" : "skip preflight: off"}
+              </button>
+              <button
                 onClick={() => setDebugLogs([])}
                 className="rounded-md border border-white/10 px-2 py-1 font-mono text-[11px] text-white/60 hover:text-white"
               >
