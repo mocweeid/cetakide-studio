@@ -1021,6 +1021,11 @@ function Workspace() {
     if (!user) return;
 
     setDebugOpen(true);
+    // Pre-flight boleh menyimpulkan bahwa YogaDev reachable tapi model target
+    // (cx/gpt-5.5-image) tidak terdaftar. Kalau begitu: skip YogaDev untuk
+    // semua variasi & langsung pakai fallback tanpa menunggu user klik retry.
+    let autoFallback = false;
+    let autoFallbackReason = "";
     if (skipPreflight) {
       // Emergency mode: pre-flight dilewati. Konfirmasi ulang sebelum motong saldo.
       pushDebug({
@@ -1057,6 +1062,19 @@ function Workspace() {
         return;
       }
       pushDebug({ level: "success", message: `YogaDev siap (${health.latency ?? "?"}ms) — lanjut generate` });
+      if (health.reachable && health.hasTargetModel === false) {
+        autoFallback = true;
+        const target = health.targetModel || "cx/gpt-5.5-image";
+        autoFallbackReason = `Model ${target} tidak terdaftar di YogaDev /models`;
+        pushDebug({
+          level: "warn" as never, // fallback ke info jika level tidak tersedia
+          message: `⚠ Auto-fallback aktif — ${autoFallbackReason}. Semua variasi dialihkan ke Lovable Gateway.`,
+        });
+        toast.warning("Auto-fallback ke Lovable Gateway", {
+          description: `${autoFallbackReason}. Sistem tidak menunggu Retry — langsung pakai generator cadangan.`,
+          duration: 8000,
+        });
+      }
     }
     pushDebug({
       level: "info",
