@@ -452,15 +452,26 @@ export const Route = createFileRoute("/api/generate-image-simple")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const requestId =
+          (typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+        const requestStartedAt = Date.now();
         const authed = await verifySupabaseAuth(request);
-        if (authed instanceof Response) return authed;
+        if (authed instanceof Response) {
+          log("warn", "auth_rejected", { requestId, status: authed.status });
+          return authed;
+        }
+        const userId = authed.userId;
 
         let body: { prompt?: unknown; jobId?: unknown; size?: unknown };
         try {
           body = (await request.json()) as { prompt?: unknown; jobId?: unknown; size?: unknown };
         } catch {
+          log("warn", "bad_body", { requestId, userId });
           return jsonResponse({ success: false, message: "Body JSON tidak valid" }, 400);
         }
+        const jobId = typeof body.jobId === "string" ? body.jobId : undefined;
 
         const promptRaw = body?.prompt;
         if (typeof promptRaw !== "string") {
@@ -486,11 +497,22 @@ export const Route = createFileRoute("/api/generate-image-simple")({
         const providerLabel = `YogaDev ${model}`;
         const targetUrl = resolveYogaEndpoint(baseUrl);
         if (!apiKey) {
+          log("error", "missing_api_key", { requestId, userId, jobId });
           return jsonResponse(
             { success: false, message: "CUSTOM_AI_API_KEY belum dikonfigurasi di backend" },
             500,
           );
         }
+
+        log("info", "request_start", {
+          requestId,
+          userId,
+          jobId,
+          model,
+          targetUrl,
+          promptLen: prompt.length,
+          sizeParam: typeof body.size === "string" ? body.size : null,
+        });
 
         const basePayload = {
           model,
@@ -545,6 +567,16 @@ export const Route = createFileRoute("/api/generate-image-simple")({
             const isLastRetry = retry === MAX_RETRIES - 1;
             const retryLabel =
               retry === 0 ? attempt.label : `${attempt.label} (retry ${retry}/${MAX_RETRIES - 1})`;
+            const tryStartedAt = Date.now();
+            log("info", "attempt_start", {
+              requestId,
+              jobId,
+              attempt: attempt.label,
+              retry,
+              maxRetries: MAX_RETRIES,
+              accept: attempt.accept,
+              targetUrl,
+            });
             let response: Response;
             try {
               response = await fetchWithTimeout(
@@ -562,10 +594,29 @@ export const Route = createFileRoute("/api/generate-image-simple")({
               );
             } catch (err) {
               const message = (err as Error)?.message || "Image provider network error";
+              const errorType = classifyErrorType({ message });
+              const durationMs = Date.now() - tryStartedAt;
               errors.push({ attempt: retryLabel, message, requestPayload: attempt.payload });
+              log("warn", "attempt_network_error", {
+                requestId,
+                jobId,
+                attempt: attempt.label,
+                retry,
+                errorType,
+                message,
+                durationMs,
+              });
               // network / timeout → transient, backoff and retry
               if (!isLastRetry) {
                 const delay = BASE_DELAY_MS * 2 ** retry + Math.floor(Math.random() * 250);
+                log("info", "retry_scheduled", {
+                  requestId,
+                  jobId,
+                  attempt: attempt.label,
+                  nextRetry: retry + 1,
+                  delayMs: delay,
+                  reason: errorType,
+                });
                 await new Promise((r) => setTimeout(r, delay));
                 continue;
               }
@@ -575,6 +626,12 @@ export const Route = createFileRoute("/api/generate-image-simple")({
             const contentType = response.headers.get("content-type") ?? "";
             if (!response.ok) {
               const raw = await response.text().catch(() => "");
+              const errorType = classifyErrorType({
+                status: response.status,
+                message: raw,
+                body: raw,
+              });
+              const durationMs = Date.now() - tryStartedAt;
               errors.push({
                 attempt: retryLabel,
                 status: response.status,
@@ -582,6 +639,17 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 message: `${providerLabel} request failed`,
                 body: truncate(raw),
                 requestPayload: attempt.payload,
+              });
+              log("warn", "attempt_http_error", {
+                requestId,
+                jobId,
+                attempt: attempt.label,
+                retry,
+                status: response.status,
+                contentType,
+                errorType,
+                durationMs,
+                bodyPreview: truncate(raw, 300),
               });
 
               const lowerRaw = raw.toLowerCase();
@@ -593,6 +661,13 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 lowerRaw.includes("no credentials for provider");
               if (isAuthFatal) {
                 credentialFatal = true;
+                log("error", "credential_fatal", {
+                  requestId,
+                  jobId,
+                  attempt: attempt.label,
+                  status: response.status,
+                  errorType,
+                });
                 break;
               }
 
@@ -607,6 +682,15 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                   Number.isFinite(retryAfter) && retryAfter > 0
                     ? retryAfter
                     : BASE_DELAY_MS * 2 ** retry + Math.floor(Math.random() * 250);
+                log("info", "retry_scheduled", {
+                  requestId,
+                  jobId,
+                  attempt: attempt.label,
+                  nextRetry: retry + 1,
+                  delayMs: delay,
+                  reason: errorType,
+                  retryAfterHeader: response.headers.get("retry-after"),
+                });
                 await new Promise((r) => setTimeout(r, delay));
                 continue;
               }
@@ -617,14 +701,34 @@ export const Route = createFileRoute("/api/generate-image-simple")({
               const img = await parseYogaResponse(response);
               if (!img) throw new Error("YG response tidak berisi gambar");
               const imageUrl = img.b64_json ? `data:image/png;base64,${img.b64_json}` : img.url!;
+              const durationMs = Date.now() - tryStartedAt;
+              const totalMs = Date.now() - requestStartedAt;
+              log("info", "attempt_success", {
+                requestId,
+                jobId,
+                attempt: attempt.label,
+                retry,
+                status: response.status,
+                contentType,
+                durationMs,
+                totalMs,
+                imageKind: img.b64_json ? "base64" : "url",
+              });
               return jsonResponse({
                 success: true,
                 imageUrl,
                 provider: `${providerLabel} · ${retryLabel}`,
-                jobId: body.jobId,
+                jobId,
+                requestId,
               });
             } catch (err) {
               const e = err as ProviderError;
+              const errorType = classifyErrorType({
+                status: response.status,
+                message: e.message,
+                body: e.lastPayload,
+              });
+              const durationMs = Date.now() - tryStartedAt;
               errors.push({
                 attempt: retryLabel,
                 status: response.status,
@@ -632,6 +736,17 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 message: e.message || "Gagal memparse response YG",
                 body: e.lastPayload ?? "",
                 requestPayload: attempt.payload,
+              });
+              log("warn", "attempt_parse_error", {
+                requestId,
+                jobId,
+                attempt: attempt.label,
+                retry,
+                status: response.status,
+                contentType,
+                errorType,
+                durationMs,
+                message: e.message,
               });
               // parse failure → try next attempt shape, no more retries here
               break;
@@ -648,18 +763,53 @@ export const Route = createFileRoute("/api/generate-image-simple")({
         );
 
         // Semua attempt YG gagal → coba Lovable Gateway supaya user tidak terkunci
+        log("warn", "primary_exhausted", {
+          requestId,
+          jobId,
+          attemptCount: errors.length,
+          lastStatus: last?.status,
+          lastErrorType: classifyErrorType({
+            status: last?.status,
+            message: last?.message,
+            body: last?.body,
+          }),
+          totalMs: Date.now() - requestStartedAt,
+        });
+        const fallbackStartedAt = Date.now();
         const fallback = await tryLovableGatewayFallback(prompt);
         if (fallback.ok) {
+          log("info", "fallback_success", {
+            requestId,
+            jobId,
+            provider: fallback.provider,
+            durationMs: Date.now() - fallbackStartedAt,
+            totalMs: Date.now() - requestStartedAt,
+          });
           return jsonResponse({
             success: true,
             imageUrl: fallback.imageUrl,
             provider: fallback.provider,
-            jobId: body.jobId,
+            jobId,
+            requestId,
             fallbackUsed: true,
             primaryProvider: providerLabel,
             primaryErrors: errors,
           });
         }
+        log("error", "request_failed", {
+          requestId,
+          jobId,
+          userId,
+          attemptCount: errors.length,
+          lastStatus: last?.status,
+          lastErrorType: classifyErrorType({
+            status: last?.status,
+            message: last?.message,
+            body: last?.body,
+          }),
+          fallbackMessage: fallback.ok ? undefined : fallback.message,
+          totalMs: Date.now() - requestStartedAt,
+        });
 
         return jsonResponse(
           {
@@ -667,6 +817,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
             message: credentialError
               ? "YogaDev menolak request: akun/key YogaDev belum punya kredensial provider image upstream. Minta YogaDev mengaktifkan cx/gpt-5.5-image untuk key ini."
               : last?.message || `${providerLabel} belum mengembalikan gambar`,
+            requestId,
             details: {
               provider: providerLabel,
               targetUrl,
