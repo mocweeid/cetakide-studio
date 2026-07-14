@@ -369,6 +369,20 @@ function Workspace() {
     latency?: number;
     reachable?: boolean;
   }>(null);
+  const [yogaDetail, setYogaDetail] = useState<null | {
+    baseUrl?: string;
+    target_model?: string;
+    has_target_model?: boolean;
+    model_count?: number;
+    sample_models?: string[];
+    cache_source?: "cache" | "live";
+    cache_age_ms?: number;
+    cache_expires_in_ms?: number;
+    status?: number;
+  }>(null);
+  const [yogaPingHistory, setYogaPingHistory] = useState<
+    Array<{ ts: string; ok: boolean; latency?: number; source?: "cache" | "live"; status?: number; note?: string }>
+  >([]);
   // Emergency mode: skip pre-flight YogaDev health check.
   // Persisted per-browser at localStorage["cetakide.skipPreflight"].
   const [skipPreflight, setSkipPreflight] = useState<boolean>(false);
