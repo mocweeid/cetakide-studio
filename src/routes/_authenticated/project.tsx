@@ -34,6 +34,10 @@ type Project = {
   aspect_ratio: string;
   status: string;
   created_at: string;
+  provider?: string | null;
+  primary_provider?: string | null;
+  fallback_used?: boolean | null;
+  request_id?: string | null;
 };
 
 const MOCK_PROJECTS: Project[] = [
