@@ -1475,16 +1475,21 @@ function Workspace() {
             message: `✗ variasi ${i + 1}/${totalJobs} belum berhasil setelah ${took}s — ${info.title}: ${info.summary}`,
             jobId,
           });
-          toast.error(`Variasi ${i + 1} — ${info.title}`, {
-            description: info.description,
-            duration: 10000,
-            action: {
-              label: "Retry",
-              onClick: () => {
+          showGenerateFailureToast(
+            genErr,
+            {
+              onRetry: () => {
                 void handleRegenerate(i);
               },
+              onReduceVariants: () => {
+                setGenerateCount(1);
+                setAllRatios(false);
+                toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+              },
+              currentVariantCount: totalJobs,
             },
-          });
+            `Variasi ${i + 1} — ${info.title}`,
+          );
           captureFailure(genErr, `Variasi ${i + 1}`);
         }
         await refresh();
@@ -1504,27 +1509,33 @@ function Workspace() {
           `${newResults.length} variasi sukses${failedCount > 0 ? `, ${failedCount} belum berhasil` : ""}!${keyInfo}${failInfo}`,
         );
       } else if (failedCount > 0) {
-        toast.error(`Semua ${failedCount} variasi belum berhasil di-generate.`, {
-          duration: 10000,
-          action: {
-            label: "Retry semua",
-            onClick: () => {
+        showGenerateFailureToast(
+          new Error(`Semua ${failedCount} variasi belum berhasil di-generate.`),
+          {
+            onRetry: () => {
               void handleGenerate();
             },
+            onReduceVariants: () => {
+              setGenerateCount(1);
+              setAllRatios(false);
+              toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+            },
+            currentVariantCount: totalJobs,
           },
-        });
+          `Semua ${failedCount} variasi belum berhasil`,
+        );
       }
     } catch (err) {
-      const info = formatGenerateError(err);
-      toast.error(info.title, {
-        description: info.description,
-        duration: 10000,
-        action: {
-          label: "Retry",
-          onClick: () => {
-            void handleGenerate();
-          },
+      showGenerateFailureToast(err, {
+        onRetry: () => {
+          void handleGenerate();
         },
+        onReduceVariants: () => {
+          setGenerateCount(1);
+          setAllRatios(false);
+          toast.message("Variasi diset ke 1. Tekan Generate ulang.");
+        },
+        currentVariantCount: generateCount,
       });
     } finally {
       setGenerating(false);
