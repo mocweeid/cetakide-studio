@@ -45,6 +45,25 @@ function formatGenerateError(err: unknown): { title: string; description: string
   return { title: "Generate belum berhasil", description: msg };
 }
 
+function extractFailureMeta(err: unknown): {
+  status?: number;
+  raw?: string;
+  requestId?: string;
+} {
+  if (!(err instanceof GenerateImageError)) return {};
+  const last = err.attempts[err.attempts.length - 1];
+  const raw =
+    last?.body ||
+    err.providerMessage ||
+    (err.rawResponse ? JSON.stringify(err.rawResponse) : undefined);
+  const reqMatch = err.message.match(/req=([a-z0-9-]+)/i);
+  return {
+    status: last?.status ?? err.status ?? undefined,
+    raw: raw ? String(raw).slice(0, 4000) : undefined,
+    requestId: reqMatch?.[1],
+  };
+}
+
 export const Route = createFileRoute("/_authenticated/workspace")({
   validateSearch: z.object({
     preset: z.string().optional(),
@@ -680,6 +699,8 @@ function Workspace() {
     onStreamFrame: (dataUrl: string, isFinal: boolean) => void;
     onStatus: (s: { provider?: string; message?: string; jobId?: string }) => void;
   }): Promise<{ provider: string; finalUrl: string }> {
+    // return shape extended below (fallbackUsed etc are attached via any)
+    // keep declared type for compat; callers cast when reading extras.
     let lastErr: unknown = null;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       setVariants((prev) => {
@@ -726,7 +747,13 @@ function Workspace() {
             jobId: params.jobId,
           });
         }
-        return { provider: result.provider, finalUrl };
+        return {
+          provider: result.provider,
+          finalUrl,
+          fallbackUsed: !!result.fallbackUsed,
+          primaryProvider: result.primaryProvider,
+          requestId: result.requestId,
+        } as { provider: string; finalUrl: string; fallbackUsed?: boolean; primaryProvider?: string; requestId?: string };
       } catch (err) {
         lastErr = err;
         const msg = err instanceof Error ? err.message : String(err);
@@ -884,7 +911,7 @@ function Workspace() {
           });
         }, 5000);
         try {
-          const { provider, finalUrl } = await attemptWithRetry({
+          const genResult = await attemptWithRetry({
             index: i,
             prompt: finalBasePrompt,
             size,
@@ -907,6 +934,12 @@ function Workspace() {
                 jobId: status.jobId || jobId,
               }),
           });
+          const { provider, finalUrl } = genResult;
+          const { fallbackUsed, primaryProvider, requestId } = genResult as {
+            fallbackUsed?: boolean;
+            primaryProvider?: string;
+            requestId?: string;
+          };
           clearInterval(heartbeat);
           if (!finalUrl) throw new Error("Tidak ada gambar final.");
           usedKeys.add(provider);
@@ -920,7 +953,14 @@ function Workspace() {
           });
           await supabase
             .from("projects")
-            .update({ image_url: finalUrl, status: "sukses", provider })
+            .update({
+              image_url: finalUrl,
+              status: "sukses",
+              provider,
+              fallback_used: !!fallbackUsed,
+              primary_provider: primaryProvider ?? null,
+              request_id: requestId ?? null,
+            })
             .eq("id", projectId);
         } catch (genErr) {
           clearInterval(heartbeat);
@@ -933,9 +973,17 @@ function Workspace() {
             next[i] = { status: "gagal", error: msg, prompt: finalBasePrompt, ratio: jobRatio };
             return next;
           });
+          const failMeta = extractFailureMeta(genErr);
           await supabase
             .from("projects")
-            .update({ status: "gagal", error_message: msg.slice(0, 500) })
+            .update({
+              status: "gagal",
+              error_message: msg.slice(0, 500),
+              error_status: failMeta.status ?? null,
+              error_raw: failMeta.raw?.slice(0, 4000) ?? null,
+              fallback_used: false,
+              request_id: failMeta.requestId ?? null,
+            })
             .eq("id", projectId);
           pushDebug({
             level: "error",
@@ -1065,7 +1113,7 @@ function Workspace() {
           .single();
         projectId = inserted?.id ?? null;
       }
-      const { provider, finalUrl } = await attemptWithRetry({
+      const genResult = await attemptWithRetry({
         index: i,
         prompt,
         size,
@@ -1088,12 +1136,25 @@ function Workspace() {
             jobId: status.jobId || jobId,
           }),
       });
+      const { provider, finalUrl } = genResult;
+      const { fallbackUsed, primaryProvider, requestId } = genResult as {
+        fallbackUsed?: boolean;
+        primaryProvider?: string;
+        requestId?: string;
+      };
       if (!finalUrl) throw new Error("Tidak ada gambar final.");
       clearInterval(heartbeat);
       if (projectId) {
         await supabase
           .from("projects")
-          .update({ status: "sukses", provider, image_url: finalUrl })
+          .update({
+            status: "sukses",
+            provider,
+            image_url: finalUrl,
+            fallback_used: !!fallbackUsed,
+            primary_provider: primaryProvider ?? null,
+            request_id: requestId ?? null,
+          })
           .eq("id", projectId);
       }
       await refresh();
@@ -1113,9 +1174,17 @@ function Workspace() {
         return next;
       });
       if (projectId) {
+        const failMeta = extractFailureMeta(err);
         await supabase
           .from("projects")
-          .update({ status: "gagal", error_message: msg.slice(0, 500) })
+          .update({
+            status: "gagal",
+            error_message: msg.slice(0, 500),
+            error_status: failMeta.status ?? null,
+            error_raw: failMeta.raw ?? null,
+            fallback_used: false,
+            request_id: failMeta.requestId ?? null,
+          })
           .eq("id", projectId);
       }
       const info = formatGenerateError(err);

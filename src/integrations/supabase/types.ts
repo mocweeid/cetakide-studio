@@ -286,14 +286,19 @@ export type Database = {
           body_content: string | null
           created_at: string
           error_message: string | null
+          error_raw: string | null
+          error_status: number | null
+          fallback_used: boolean
           id: string
           image_url: string | null
           job_id: string | null
           kebutuhan: string
           platform: string
+          primary_provider: string | null
           prompt: string | null
           provider: string | null
           reference_url: string | null
+          request_id: string | null
           social_url: string | null
           status: string
           subtitle: string | null
@@ -306,14 +311,19 @@ export type Database = {
           body_content?: string | null
           created_at?: string
           error_message?: string | null
+          error_raw?: string | null
+          error_status?: number | null
+          fallback_used?: boolean
           id?: string
           image_url?: string | null
           job_id?: string | null
           kebutuhan: string
           platform?: string
+          primary_provider?: string | null
           prompt?: string | null
           provider?: string | null
           reference_url?: string | null
+          request_id?: string | null
           social_url?: string | null
           status?: string
           subtitle?: string | null
@@ -326,14 +336,19 @@ export type Database = {
           body_content?: string | null
           created_at?: string
           error_message?: string | null
+          error_raw?: string | null
+          error_status?: number | null
+          fallback_used?: boolean
           id?: string
           image_url?: string | null
           job_id?: string | null
           kebutuhan?: string
           platform?: string
+          primary_provider?: string | null
           prompt?: string | null
           provider?: string | null
           reference_url?: string | null
+          request_id?: string | null
           social_url?: string | null
           status?: string
           subtitle?: string | null
