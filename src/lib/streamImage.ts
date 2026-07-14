@@ -30,6 +30,7 @@ export class GenerateImageError extends Error {
     message?: string;
     body?: string;
     requestPayload?: Record<string, unknown>;
+    retryAfterSeconds?: number;
   }>;
   rawResponse: unknown;
   rawRequest: Record<string, unknown>;
@@ -164,6 +165,7 @@ export async function streamImage(
           message?: string;
           body?: string;
           requestPayload?: Record<string, unknown>;
+          retryAfterSeconds?: number;
         }>).map(
           (a) => ({
             attempt: a.attempt || "YogaDev",
@@ -172,6 +174,7 @@ export async function streamImage(
             message: a.message,
             body: a.body,
             requestPayload: a.requestPayload,
+            retryAfterSeconds: a.retryAfterSeconds,
           }),
         )
       : [];
