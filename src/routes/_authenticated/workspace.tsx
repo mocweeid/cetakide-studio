@@ -178,6 +178,78 @@ function extractFailureMeta(err: unknown): {
   };
 }
 
+// ------- toast aksi cepat (Retry, Kurangi variasi, Top-up, Kontak admin) -------
+type ErrorToastActions = {
+  onRetry?: () => void;
+  onReduceVariants?: () => void;
+  currentVariantCount?: number;
+};
+
+function renderErrorActions(actions: ErrorToastActions) {
+  const canReduce = (actions.currentVariantCount ?? 1) > 1 && !!actions.onReduceVariants;
+  const btn =
+    "inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/5 px-2 py-1 text-[11px] font-medium hover:bg-white/10 transition";
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {actions.onRetry ? (
+        <button
+          type="button"
+          className={`${btn} border-red-400/40 bg-red-500/10 hover:bg-red-500/20`}
+          onClick={() => {
+            toast.dismiss();
+            actions.onRetry?.();
+          }}
+        >
+          🔄 Retry
+        </button>
+      ) : null}
+      {canReduce ? (
+        <button
+          type="button"
+          className={btn}
+          onClick={() => {
+            toast.dismiss();
+            actions.onReduceVariants?.();
+          }}
+        >
+          ✂️ Kurangi variasi
+        </button>
+      ) : null}
+      <a
+        href="/top-up"
+        className={btn}
+        onClick={() => toast.dismiss()}
+      >
+        💳 Top-up saldo
+      </a>
+      <a
+        href="/support"
+        className={btn}
+        onClick={() => toast.dismiss()}
+      >
+        📞 Kontak admin
+      </a>
+    </div>
+  );
+}
+
+function showGenerateFailureToast(
+  err: unknown,
+  actions: ErrorToastActions,
+  overrideTitle?: string,
+) {
+  const info = formatGenerateError(err);
+  toast.error(overrideTitle ?? info.title, {
+    duration: 12000,
+    description: (
+      <div>
+        {info.description}
+        {renderErrorActions(actions)}
+      </div>
+    ),
+  });
+}
+
 export const Route = createFileRoute("/_authenticated/workspace")({
   validateSearch: z.object({
     preset: z.string().optional(),
