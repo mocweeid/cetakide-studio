@@ -33,16 +33,116 @@ import { streamImage, GenerateImageError } from "@/lib/streamImage";
 import { useServerFn } from "@tanstack/react-start";
 import JSZip from "jszip";
 
-function formatGenerateError(err: unknown): { title: string; description: string } {
+type ErrorChecklistItem = { icon: string; text: string; tone?: "primary" | "muted" };
+
+function buildErrorChecklist(status: number | undefined, providerMessage: string): ErrorChecklistItem[] {
+  const msg = (providerMessage || "").toLowerCase();
+  // Auth / API key
+  if (status === 401 || status === 403 || /unauthori[sz]ed|invalid.*key|api key/i.test(providerMessage)) {
+    return [
+      { icon: "🔑", text: "Cek API key provider (Admin → AI Keys) — mungkin expired atau salah.", tone: "primary" },
+      { icon: "🔄", text: "Setelah update key, tekan Retry di toast ini." },
+      { icon: "📞", text: "Jika tetap gagal, hubungi admin dengan requestId di terminal.", tone: "muted" },
+    ];
+  }
+  // Rate limit / quota
+  if (status === 429 || /rate limit|quota|too many/i.test(providerMessage)) {
+    return [
+      { icon: "⏳", text: "Tunggu 30–60 detik lalu Retry — provider sedang membatasi rate.", tone: "primary" },
+      { icon: "✂️", text: "Kurangi jumlah variasi (mis. dari 4 → 1) untuk melewati kuota." },
+      { icon: "💳", text: "Cek saldo/kuota kredit di dashboard provider." },
+    ];
+  }
+  // Payment required / insufficient credits
+  if (status === 402 || /insufficient|balance|credit/i.test(providerMessage)) {
+    return [
+      { icon: "💳", text: "Top-up saldo provider — kredit habis.", tone: "primary" },
+      { icon: "📞", text: "Hubungi admin untuk isi ulang kredit YogaDev." },
+    ];
+  }
+  // Bad request / validation
+  if (status === 400 || status === 422) {
+    return [
+      { icon: "📝", text: "Perpendek atau perjelas prompt — bisa jadi ditolak validator.", tone: "primary" },
+      { icon: "🖼️", text: "Kurangi jumlah gambar referensi bila ada." },
+      { icon: "🔄", text: "Tekan Retry setelah menyunting input." },
+    ];
+  }
+  // Timeout / gateway
+  if (status === 408 || status === 504 || status === 524 || /timeout|timed out/i.test(providerMessage)) {
+    return [
+      { icon: "⏱️", text: "Provider lambat merespons — tekan Retry, biasanya lebih cepat di percobaan kedua.", tone: "primary" },
+      { icon: "✂️", text: "Kurangi variasi jadi 1 untuk mempercepat." },
+      { icon: "🔁", text: "Sistem otomatis fallback bila YogaDev terus timeout." },
+    ];
+  }
+  // Server / gateway errors
+  if (status && status >= 500) {
+    return [
+      { icon: "🔄", text: "Provider bermasalah sementara — tekan Retry dalam 10–30 detik.", tone: "primary" },
+      { icon: "🔁", text: "Circuit breaker akan otomatis pindah ke fallback jika berulang." },
+      { icon: "📞", text: "Bila terus 5xx >5 menit, hubungi admin.", tone: "muted" },
+    ];
+  }
+  // Network / no status
+  if (!status) {
+    return [
+      { icon: "🌐", text: "Cek koneksi internet Anda.", tone: "primary" },
+      { icon: "🔄", text: "Tekan Retry — mungkin gangguan jaringan sesaat." },
+      { icon: "📞", text: "Jika berulang, hubungi admin dengan requestId di terminal.", tone: "muted" },
+    ];
+  }
+  // Default
+  return [
+    { icon: "🔄", text: "Tekan Retry untuk mencoba ulang.", tone: "primary" },
+    { icon: "✂️", text: "Kurangi jumlah variasi jika masalah berulang." },
+    { icon: "📞", text: "Salin requestId dari terminal dan hubungi admin.", tone: "muted" },
+  ];
+}
+
+function renderErrorChecklist(items: ErrorChecklistItem[], providerMessage?: string) {
+  return (
+    <div className="space-y-1.5 text-sm">
+      {providerMessage ? (
+        <div className="text-xs opacity-70 italic border-l-2 border-red-400/40 pl-2">
+          {providerMessage.slice(0, 160)}
+        </div>
+      ) : null}
+      <div className="font-semibold text-xs uppercase tracking-wide opacity-80">
+        Saran tindakan
+      </div>
+      <ul className="space-y-1">
+        {items.map((item, idx) => (
+          <li
+            key={idx}
+            className={`flex gap-2 items-start ${
+              item.tone === "muted" ? "opacity-70" : ""
+            } ${item.tone === "primary" ? "font-medium" : ""}`}
+          >
+            <span className="shrink-0">{item.icon}</span>
+            <span>{item.text}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function formatGenerateError(err: unknown): { title: string; description: React.ReactNode } {
   if (err instanceof GenerateImageError) {
     const statusLabel = err.status ? `HTTP ${err.status}` : "network";
+    const items = buildErrorChecklist(err.status, err.providerMessage);
     return {
       title: `Generate belum berhasil (${statusLabel})`,
-      description: `${err.providerMessage}\n💡 ${err.suggestion}`,
+      description: renderErrorChecklist(items, err.providerMessage),
     };
   }
   const msg = err instanceof Error ? err.message : String(err ?? "Generate belum berhasil");
-  return { title: "Generate belum berhasil", description: msg };
+  const items = buildErrorChecklist(undefined, msg);
+  return {
+    title: "Generate belum berhasil",
+    description: renderErrorChecklist(items, msg),
+  };
 }
 
 function extractFailureMeta(err: unknown): {
