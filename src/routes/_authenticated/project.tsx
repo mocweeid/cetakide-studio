@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  AlertTriangle,
+  Loader2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -109,22 +111,78 @@ const MOCK_PROJECTS: Project[] = [
   },
 ];
 
-function StatusBadge({ status }: { status: string }) {
-  if (status === "sukses")
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-green-400">
-        <CheckCircle2 className="h-2.5 w-2.5" /> Sukses
-      </span>
-    );
-  if (status === "gagal")
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-red-400">
-        <XCircle className="h-2.5 w-2.5" /> Gagal
-      </span>
-    );
+type StatusKey = "sukses" | "gagal" | "partial" | "proses";
+
+const STATUS_META: Record<
+  StatusKey,
+  {
+    label: string;
+    icon: typeof CheckCircle2;
+    text: string;
+    bg: string;
+    ring: string;
+    dot: string;
+    accent: string;
+  }
+> = {
+  sukses: {
+    label: "Sukses",
+    icon: CheckCircle2,
+    text: "text-emerald-300",
+    bg: "bg-emerald-500/15",
+    ring: "ring-emerald-400/30",
+    dot: "bg-emerald-400",
+    accent: "bg-emerald-400",
+  },
+  gagal: {
+    label: "Gagal",
+    icon: XCircle,
+    text: "text-rose-300",
+    bg: "bg-rose-500/15",
+    ring: "ring-rose-400/30",
+    dot: "bg-rose-400",
+    accent: "bg-rose-400",
+  },
+  partial: {
+    label: "Partial",
+    icon: AlertTriangle,
+    text: "text-amber-300",
+    bg: "bg-amber-500/15",
+    ring: "ring-amber-400/30",
+    dot: "bg-amber-400",
+    accent: "bg-amber-400",
+  },
+  proses: {
+    label: "Proses",
+    icon: Loader2,
+    text: "text-sky-300",
+    bg: "bg-sky-500/15",
+    ring: "ring-sky-400/30",
+    dot: "bg-sky-400",
+    accent: "bg-sky-400",
+  },
+};
+
+function normalizeStatus(status: string): StatusKey {
+  const s = (status || "").toLowerCase();
+  if (s === "sukses" || s === "success") return "sukses";
+  if (s === "gagal" || s === "failed" || s === "error") return "gagal";
+  if (s === "partial" || s === "sebagian") return "partial";
+  return "proses";
+}
+
+function StatusBadge({ status, size = "sm" }: { status: string; size?: "sm" | "md" }) {
+  const key = normalizeStatus(status);
+  const meta = STATUS_META[key];
+  const Icon = meta.icon;
+  const pad = size === "md" ? "px-2.5 py-1 text-[11px]" : "px-2 py-0.5 text-[10px]";
+  const iconSize = size === "md" ? "h-3.5 w-3.5" : "h-3 w-3";
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-yellow-400">
-      <Clock className="h-2.5 w-2.5" /> Proses
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full font-semibold ring-1 backdrop-blur-sm ${pad} ${meta.bg} ${meta.text} ${meta.ring}`}
+    >
+      <Icon className={`${iconSize} ${key === "proses" ? "animate-spin" : ""}`} />
+      {meta.label}
     </span>
   );
 }
