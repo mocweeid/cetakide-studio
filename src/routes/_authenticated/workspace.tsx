@@ -1178,6 +1178,8 @@ function Workspace() {
             size,
             ratio: jobRatio,
             jobId,
+            forceFallback: autoFallback,
+            forceFallbackReason: autoFallbackReason,
             onStreamFrame: (dataUrl, isFinal) => {
               setVariants((prev) => {
                 const next = [...prev];
