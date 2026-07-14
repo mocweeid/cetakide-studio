@@ -393,73 +393,127 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           );
         }
 
-        let response: Response;
-        try {
-          response = await fetchWithTimeout(
-            targetUrl,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`,
-                Accept: "text/event-stream",
+        const basePayload = {
+          model,
+          prompt,
+          n: 1,
+          size: "auto",
+          quality: "auto",
+          background: "auto",
+          image_detail: "high",
+          output_format: "png",
+        } satisfies Record<string, unknown>;
+
+        const attempts: YogaAttempt[] = [
+          {
+            label: "SSE resmi YogaDev",
+            accept: "text/event-stream",
+            payload: { ...basePayload, stream: true },
+          },
+          {
+            label: "JSON YogaDev",
+            accept: "application/json",
+            payload: { ...basePayload, stream: false },
+          },
+          {
+            label: "Body minimal YogaDev",
+            accept: "application/json",
+            payload: { model, prompt, size: "auto", quality: "auto" },
+          },
+        ];
+
+        const errors: Array<{
+          attempt: string;
+          status?: number;
+          contentType?: string;
+          message: string;
+          body?: string;
+        }> = [];
+
+        for (const attempt of attempts) {
+          let response: Response;
+          try {
+            response = await fetchWithTimeout(
+              targetUrl,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${apiKey}`,
+                  Accept: attempt.accept,
+                },
+                body: JSON.stringify(attempt.payload),
               },
-              body: JSON.stringify({
-                model,
-                prompt,
-                n: 1,
-                size: "auto",
-                quality: "auto",
-                background: "auto",
-                image_detail: "high",
-                output_format: "png",
-              }),
-            },
-            180_000,
-          );
-        } catch (err) {
-          return jsonResponse(
-            {
-              success: false,
+              180_000,
+            );
+          } catch (err) {
+            errors.push({
+              attempt: attempt.label,
               message: (err as Error)?.message || "Image provider network error",
-            },
-            502,
-          );
-        }
+            });
+            continue;
+          }
 
-        if (!response.ok) {
-          const raw = await response.text().catch(() => "");
-          return jsonResponse(
-            {
-              success: false,
+          const contentType = response.headers.get("content-type") ?? "";
+          if (!response.ok) {
+            const raw = await response.text().catch(() => "");
+            errors.push({
+              attempt: attempt.label,
+              status: response.status,
+              contentType,
               message: `${providerLabel} request failed`,
-              details: { status: response.status, body: truncate(raw) },
-            },
-            response.status >= 400 && response.status < 600 ? response.status : 502,
-          );
+              body: truncate(raw),
+            });
+
+            const lowerRaw = raw.toLowerCase();
+            if (
+              response.status === 401 ||
+              response.status === 403 ||
+              lowerRaw.includes("invalid api key") ||
+              lowerRaw.includes("unauthorized") ||
+              lowerRaw.includes("no credentials for provider")
+            ) {
+              break;
+            }
+            continue;
+          }
+
+          try {
+            const img = await parseYogaResponse(response);
+            if (!img) throw new Error("YG response tidak berisi gambar");
+            const imageUrl = img.b64_json ? `data:image/png;base64,${img.b64_json}` : img.url!;
+            return jsonResponse({
+              success: true,
+              imageUrl,
+              provider: `${providerLabel} · ${attempt.label}`,
+              jobId: body.jobId,
+            });
+          } catch (err) {
+            const e = err as ProviderError;
+            errors.push({
+              attempt: attempt.label,
+              status: response.status,
+              contentType,
+              message: e.message || "Gagal memparse response YG",
+              body: e.lastPayload ?? "",
+            });
+          }
         }
 
-        try {
-          const img = await parseYogaResponse(response);
-          if (!img) throw new Error("YG response tidak berisi gambar");
-          const imageUrl = img.b64_json
-            ? `data:image/png;base64,${img.b64_json}`
-            : img.url!;
-          return jsonResponse({ success: true, imageUrl, provider: providerLabel, jobId: body.jobId });
-        } catch (err) {
-          const e = err as Error & { lastPayload?: string };
-          return jsonResponse(
-            {
-              success: false,
-              message: e.message || "Gagal memparse response YG",
-              details: {
-                contentType: response.headers.get("content-type") ?? "",
-                lastPayload: e.lastPayload ?? "",
-              },
-            },
-            502,
-          );
-        }
+        const last = errors.at(-1);
+        const credentialError = errors.find((e) =>
+          `${e.message} ${e.body ?? ""}`.toLowerCase().includes("no credentials for provider"),
+        );
+        return jsonResponse(
+          {
+            success: false,
+            message: credentialError
+              ? "YogaDev menolak request: akun/key YogaDev belum punya kredensial provider image upstream. Minta YogaDev mengaktifkan cx/gpt-5.5-image untuk key ini."
+              : last?.message || `${providerLabel} belum mengembalikan gambar`,
+            details: { provider: providerLabel, targetUrl, attempts: errors },
+          },
+          502,
+        );
       },
     },
   },
