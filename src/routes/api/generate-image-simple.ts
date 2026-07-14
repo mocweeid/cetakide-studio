@@ -405,6 +405,61 @@ type YogaAttempt = {
   payload: Record<string, unknown>;
 };
 
+// ------- retry config (env-driven, dengan default aman) -------
+//
+// Semua nilai bisa disetel via .env / dashboard secrets tanpa mengubah kode:
+//   RETRY_MAX_ATTEMPTS       (default 3)      total percobaan per attempt shape
+//   RETRY_BASE_DELAY_MS      (default 800)    delay awal exponential backoff
+//   RETRY_MAX_DELAY_MS       (default 15000)  cap delay per retry
+//   RETRY_JITTER_MS          (default 250)    tambahan random 0..N ms
+//   RETRY_STATUS_CODES       (default "408,425,429,500,502,503,504")
+//                            daftar HTTP status yang boleh di-retry (koma)
+//   RETRY_ON_NETWORK_ERROR   (default "true") retry saat network/timeout
+//   RETRY_REQUEST_TIMEOUT_MS (default 180000) timeout per fetch YogaDev
+function parsePositiveInt(v: string | undefined, fallback: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+function parseNonNegativeInt(v: string | undefined, fallback: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
+}
+function parseBool(v: string | undefined, fallback: boolean): boolean {
+  if (v === undefined) return fallback;
+  const s = v.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(s)) return true;
+  if (["0", "false", "no", "off"].includes(s)) return false;
+  return fallback;
+}
+function parseStatusCodes(v: string | undefined, fallback: number[]): number[] {
+  if (!v) return fallback;
+  const parsed = v
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isFinite(n) && n >= 400 && n < 600);
+  return parsed.length ? Array.from(new Set(parsed)) : fallback;
+}
+function loadRetryConfig() {
+  return {
+    maxAttempts: parsePositiveInt(process.env.RETRY_MAX_ATTEMPTS, 3),
+    baseDelayMs: parseNonNegativeInt(process.env.RETRY_BASE_DELAY_MS, 800),
+    maxDelayMs: parsePositiveInt(process.env.RETRY_MAX_DELAY_MS, 15_000),
+    jitterMs: parseNonNegativeInt(process.env.RETRY_JITTER_MS, 250),
+    statusCodes: parseStatusCodes(
+      process.env.RETRY_STATUS_CODES,
+      [408, 425, 429, 500, 502, 503, 504],
+    ),
+    retryOnNetworkError: parseBool(process.env.RETRY_ON_NETWORK_ERROR, true),
+    requestTimeoutMs: parsePositiveInt(process.env.RETRY_REQUEST_TIMEOUT_MS, 180_000),
+  } as const;
+}
+function computeBackoff(retry: number, cfg: ReturnType<typeof loadRetryConfig>): number {
+  const exp = cfg.baseDelayMs * 2 ** retry;
+  const capped = Math.min(exp, cfg.maxDelayMs);
+  const jitter = cfg.jitterMs > 0 ? Math.floor(Math.random() * cfg.jitterMs) : 0;
+  return capped + jitter;
+}
+
 // ------- circuit breaker (in-memory, per Worker instance) -------
 
 type BreakerState = "CLOSED" | "OPEN" | "HALF_OPEN";
@@ -598,6 +653,9 @@ export const Route = createFileRoute("/api/generate-image-simple")({
           sizeParam: typeof body.size === "string" ? body.size : null,
         });
 
+        const retryCfg = loadRetryConfig();
+        log("info", "retry_config", { requestId, jobId, ...retryCfg });
+
         // Circuit breaker gate: jika YogaDev sedang OPEN, lewati semua attempt YG
         // dan langsung mencoba fallback (atau kembalikan 503 dengan pesan jelas).
         const gate = breakerAllowRequest(requestId, jobId);
@@ -688,8 +746,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
         }> = [];
 
         for (const attempt of attempts) {
-          const MAX_RETRIES = 3;
-          const BASE_DELAY_MS = 800;
+          const MAX_RETRIES = retryCfg.maxAttempts;
           let credentialFatal = false;
           let attemptSucceeded = false;
 
@@ -720,7 +777,7 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                   },
                   body: JSON.stringify(attempt.payload),
                 },
-                180_000,
+                retryCfg.requestTimeoutMs,
               );
             } catch (err) {
               const message = (err as Error)?.message || "Image provider network error";
@@ -736,9 +793,9 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 message,
                 durationMs,
               });
-              // network / timeout → transient, backoff and retry
-              if (!isLastRetry) {
-                const delay = BASE_DELAY_MS * 2 ** retry + Math.floor(Math.random() * 250);
+              // network / timeout → transient, backoff and retry (opt-in via env)
+              if (!isLastRetry && retryCfg.retryOnNetworkError) {
+                const delay = computeBackoff(retry, retryCfg);
                 log("info", "retry_scheduled", {
                   requestId,
                   jobId,
@@ -801,17 +858,13 @@ export const Route = createFileRoute("/api/generate-image-simple")({
                 break;
               }
 
-              const isTransient =
-                response.status === 408 ||
-                response.status === 425 ||
-                response.status === 429 ||
-                response.status >= 500;
+              const isTransient = retryCfg.statusCodes.includes(response.status);
               if (isTransient && !isLastRetry) {
                 const retryAfter = Number(response.headers.get("retry-after")) * 1000;
                 const delay =
                   Number.isFinite(retryAfter) && retryAfter > 0
-                    ? retryAfter
-                    : BASE_DELAY_MS * 2 ** retry + Math.floor(Math.random() * 250);
+                    ? Math.min(retryAfter, retryCfg.maxDelayMs)
+                    : computeBackoff(retry, retryCfg);
                 log("info", "retry_scheduled", {
                   requestId,
                   jobId,
