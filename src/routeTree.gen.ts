@@ -52,6 +52,7 @@ import { Route as AuthenticatedBrandKitsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedAutoUploaderRouteImport } from './routes/_authenticated/auto-uploader'
 import { Route as AuthenticatedAssetsRouteImport } from './routes/_authenticated/assets'
+import { Route as AuthenticatedApiKeysRouteImport } from './routes/_authenticated/api-keys'
 import { Route as AuthenticatedApiDocRouteImport } from './routes/_authenticated/api-doc'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedAffiliateRouteImport } from './routes/_authenticated/affiliate'
@@ -287,6 +288,11 @@ const AuthenticatedAssetsRoute = AuthenticatedAssetsRouteImport.update({
   path: '/assets',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedApiKeysRoute = AuthenticatedApiKeysRouteImport.update({
+  id: '/api-keys',
+  path: '/api-keys',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedApiDocRoute = AuthenticatedApiDocRouteImport.update({
   id: '/api-doc',
   path: '/api-doc',
@@ -322,6 +328,7 @@ export interface FileRoutesByFullPath {
   '/affiliate': typeof AuthenticatedAffiliateRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/api-doc': typeof AuthenticatedApiDocRoute
+  '/api-keys': typeof AuthenticatedApiKeysRoute
   '/assets': typeof AuthenticatedAssetsRoute
   '/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/billing': typeof AuthenticatedBillingRoute
@@ -371,6 +378,7 @@ export interface FileRoutesByTo {
   '/affiliate': typeof AuthenticatedAffiliateRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/api-doc': typeof AuthenticatedApiDocRoute
+  '/api-keys': typeof AuthenticatedApiKeysRoute
   '/assets': typeof AuthenticatedAssetsRoute
   '/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/billing': typeof AuthenticatedBillingRoute
@@ -422,6 +430,7 @@ export interface FileRoutesById {
   '/_authenticated/affiliate': typeof AuthenticatedAffiliateRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/api-doc': typeof AuthenticatedApiDocRoute
+  '/_authenticated/api-keys': typeof AuthenticatedApiKeysRoute
   '/_authenticated/assets': typeof AuthenticatedAssetsRoute
   '/_authenticated/auto-uploader': typeof AuthenticatedAutoUploaderRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
@@ -473,6 +482,7 @@ export interface FileRouteTypes {
     | '/affiliate'
     | '/analytics'
     | '/api-doc'
+    | '/api-keys'
     | '/assets'
     | '/auto-uploader'
     | '/billing'
@@ -522,6 +532,7 @@ export interface FileRouteTypes {
     | '/affiliate'
     | '/analytics'
     | '/api-doc'
+    | '/api-keys'
     | '/assets'
     | '/auto-uploader'
     | '/billing'
@@ -572,6 +583,7 @@ export interface FileRouteTypes {
     | '/_authenticated/affiliate'
     | '/_authenticated/analytics'
     | '/_authenticated/api-doc'
+    | '/_authenticated/api-keys'
     | '/_authenticated/assets'
     | '/_authenticated/auto-uploader'
     | '/_authenticated/billing'
@@ -926,6 +938,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAssetsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/api-keys': {
+      id: '/_authenticated/api-keys'
+      path: '/api-keys'
+      fullPath: '/api-keys'
+      preLoaderRoute: typeof AuthenticatedApiKeysRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/api-doc': {
       id: '/_authenticated/api-doc'
       path: '/api-doc'
@@ -970,6 +989,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAffiliateRoute: typeof AuthenticatedAffiliateRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedApiDocRoute: typeof AuthenticatedApiDocRoute
+  AuthenticatedApiKeysRoute: typeof AuthenticatedApiKeysRoute
   AuthenticatedAssetsRoute: typeof AuthenticatedAssetsRoute
   AuthenticatedAutoUploaderRoute: typeof AuthenticatedAutoUploaderRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
@@ -1015,6 +1035,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAffiliateRoute: AuthenticatedAffiliateRoute,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedApiDocRoute: AuthenticatedApiDocRoute,
+  AuthenticatedApiKeysRoute: AuthenticatedApiKeysRoute,
   AuthenticatedAssetsRoute: AuthenticatedAssetsRoute,
   AuthenticatedAutoUploaderRoute: AuthenticatedAutoUploaderRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
