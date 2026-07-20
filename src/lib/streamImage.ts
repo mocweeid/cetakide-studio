@@ -58,6 +58,21 @@ export class GenerateImageError extends Error {
 }
 
 function suggestionFor(status: number, text: string): string {
+  return _suggestionFor(status, text);
+}
+
+function toDisplayString(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function _suggestionFor(status: number, text: string): string {
   const t = (text || "").toLowerCase();
   if (status === 401 || status === 403 || t.includes("unauthor") || t.includes("invalid api key"))
     return "API key YogaDev invalid/kadaluarsa — minta developer perbarui CUSTOM_AI_API_KEY.";
