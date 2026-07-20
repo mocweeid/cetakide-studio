@@ -209,7 +209,26 @@ function summarizeGenerateError(err: unknown): string {
   if (err instanceof GenerateImageError) {
     return `${err.providerMessage} — ${err.suggestion}`.slice(0, 300);
   }
-  return err instanceof Error ? err.message : String(err ?? "Generate belum berhasil");
+  return stringifyErr(err);
+}
+
+function stringifyErr(err: unknown): string {
+  if (err == null) return "Generate belum berhasil";
+  if (typeof err === "string") return err;
+  if (err instanceof Error) return err.message || err.name || "Generate belum berhasil";
+  if (typeof err === "object") {
+    const anyErr = err as { message?: unknown; error?: unknown; statusText?: unknown };
+    if (typeof anyErr.message === "string" && anyErr.message) return anyErr.message;
+    if (typeof anyErr.error === "string" && anyErr.error) return anyErr.error;
+    if (typeof anyErr.statusText === "string" && anyErr.statusText) return anyErr.statusText;
+    try {
+      const s = JSON.stringify(err);
+      if (s && s !== "{}") return s.slice(0, 300);
+    } catch {
+      /* ignore */
+    }
+  }
+  return "Generate belum berhasil (detail tidak tersedia — lihat terminal di bawah)";
 }
 
 function formatGenerateError(
@@ -230,11 +249,11 @@ function formatGenerateError(
       summary,
     };
   }
-  const msg = err instanceof Error ? err.message : String(err ?? "Generate belum berhasil");
-  const items = buildErrorChecklist(undefined, msg, extras);
+  const safeMsg = stringifyErr(err);
+  const items = buildErrorChecklist(undefined, safeMsg, extras);
   return {
     title: "Generate belum berhasil",
-    description: renderErrorChecklist(items, msg),
+    description: renderErrorChecklist(items, safeMsg),
     summary,
   };
 }

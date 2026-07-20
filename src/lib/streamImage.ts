@@ -58,6 +58,21 @@ export class GenerateImageError extends Error {
 }
 
 function suggestionFor(status: number, text: string): string {
+  return _suggestionFor(status, text);
+}
+
+function toDisplayString(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function _suggestionFor(status: number, text: string): string {
   const t = (text || "").toLowerCase();
   if (status === 401 || status === 403 || t.includes("unauthor") || t.includes("invalid api key"))
     return "API key YogaDev invalid/kadaluarsa — minta developer perbarui CUSTOM_AI_API_KEY.";
@@ -163,7 +178,7 @@ export async function streamImage(
           status?: number;
           contentType?: string;
           message?: string;
-          body?: string;
+          body?: unknown;
           requestPayload?: Record<string, unknown>;
           retryAfterSeconds?: number;
         }>).map(
@@ -172,7 +187,7 @@ export async function streamImage(
             status: a.status,
             contentType: a.contentType,
             message: a.message,
-            body: a.body,
+            body: toDisplayString(a.body),
             requestPayload: a.requestPayload,
             retryAfterSeconds: a.retryAfterSeconds,
           }),
@@ -180,13 +195,18 @@ export async function streamImage(
       : [];
     const last = attempts[attempts.length - 1];
     const providerMessage =
-      last?.body?.slice(0, 300) || last?.message || json.message || "Tidak ada detail dari provider.";
+      toDisplayString(last?.body).slice(0, 300) ||
+      toDisplayString(last?.message) ||
+      toDisplayString(json.message) ||
+      "Tidak ada detail dari provider.";
     const status = last?.status ?? res.status;
-    const suggestion = suggestionFor(status, `${json.message || ""} ${providerMessage}`);
+    const suggestion = suggestionFor(status, `${toDisplayString(json.message)} ${providerMessage}`);
     const details = formatYogaDetails(json.details);
     const reqTag = json.requestId ? ` · req=${json.requestId.slice(0, 8)}` : "";
+    const baseMessage =
+      toDisplayString(json.message) || `YogaDev belum berhasil (HTTP ${status})`;
     throw new GenerateImageError({
-      message: `${json.message || `YogaDev belum berhasil (HTTP ${status})`}${reqTag}${details}`,
+      message: `${baseMessage}${reqTag}${details}`,
       status,
       providerMessage,
       suggestion,
