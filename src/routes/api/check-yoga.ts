@@ -13,7 +13,7 @@ function json(status: number, payload: unknown): Response {
 
 // Build tag — bumped to force Worker rebuild & re-bind runtime env after
 // CUSTOM_AI_API_KEY was added/rotated in Lovable Cloud secrets.
-const BUILD_TAG = "check-yoga@2026-07-14T07:19-no-cache";
+const BUILD_TAG = "check-yoga@2026-07-20T00:58-hidden-image-alias";
 
 function truncate(s: string, n = 240): string {
   return s.length > n ? s.slice(0, n) + "…" : s;
@@ -50,6 +50,14 @@ function ttlFailMs(): number {
 
 function cacheKey(baseUrl: string, model: string): string {
   return `${baseUrl}::${model}`;
+}
+
+function isRoutableImageAlias(model: string): boolean {
+  const normalized = model.trim().toLowerCase();
+  // YogaDev can expose image aliases on /images/generations even when /models
+  // only lists text/chat models. Do not block generation just because /models
+  // omits these routable image aliases.
+  return normalized.endsWith("-image") || normalized.includes("/gpt-5.5-image");
 }
 
 function withCacheMeta(payload: HealthPayload, source: "cache" | "live", cachedAt: number, ttl: number): HealthPayload {
@@ -134,7 +142,9 @@ export const Route = createFileRoute("/api/check-yoga")({
           const text = await res.text();
 
           let modelCount = 0;
+          let listedTargetModel = false;
           let hasTargetModel = false;
+          const imageAliasAccepted = isRoutableImageAlias(model);
           let sampleModels: string[] = [];
           try {
             const j = JSON.parse(text) as {
@@ -146,9 +156,10 @@ export const Route = createFileRoute("/api/check-yoga")({
               .map((m) => String(m.id ?? ""))
               .filter(Boolean)
               .slice(0, 6);
-            hasTargetModel = list.some(
+            listedTargetModel = list.some(
               (m) => String(m.id ?? "").toLowerCase() === model.toLowerCase(),
             );
+            hasTargetModel = listedTargetModel || imageAliasAccepted;
           } catch {
             /* body not JSON */
           }
@@ -183,7 +194,14 @@ export const Route = createFileRoute("/api/check-yoga")({
             model,
             model_count: modelCount,
             has_target_model: hasTargetModel,
+            listed_target_model: listedTargetModel,
+            image_alias_accepted: imageAliasAccepted,
+            warning:
+              imageAliasAccepted && !listedTargetModel
+                ? `${model} tidak muncul di /models, tapi diperlakukan sebagai image alias yang routable ke /images/generations.`
+                : undefined,
             sample_models: sampleModels,
+            build: BUILD_TAG,
           };
           HEALTH_CACHE.set(key, { at: Date.now(), payload, ok: true });
           return payload;
