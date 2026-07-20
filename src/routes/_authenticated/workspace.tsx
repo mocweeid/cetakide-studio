@@ -249,7 +249,6 @@ function formatGenerateError(
       summary,
     };
   }
-  const msg = err instanceof Error ? err.message : String(err ?? "Generate belum berhasil");
   const safeMsg = stringifyErr(err);
   const items = buildErrorChecklist(undefined, safeMsg, extras);
   return {
